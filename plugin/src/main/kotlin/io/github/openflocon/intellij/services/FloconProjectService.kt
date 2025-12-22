@@ -12,6 +12,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Project-level service for Flocon plugin.
@@ -34,12 +35,60 @@ class FloconProjectService(private val project: Project) : Disposable {
 
     // Delegate server state from app service
     val serverState: StateFlow<ServerState> = appService.serverState
-    val connectedDevices: StateFlow<List<ConnectedDevice>> = appService.connectedDevices
+    val connectedDevices: StateFlow<Set<ConnectedDevice>> = appService.connectedDevices
 
     init {
         thisLogger().info("FloconProjectService initialized for project: ${project.name}")
         // Auto-start server when first project service is created
         appService.startServer()
+
+        // Subscribe to network events from the application service
+        subscribeToNetworkEvents()
+    }
+
+    private fun subscribeToNetworkEvents() {
+        // Handle incoming network requests
+        scope.launch {
+            appService.networkRequests.collect { event ->
+                thisLogger().debug("Received network request: ${event.request.method} ${event.request.url}")
+                val entry = NetworkCallEntry(
+                    id = event.callId,
+                    deviceId = event.deviceId,
+                    packageName = event.packageName,
+                    request = NetworkRequest(
+                        url = event.request.url ?: "",
+                        method = event.request.method ?: "UNKNOWN",
+                        headers = event.request.requestHeaders ?: emptyMap(),
+                        body = event.request.requestBody,
+                        contentType = event.request.requestHeaders?.get("Content-Type"),
+                        size = event.request.requestSize,
+                    ),
+                    startTime = event.request.startTime ?: System.currentTimeMillis(),
+                )
+                addNetworkCall(entry)
+            }
+        }
+
+        // Handle incoming network responses
+        scope.launch {
+            appService.networkResponses.collect { event ->
+                thisLogger().debug("Received network response: ${event.response.responseHttpCode} (${event.response.durationMs}ms)")
+                updateNetworkCall(event.callId) { call ->
+                    call.copy(
+                        response = NetworkResponse(
+                            statusCode = event.response.responseHttpCode ?: 0,
+                            statusMessage = null,
+                            headers = event.response.responseHeaders ?: emptyMap(),
+                            body = event.response.responseBody,
+                            contentType = event.response.responseContentType,
+                            size = event.response.responseSize,
+                            error = event.response.responseError,
+                        ),
+                        duration = event.response.durationMs?.toLong(),
+                    )
+                }
+            }
+        }
     }
 
     /**

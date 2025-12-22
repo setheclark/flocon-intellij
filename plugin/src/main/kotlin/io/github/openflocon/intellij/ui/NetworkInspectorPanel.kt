@@ -10,10 +10,13 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
+import io.github.openflocon.intellij.services.AdbService
+import io.github.openflocon.intellij.services.AdbStatus
 import io.github.openflocon.intellij.services.FloconProjectService
 import io.github.openflocon.intellij.services.ServerState
 import io.github.openflocon.intellij.ui.detail.DetailPanel
@@ -25,6 +28,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
+import java.awt.FlowLayout
+import javax.swing.BorderFactory
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
@@ -38,10 +43,12 @@ class NetworkInspectorPanel(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val floconService = project.service<FloconProjectService>()
+    private val adbService = service<AdbService>()
 
     private val networkCallListPanel = NetworkCallListPanel(project)
     private val detailPanel = DetailPanel(project)
     private val statusLabel = JBLabel()
+    private val warningBanner = createWarningBanner()
 
     init {
         // Create toolbar
@@ -56,6 +63,7 @@ class NetworkInspectorPanel(
 
         // Add status bar at bottom
         val contentPanel = JPanel(BorderLayout()).apply {
+            add(warningBanner, BorderLayout.NORTH)
             add(mainSplitter, BorderLayout.CENTER)
             add(createStatusBar(), BorderLayout.SOUTH)
         }
@@ -64,6 +72,8 @@ class NetworkInspectorPanel(
 
         // Observe server state for status bar
         observeServerState()
+        // Observe ADB status for warning banner
+        observeAdbStatus()
     }
 
     private fun createToolbar(): ActionToolbar {
@@ -85,6 +95,57 @@ class NetworkInspectorPanel(
             border = JBUI.Borders.empty(2, 8)
             add(statusLabel, BorderLayout.WEST)
         }
+    }
+
+    private fun createWarningBanner(): JPanel {
+        val warningColor = JBColor(0xFFF3CD, 0x5C4813) // Yellow warning background
+        val textColor = JBColor(0x856404, 0xFFE69C)    // Dark text on light, light text on dark
+
+        return JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+            background = warningColor
+            border = BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor.border()),
+                JBUI.Borders.empty(8, 12)
+            )
+            isVisible = false // Hidden by default
+
+            val iconLabel = JBLabel(AllIcons.General.Warning)
+            val textLabel = JBLabel().apply {
+                foreground = textColor
+            }
+
+            add(iconLabel)
+            add(textLabel)
+
+            // Store text label for updates
+            putClientProperty("textLabel", textLabel)
+        }
+    }
+
+    private fun observeAdbStatus() {
+        scope.launch {
+            adbService.adbStatus.collectLatest { status ->
+                SwingUtilities.invokeLater {
+                    updateWarningBanner(status)
+                }
+            }
+        }
+    }
+
+    private fun updateWarningBanner(status: AdbStatus) {
+        val textLabel = warningBanner.getClientProperty("textLabel") as? JBLabel
+        when (status) {
+            is AdbStatus.NotFound -> {
+                textLabel?.text = "<html><b>ADB not found.</b> USB device connections won't work. " +
+                    "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>"
+                warningBanner.isVisible = true
+            }
+            else -> {
+                warningBanner.isVisible = false
+            }
+        }
+        warningBanner.revalidate()
+        warningBanner.repaint()
     }
 
     private fun observeServerState() {

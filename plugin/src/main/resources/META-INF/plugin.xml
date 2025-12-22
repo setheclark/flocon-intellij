@@ -43,6 +43,10 @@
         <!-- Application Service - shared across all projects -->
         <applicationService
             serviceImplementation="io.github.openflocon.intellij.services.FloconApplicationService"/>
+
+        <!-- ADB Service - manages ADB reverse forwarding -->
+        <applicationService
+            serviceImplementation="io.github.openflocon.intellij.services.AdbService"/>
     </extensions>
 
     <actions>
