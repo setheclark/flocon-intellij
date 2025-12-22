@@ -1,0 +1,3 @@
+[submodule "flocon-upstream"]
+	path = flocon-upstream
+	url = https://github.com/openflocon/Flocon.git

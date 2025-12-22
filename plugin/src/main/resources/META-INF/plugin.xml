@@ -1,0 +1,58 @@
+<idea-plugin>
+    <id>io.github.openflocon.intellij</id>
+    <name>Flocon Network Inspector</name>
+    <vendor email="support@openflocon.io" url="https://github.com/openflocon">Open Flocon</vendor>
+
+    <description><![CDATA[
+        Network traffic inspector for Android apps using the Flocon SDK.
+
+        <h3>Features</h3>
+        <ul>
+            <li>Real-time network traffic inspection from connected Android devices</li>
+            <li>View HTTP request/response details including headers and body</li>
+            <li>Timeline visualization of network activity</li>
+            <li>Support for multiple connected devices simultaneously</li>
+            <li>Filter and search network requests</li>
+        </ul>
+
+        <h3>Usage</h3>
+        <ol>
+            <li>Integrate the Flocon SDK into your Android app</li>
+            <li>Connect your device via USB or WiFi</li>
+            <li>Open the Flocon tool window (View → Tool Windows → Flocon)</li>
+            <li>Run your app and watch network traffic appear in real-time</li>
+        </ol>
+
+        <p>For more information, visit <a href="https://github.com/openflocon/Flocon">Flocon on GitHub</a></p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Tool Window -->
+        <toolWindow
+            id="Flocon"
+            anchor="bottom"
+            icon="/icons/flocon.svg"
+            factoryClass="io.github.openflocon.intellij.ui.FloconToolWindowFactory"/>
+
+        <!-- Project Service - manages server lifecycle per project -->
+        <projectService
+            serviceImplementation="io.github.openflocon.intellij.services.FloconProjectService"/>
+
+        <!-- Application Service - shared across all projects -->
+        <applicationService
+            serviceImplementation="io.github.openflocon.intellij.services.FloconApplicationService"/>
+    </extensions>
+
+    <actions>
+        <group id="Flocon.ToolbarActions" text="Flocon Actions">
+            <action
+                id="Flocon.ClearAll"
+                class="io.github.openflocon.intellij.ui.actions.ClearAllAction"
+                text="Clear All"
+                description="Clear all captured network traffic"
+                icon="AllIcons.Actions.GC"/>
+        </group>
+    </actions>
+</idea-plugin>
