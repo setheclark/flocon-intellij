@@ -26,9 +26,12 @@ import java.time.format.DateTimeFormatter
 import javax.swing.JPanel
 import javax.swing.JTable
 import javax.swing.ListSelectionModel
+import javax.swing.SortOrder
 import javax.swing.SwingUtilities
+import javax.swing.RowSorter
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
+import javax.swing.table.TableRowSorter
 
 /**
  * Panel displaying the list of captured network calls in a table format.
@@ -49,10 +52,36 @@ class NetworkCallListPanel(
     }
 
     private fun setupTable() {
+        // Set up row sorter for column sorting
+        val sorter = TableRowSorter(tableModel).apply {
+            // Set comparators that use the raw sortable values from the model
+            setComparator(COL_TIME) { a: Any?, b: Any? ->
+                ((a as? Long) ?: 0L).compareTo((b as? Long) ?: 0L)
+            }
+            setComparator(COL_STATUS) { a: Any?, b: Any? ->
+                val aVal = (a as? Int) ?: Int.MAX_VALUE
+                val bVal = (b as? Int) ?: Int.MAX_VALUE
+                aVal.compareTo(bVal)
+            }
+            setComparator(COL_DURATION) { a: Any?, b: Any? ->
+                val aVal = (a as? Long) ?: Long.MAX_VALUE
+                val bVal = (b as? Long) ?: Long.MAX_VALUE
+                aVal.compareTo(bVal)
+            }
+            setComparator(COL_SIZE) { a: Any?, b: Any? ->
+                val aVal = (a as? Long) ?: Long.MAX_VALUE
+                val bVal = (b as? Long) ?: Long.MAX_VALUE
+                aVal.compareTo(bVal)
+            }
+            // Default sort by time ascending
+            sortKeys = listOf(RowSorter.SortKey(COL_TIME, SortOrder.ASCENDING))
+        }
+
         table.apply {
             setShowGrid(false)
             rowHeight = JBUI.scale(24)
             selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
+            rowSorter = sorter
 
             // Column widths
             columnModel.apply {
@@ -65,15 +94,23 @@ class NetworkCallListPanel(
             }
 
             // Custom renderers
-            columnModel.getColumn(1).cellRenderer = StatusCodeRenderer()
-            columnModel.getColumn(2).cellRenderer = MethodRenderer()
+            columnModel.getColumn(COL_TIME).cellRenderer = TimeRenderer()
+            columnModel.getColumn(COL_STATUS).cellRenderer = StatusCodeRenderer()
+            columnModel.getColumn(COL_METHOD).cellRenderer = MethodRenderer()
+            columnModel.getColumn(COL_DURATION).cellRenderer = DurationRenderer()
+            columnModel.getColumn(COL_SIZE).cellRenderer = SizeRenderer()
 
-            // Selection listener
+            // Selection listener - convert view row to model row for proper selection
             selectionModel.addListSelectionListener { e ->
                 if (!e.valueIsAdjusting) {
-                    val selectedRow = selectedRow
-                    if (selectedRow >= 0 && selectedRow < tableModel.calls.size) {
-                        floconService.selectCall(tableModel.calls[selectedRow])
+                    val viewRow = selectedRow
+                    if (viewRow >= 0) {
+                        val modelRow = convertRowIndexToModel(viewRow)
+                        if (modelRow >= 0 && modelRow < tableModel.calls.size) {
+                            floconService.selectCall(tableModel.calls[modelRow])
+                        } else {
+                            floconService.selectCall(null)
+                        }
                     } else {
                         floconService.selectCall(null)
                     }
@@ -84,6 +121,16 @@ class NetworkCallListPanel(
         // Use JBScrollPane to properly handle the table header (keeps it pinned at top)
         val scrollPane = JBScrollPane(table)
         add(scrollPane, BorderLayout.CENTER)
+    }
+
+    companion object {
+        // Column indices
+        private const val COL_TIME = 0
+        private const val COL_STATUS = 1
+        private const val COL_METHOD = 2
+        private const val COL_URL = 3
+        private const val COL_DURATION = 4
+        private const val COL_SIZE = 5
     }
 
     private fun observeNetworkCalls() {
@@ -157,12 +204,11 @@ class NetworkCallListPanel(
 
 /**
  * Table model for the network call list.
+ * Returns raw values for proper sorting; cell renderers handle formatting.
  */
 class NetworkCallTableModel : AbstractTableModel() {
 
     private val columns = arrayOf("Time", "Status", "Method", "URL", "Duration", "Size")
-    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
-        .withZone(ZoneId.systemDefault())
 
     var calls: List<NetworkCallEntry> = emptyList()
         private set
@@ -179,18 +225,80 @@ class NetworkCallTableModel : AbstractTableModel() {
     override fun getValueAt(rowIndex: Int, columnIndex: Int): Any? {
         val call = calls.getOrNull(rowIndex) ?: return null
         return when (columnIndex) {
-            0 -> formatTime(call.startTime)
-            1 -> call.response?.statusCode?.toString() ?: "..."
+            0 -> call.startTime                                    // Raw Long for sorting
+            1 -> call.response?.statusCode                         // Raw Int? for sorting
             2 -> call.request.method
             3 -> call.request.url
-            4 -> call.duration?.let { "${it}ms" } ?: "..."
-            5 -> formatSize(call.response?.size ?: call.request.size)
+            4 -> call.duration                                     // Raw Long? for sorting
+            5 -> call.response?.size ?: call.request.size          // Raw Long? for sorting
             else -> null
         }
     }
 
-    private fun formatTime(epochMillis: Long): String {
-        return timeFormatter.format(Instant.ofEpochMilli(epochMillis))
+    override fun getColumnClass(columnIndex: Int): Class<*> {
+        return when (columnIndex) {
+            0 -> Long::class.java
+            1 -> Integer::class.java
+            4 -> Long::class.java
+            5 -> Long::class.java
+            else -> String::class.java
+        }
+    }
+}
+
+/**
+ * Renderer for the Time column - formats epoch millis to HH:mm:ss.SSS
+ */
+class TimeRenderer : DefaultTableCellRenderer() {
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
+        .withZone(ZoneId.systemDefault())
+
+    override fun getTableCellRendererComponent(
+        table: JTable?,
+        value: Any?,
+        isSelected: Boolean,
+        hasFocus: Boolean,
+        row: Int,
+        column: Int
+    ): Component {
+        val formatted = (value as? Long)?.let {
+            timeFormatter.format(Instant.ofEpochMilli(it))
+        } ?: ""
+        return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
+    }
+}
+
+/**
+ * Renderer for the Duration column - formats milliseconds
+ */
+class DurationRenderer : DefaultTableCellRenderer() {
+    override fun getTableCellRendererComponent(
+        table: JTable?,
+        value: Any?,
+        isSelected: Boolean,
+        hasFocus: Boolean,
+        row: Int,
+        column: Int
+    ): Component {
+        val formatted = (value as? Long)?.let { "${it}ms" } ?: "..."
+        return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
+    }
+}
+
+/**
+ * Renderer for the Size column - formats bytes to human readable
+ */
+class SizeRenderer : DefaultTableCellRenderer() {
+    override fun getTableCellRendererComponent(
+        table: JTable?,
+        value: Any?,
+        isSelected: Boolean,
+        hasFocus: Boolean,
+        row: Int,
+        column: Int
+    ): Component {
+        val formatted = formatSize(value as? Long)
+        return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
     }
 
     private fun formatSize(size: Long?): String {
@@ -215,16 +323,17 @@ class StatusCodeRenderer : DefaultTableCellRenderer() {
         row: Int,
         column: Int
     ): Component {
-        val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+        val statusCode = value as? Int
+        val displayText = statusCode?.toString() ?: "..."
+        val component = super.getTableCellRendererComponent(table, displayText, isSelected, hasFocus, row, column)
 
         if (!isSelected) {
-            val statusText = value?.toString() ?: ""
             foreground = when {
-                statusText == "..." -> JBColor.GRAY
-                statusText.startsWith("2") -> JBColor.namedColor("Flocon.status.success", JBColor(0x4CAF50, 0x4CAF50))
-                statusText.startsWith("3") -> JBColor.namedColor("Flocon.status.redirect", JBColor(0x2196F3, 0x2196F3))
-                statusText.startsWith("4") -> JBColor.namedColor("Flocon.status.clientError", JBColor(0xFF9800, 0xFF9800))
-                statusText.startsWith("5") -> JBColor.namedColor("Flocon.status.serverError", JBColor(0xF44336, 0xF44336))
+                statusCode == null -> JBColor.GRAY
+                statusCode in 200..299 -> JBColor.namedColor("Flocon.status.success", JBColor(0x4CAF50, 0x4CAF50))
+                statusCode in 300..399 -> JBColor.namedColor("Flocon.status.redirect", JBColor(0x2196F3, 0x2196F3))
+                statusCode in 400..499 -> JBColor.namedColor("Flocon.status.clientError", JBColor(0xFF9800, 0xFF9800))
+                statusCode in 500..599 -> JBColor.namedColor("Flocon.status.serverError", JBColor(0xF44336, 0xF44336))
                 else -> JBColor.foreground()
             }
         }
