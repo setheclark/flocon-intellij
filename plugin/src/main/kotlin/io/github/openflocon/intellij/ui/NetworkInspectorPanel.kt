@@ -20,6 +20,7 @@ import io.github.openflocon.intellij.services.AdbStatus
 import io.github.openflocon.intellij.services.FloconProjectService
 import io.github.openflocon.intellij.services.ServerState
 import io.github.openflocon.intellij.ui.detail.DetailPanel
+import io.github.openflocon.intellij.ui.filter.FilterPanel
 import io.github.openflocon.intellij.ui.list.NetworkCallListPanel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +48,7 @@ class NetworkInspectorPanel(
 
     private val networkCallListPanel = NetworkCallListPanel(project)
     private val detailPanel = DetailPanel(project)
+    private val filterPanel = FilterPanel(project)
     private val statusLabel = JBLabel()
     private val warningBanner = createWarningBanner()
 
@@ -61,9 +63,15 @@ class NetworkInspectorPanel(
             secondComponent = detailPanel
         }
 
+        // Create top panel with warning and filters
+        val topPanel = JPanel(BorderLayout()).apply {
+            add(warningBanner, BorderLayout.NORTH)
+            add(filterPanel, BorderLayout.SOUTH)
+        }
+
         // Add status bar at bottom
         val contentPanel = JPanel(BorderLayout()).apply {
-            add(warningBanner, BorderLayout.NORTH)
+            add(topPanel, BorderLayout.NORTH)
             add(mainSplitter, BorderLayout.CENTER)
             add(createStatusBar(), BorderLayout.SOUTH)
         }
@@ -170,6 +178,7 @@ class NetworkInspectorPanel(
 
     override fun dispose() {
         scope.cancel()
+        filterPanel.dispose()
     }
 
     // Action implementations

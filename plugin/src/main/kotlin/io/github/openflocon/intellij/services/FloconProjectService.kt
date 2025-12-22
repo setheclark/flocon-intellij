@@ -47,10 +47,12 @@ class FloconProjectService(private val project: Project) : Disposable {
     }
 
     private fun subscribeToNetworkEvents() {
+        thisLogger().info(">>> Subscribing to network events")
         // Handle incoming network requests
         scope.launch {
+            thisLogger().info(">>> Started collecting networkRequests")
             appService.networkRequests.collect { event ->
-                thisLogger().debug("Received network request: ${event.request.method} ${event.request.url}")
+                thisLogger().info(">>> Received network request in ProjectService: ${event.request.method} ${event.request.url}")
                 val entry = NetworkCallEntry(
                     id = event.callId,
                     deviceId = event.deviceId,
@@ -71,8 +73,9 @@ class FloconProjectService(private val project: Project) : Disposable {
 
         // Handle incoming network responses
         scope.launch {
+            thisLogger().info(">>> Started collecting networkResponses")
             appService.networkResponses.collect { event ->
-                thisLogger().debug("Received network response: ${event.response.responseHttpCode} (${event.response.durationMs}ms)")
+                thisLogger().info(">>> Received network response in ProjectService: ${event.response.responseHttpCode} (${event.response.durationMs}ms)")
                 updateNetworkCall(event.callId) { call ->
                     call.copy(
                         response = NetworkResponse(
@@ -97,6 +100,7 @@ class FloconProjectService(private val project: Project) : Disposable {
      */
     fun addNetworkCall(call: NetworkCallEntry) {
         _networkCalls.value = _networkCalls.value + call
+        thisLogger().info(">>> Added network call: ${call.request.method} ${call.request.url}, total calls: ${_networkCalls.value.size}")
     }
 
     /**

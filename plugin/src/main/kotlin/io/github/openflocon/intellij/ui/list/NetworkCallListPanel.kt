@@ -8,11 +8,14 @@ import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import io.github.openflocon.intellij.services.FloconProjectService
 import io.github.openflocon.intellij.services.NetworkCallEntry
+import io.github.openflocon.intellij.services.NetworkFilter
+import io.github.openflocon.intellij.services.StatusFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.Component
@@ -79,11 +82,65 @@ class NetworkCallListPanel(
 
     private fun observeNetworkCalls() {
         scope.launch {
-            floconService.networkCalls.collectLatest { calls ->
+            combine(
+                floconService.networkCalls,
+                floconService.filter
+            ) { calls, filter ->
+                applyFilter(calls, filter)
+            }.collectLatest { filteredCalls ->
                 SwingUtilities.invokeLater {
-                    tableModel.updateCalls(calls)
+                    tableModel.updateCalls(filteredCalls)
                 }
             }
+        }
+    }
+
+    private fun applyFilter(calls: List<NetworkCallEntry>, filter: NetworkFilter): List<NetworkCallEntry> {
+        return calls.filter { call ->
+            // URL search filter
+            if (filter.searchText.isNotEmpty()) {
+                if (!call.request.url.contains(filter.searchText, ignoreCase = true)) {
+                    return@filter false
+                }
+            }
+
+            // Method filter
+            if (filter.methodFilter != null) {
+                if (!call.request.method.equals(filter.methodFilter, ignoreCase = true)) {
+                    return@filter false
+                }
+            }
+
+            // Status filter
+            val statusCode = call.response?.statusCode
+            val hasError = call.response?.error != null
+            when (filter.statusFilter) {
+                StatusFilter.ALL -> { /* include all */ }
+                StatusFilter.SUCCESS -> {
+                    if (statusCode == null || statusCode < 200 || statusCode >= 300) return@filter false
+                }
+                StatusFilter.REDIRECT -> {
+                    if (statusCode == null || statusCode < 300 || statusCode >= 400) return@filter false
+                }
+                StatusFilter.CLIENT_ERROR -> {
+                    if (statusCode == null || statusCode < 400 || statusCode >= 500) return@filter false
+                }
+                StatusFilter.SERVER_ERROR -> {
+                    if (statusCode == null || statusCode < 500 || statusCode >= 600) return@filter false
+                }
+                StatusFilter.ERROR -> {
+                    if (!hasError) return@filter false
+                }
+            }
+
+            // Device filter
+            if (filter.deviceFilter != null) {
+                if (call.deviceId != filter.deviceFilter) {
+                    return@filter false
+                }
+            }
+
+            true
         }
     }
 
