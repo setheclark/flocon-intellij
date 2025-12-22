@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import io.github.openflocon.intellij.services.FloconProjectService
@@ -19,6 +20,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.Component
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.swing.JPanel
 import javax.swing.JTable
 import javax.swing.ListSelectionModel
@@ -52,16 +56,17 @@ class NetworkCallListPanel(
 
             // Column widths
             columnModel.apply {
-                getColumn(0).preferredWidth = 50   // Status
-                getColumn(1).preferredWidth = 60   // Method
-                getColumn(2).preferredWidth = 400  // URL
-                getColumn(3).preferredWidth = 80   // Duration
-                getColumn(4).preferredWidth = 80   // Size
+                getColumn(0).preferredWidth = 100  // Time
+                getColumn(1).preferredWidth = 50   // Status
+                getColumn(2).preferredWidth = 60   // Method
+                getColumn(3).preferredWidth = 400  // URL
+                getColumn(4).preferredWidth = 80   // Duration
+                getColumn(5).preferredWidth = 80   // Size
             }
 
             // Custom renderers
-            columnModel.getColumn(0).cellRenderer = StatusCodeRenderer()
-            columnModel.getColumn(1).cellRenderer = MethodRenderer()
+            columnModel.getColumn(1).cellRenderer = StatusCodeRenderer()
+            columnModel.getColumn(2).cellRenderer = MethodRenderer()
 
             // Selection listener
             selectionModel.addListSelectionListener { e ->
@@ -76,8 +81,9 @@ class NetworkCallListPanel(
             }
         }
 
-        add(table.tableHeader, BorderLayout.NORTH)
-        add(table, BorderLayout.CENTER)
+        // Use JBScrollPane to properly handle the table header (keeps it pinned at top)
+        val scrollPane = JBScrollPane(table)
+        add(scrollPane, BorderLayout.CENTER)
     }
 
     private fun observeNetworkCalls() {
@@ -154,7 +160,10 @@ class NetworkCallListPanel(
  */
 class NetworkCallTableModel : AbstractTableModel() {
 
-    private val columns = arrayOf("Status", "Method", "URL", "Duration", "Size")
+    private val columns = arrayOf("Time", "Status", "Method", "URL", "Duration", "Size")
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
+        .withZone(ZoneId.systemDefault())
+
     var calls: List<NetworkCallEntry> = emptyList()
         private set
 
@@ -170,13 +179,18 @@ class NetworkCallTableModel : AbstractTableModel() {
     override fun getValueAt(rowIndex: Int, columnIndex: Int): Any? {
         val call = calls.getOrNull(rowIndex) ?: return null
         return when (columnIndex) {
-            0 -> call.response?.statusCode?.toString() ?: "..."
-            1 -> call.request.method
-            2 -> call.request.url
-            3 -> call.duration?.let { "${it}ms" } ?: "..."
-            4 -> formatSize(call.response?.size ?: call.request.size)
+            0 -> formatTime(call.startTime)
+            1 -> call.response?.statusCode?.toString() ?: "..."
+            2 -> call.request.method
+            3 -> call.request.url
+            4 -> call.duration?.let { "${it}ms" } ?: "..."
+            5 -> formatSize(call.response?.size ?: call.request.size)
             else -> null
         }
+    }
+
+    private fun formatTime(epochMillis: Long): String {
+        return timeFormatter.format(Instant.ofEpochMilli(epochMillis))
     }
 
     private fun formatSize(size: Long?): String {

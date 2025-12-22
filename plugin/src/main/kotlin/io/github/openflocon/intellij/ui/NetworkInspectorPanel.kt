@@ -59,7 +59,7 @@ class NetworkInspectorPanel(
 
         // Create main content with split pane
         val mainSplitter = JBSplitter(false, 0.5f).apply {
-            firstComponent = JBScrollPane(networkCallListPanel)
+            firstComponent = networkCallListPanel  // Panel handles its own scrolling
             secondComponent = detailPanel
         }
 
