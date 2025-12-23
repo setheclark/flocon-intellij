@@ -142,8 +142,31 @@ class NetworkCallListPanel(
                 applyFilter(calls, filter)
             }.collectLatest { filteredCalls ->
                 SwingUtilities.invokeLater {
+                    // Preserve selection by call ID
+                    val selectedCallId = getSelectedCallId()
                     tableModel.updateCalls(filteredCalls)
+                    // Restore selection if the call is still in the list
+                    if (selectedCallId != null) {
+                        restoreSelection(selectedCallId)
+                    }
                 }
+            }
+        }
+    }
+
+    private fun getSelectedCallId(): String? {
+        val viewRow = table.selectedRow
+        if (viewRow < 0) return null
+        val modelRow = table.convertRowIndexToModel(viewRow)
+        return tableModel.calls.getOrNull(modelRow)?.id
+    }
+
+    private fun restoreSelection(callId: String) {
+        val modelRow = tableModel.calls.indexOfFirst { it.id == callId }
+        if (modelRow >= 0) {
+            val viewRow = table.convertRowIndexToView(modelRow)
+            if (viewRow >= 0) {
+                table.setRowSelectionInterval(viewRow, viewRow)
             }
         }
     }
