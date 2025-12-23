@@ -2,7 +2,17 @@ package io.github.setheclark.intellij.ui.detail
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory
+import com.intellij.openapi.fileTypes.FileType
+import com.intellij.openapi.fileTypes.FileTypeManager
+import com.intellij.openapi.fileTypes.PlainTextFileType
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
@@ -39,8 +49,8 @@ class DetailPanel(
 
     private val tabbedPane = JBTabbedPane()
     private val headersPanel = HeadersPanel()
-    private val requestBodyPanel = BodyPanel("Request Body")
-    private val responseBodyPanel = BodyPanel("Response Body")
+    private val requestBodyPanel = BodyPanel(project, this)
+    private val responseBodyPanel = BodyPanel(project, this)
     private val timingPanel = TimingPanel()
     private val emptyLabel = JBLabel("Select a request to view details").apply {
         horizontalAlignment = JBLabel.CENTER
@@ -147,33 +157,157 @@ class HeadersPanel : JPanel(BorderLayout()) {
 }
 
 /**
- * Panel for displaying request or response body with JSON formatting.
+ * Panel for displaying request or response body with syntax highlighting and code folding.
+ * Uses IntelliJ's Editor component for a rich editing experience.
  */
-class BodyPanel(title: String) : JPanel(BorderLayout()) {
+class BodyPanel(
+    private val project: Project,
+    private val parentDisposable: Disposable
+) : JPanel(BorderLayout()) {
 
-    private val textArea = JBTextArea().apply {
-        isEditable = false
-        font = Font(Font.MONOSPACED, Font.PLAIN, 12)
-        border = JBUI.Borders.empty(4)
+    companion object {
+        private val LOG = logger<BodyPanel>()
     }
 
     private val json = Json { prettyPrint = true }
+    private val emptyLabel = JBLabel("(Empty body)").apply {
+        horizontalAlignment = JBLabel.CENTER
+        foreground = JBColor.GRAY
+    }
+
+    private var currentEditor: Editor? = null
 
     init {
-        add(JBLabel(title).apply {
-            border = JBUI.Borders.empty(4, 8)
-            font = font.deriveFont(Font.BOLD)
-        }, BorderLayout.NORTH)
-        add(JBScrollPane(textArea), BorderLayout.CENTER)
+        showEmpty()
+    }
+
+    private fun showEmpty() {
+        disposeCurrentEditor()
+        removeAll()
+        add(emptyLabel, BorderLayout.CENTER)
+        revalidate()
+        repaint()
     }
 
     fun showBody(body: String?, contentType: String?) {
-        textArea.text = when {
-            body.isNullOrEmpty() -> "(Empty body)"
-            contentType?.contains("json", ignoreCase = true) == true -> formatJson(body)
-            else -> body
+        if (body.isNullOrEmpty()) {
+            showEmpty()
+            return
         }
-        textArea.caretPosition = 0
+
+        // Determine file type based on content type
+        val fileType = getFileType(contentType)
+
+        // Format content if JSON
+        val formattedBody = if (contentType?.contains("json", ignoreCase = true) == true) {
+            formatJson(body)
+        } else {
+            body
+        }
+
+        // Create editor with syntax highlighting
+        try {
+            disposeCurrentEditor()
+            val editor = createEditor(formattedBody, fileType)
+            currentEditor = editor
+
+            removeAll()
+            add(editor.component, BorderLayout.CENTER)
+            revalidate()
+            repaint()
+        } catch (e: Exception) {
+            LOG.warn("Failed to create editor, falling back to text area", e)
+            showFallbackText(formattedBody)
+        }
+    }
+
+    private fun showFallbackText(text: String) {
+        disposeCurrentEditor()
+        removeAll()
+        val textArea = JBTextArea(text).apply {
+            isEditable = false
+            font = Font(Font.MONOSPACED, Font.PLAIN, 12)
+            border = JBUI.Borders.empty(4)
+        }
+        add(JBScrollPane(textArea), BorderLayout.CENTER)
+        revalidate()
+        repaint()
+    }
+
+    private fun createEditor(text: String, fileType: FileType): Editor {
+        val document = EditorFactory.getInstance().createDocument(text)
+        val editor = EditorFactory.getInstance().createEditor(
+            document,
+            project,
+            fileType,
+            true // isViewer (read-only)
+        ) as EditorEx
+
+        // Get the global color scheme first
+        val colorsScheme = EditorColorsManager.getInstance().schemeForCurrentUITheme
+
+        // Configure editor settings
+        editor.settings.apply {
+            isLineNumbersShown = true
+            isWhitespacesShown = false
+            isFoldingOutlineShown = true
+            isAutoCodeFoldingEnabled = true
+            additionalLinesCount = 0
+            additionalColumnsCount = 0
+            isRightMarginShown = false
+            isCaretRowShown = false
+            isUseSoftWraps = true
+        }
+
+        // Set color scheme before highlighter
+        editor.colorsScheme = colorsScheme
+
+        // Apply syntax highlighting with the file type and color scheme
+        val highlighter = EditorHighlighterFactory.getInstance().createEditorHighlighter(
+            fileType,
+            colorsScheme,
+            project
+        )
+        editor.highlighter = highlighter
+
+        // Ensure background matches the scheme
+        editor.backgroundColor = colorsScheme.defaultBackground
+
+        // Register for disposal
+        Disposer.register(parentDisposable) {
+            if (!editor.isDisposed) {
+                EditorFactory.getInstance().releaseEditor(editor)
+            }
+        }
+
+        return editor
+    }
+
+    private fun disposeCurrentEditor() {
+        currentEditor?.let { editor ->
+            if (!editor.isDisposed) {
+                EditorFactory.getInstance().releaseEditor(editor)
+            }
+        }
+        currentEditor = null
+    }
+
+    private fun getFileType(contentType: String?): FileType {
+        val fileTypeManager = FileTypeManager.getInstance()
+        return when {
+            contentType == null -> PlainTextFileType.INSTANCE
+            contentType.contains("json", ignoreCase = true) ->
+                fileTypeManager.getFileTypeByExtension("json")
+            contentType.contains("xml", ignoreCase = true) ->
+                fileTypeManager.getFileTypeByExtension("xml")
+            contentType.contains("html", ignoreCase = true) ->
+                fileTypeManager.getFileTypeByExtension("html")
+            contentType.contains("javascript", ignoreCase = true) ->
+                fileTypeManager.getFileTypeByExtension("js")
+            contentType.contains("css", ignoreCase = true) ->
+                fileTypeManager.getFileTypeByExtension("css")
+            else -> PlainTextFileType.INSTANCE
+        }
     }
 
     private fun formatJson(jsonString: String): String {
