@@ -45,6 +45,11 @@ class NetworkCallListPanel(
 
     private val tableModel = NetworkCallTableModel()
     private val table = JBTable(tableModel)
+    private var scrollPane: JBScrollPane? = null
+
+    // Track if user has interacted - stops auto-scroll
+    private var userHasInteracted = false
+    private var previousCallCount = 0
 
     init {
         setupTable()
@@ -105,6 +110,8 @@ class NetworkCallListPanel(
                 if (!e.valueIsAdjusting) {
                     val viewRow = selectedRow
                     if (viewRow >= 0) {
+                        // User selected an item - stop auto-scrolling
+                        userHasInteracted = true
                         val modelRow = convertRowIndexToModel(viewRow)
                         if (modelRow >= 0 && modelRow < tableModel.calls.size) {
                             floconService.selectCall(tableModel.calls[modelRow])
@@ -119,8 +126,45 @@ class NetworkCallListPanel(
         }
 
         // Use JBScrollPane to properly handle the table header (keeps it pinned at top)
-        val scrollPane = JBScrollPane(table)
+        scrollPane = JBScrollPane(table)
+
+        // Track manual scrolling by user
+        scrollPane!!.verticalScrollBar.addAdjustmentListener { e ->
+            if (e.valueIsAdjusting) {
+                // User is actively dragging the scrollbar
+                userHasInteracted = true
+            }
+        }
+
+        // Also track mouse wheel scrolling
+        scrollPane!!.addMouseWheelListener {
+            userHasInteracted = true
+        }
+
         add(scrollPane, BorderLayout.CENTER)
+    }
+
+    /**
+     * Reset auto-scroll behavior. Called when the list is cleared.
+     */
+    fun resetAutoScroll() {
+        userHasInteracted = false
+        previousCallCount = 0
+    }
+
+    /**
+     * Check if auto-scroll is currently enabled.
+     */
+    fun isAutoScrollEnabled(): Boolean = !userHasInteracted
+
+    /**
+     * Re-enable auto-scroll and immediately scroll to show latest entries.
+     */
+    fun enableAutoScroll() {
+        userHasInteracted = false
+        if (isSortedByTime()) {
+            scrollToShowNewEntries()
+        }
     }
 
     companion object {
@@ -142,15 +186,67 @@ class NetworkCallListPanel(
                 applyFilter(calls, filter)
             }.collectLatest { filteredCalls ->
                 SwingUtilities.invokeLater {
+                    val newCallCount = filteredCalls.size
+                    val hasNewItems = newCallCount > previousCallCount
+
+                    // Reset interaction flag if list was cleared
+                    if (newCallCount == 0) {
+                        userHasInteracted = false
+                    }
+
                     // Preserve selection by call ID
                     val selectedCallId = getSelectedCallId()
                     tableModel.updateCalls(filteredCalls)
+
                     // Restore selection if the call is still in the list
                     if (selectedCallId != null) {
                         restoreSelection(selectedCallId)
                     }
+
+                    // Auto-scroll to show new entries if user hasn't interacted
+                    if (hasNewItems && !userHasInteracted && isSortedByTime()) {
+                        scrollToShowNewEntries()
+                    }
+
+                    previousCallCount = newCallCount
                 }
             }
+        }
+    }
+
+    /**
+     * Check if the table is currently sorted by the Time column.
+     */
+    private fun isSortedByTime(): Boolean {
+        val sortKeys = table.rowSorter?.sortKeys ?: return false
+        if (sortKeys.isEmpty()) return false
+        return sortKeys[0].column == COL_TIME
+    }
+
+    /**
+     * Check if the table is sorted in ascending order.
+     */
+    private fun isSortedAscending(): Boolean {
+        val sortKeys = table.rowSorter?.sortKeys ?: return true
+        if (sortKeys.isEmpty()) return true
+        return sortKeys[0].sortOrder == SortOrder.ASCENDING
+    }
+
+    /**
+     * Scroll to show new entries based on sort order.
+     * Ascending: scroll to bottom (newest at bottom)
+     * Descending: scroll to top (newest at top)
+     */
+    private fun scrollToShowNewEntries() {
+        if (table.rowCount == 0) return
+
+        if (isSortedAscending()) {
+            // Scroll to bottom for ascending (newest at bottom)
+            table.scrollRectToVisible(table.getCellRect(table.rowCount - 1, 0, true))
+        } else {
+            // Scroll to top for descending (newest at top)
+            // Use scrollBar directly for more reliable behavior
+            scrollPane?.verticalScrollBar?.value = 0
         }
     }
 

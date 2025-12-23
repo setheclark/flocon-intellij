@@ -88,6 +88,8 @@ class NetworkInspectorPanel(
         val actionGroup = DefaultActionGroup().apply {
             add(ClearAction())
             addSeparator()
+            add(AutoScrollAction())
+            addSeparator()
             add(StartStopServerAction())
         }
 
@@ -190,7 +192,30 @@ class NetworkInspectorPanel(
     ) {
         override fun actionPerformed(e: AnActionEvent) {
             floconService.clearAll()
+            networkCallListPanel.resetAutoScroll()
         }
+
+        override fun getActionUpdateThread() = com.intellij.openapi.actionSystem.ActionUpdateThread.BGT
+    }
+
+    private inner class AutoScrollAction : com.intellij.openapi.actionSystem.ToggleAction(
+        "Auto-scroll to Latest",
+        "Automatically scroll to show new requests",
+        AllIcons.RunConfigurations.Scroll_down
+    ) {
+        override fun isSelected(e: AnActionEvent): Boolean {
+            return networkCallListPanel.isAutoScrollEnabled()
+        }
+
+        override fun setSelected(e: AnActionEvent, state: Boolean) {
+            if (state) {
+                networkCallListPanel.enableAutoScroll()
+            }
+            // When toggled off, we don't need to do anything -
+            // user interaction already disables auto-scroll
+        }
+
+        override fun getActionUpdateThread() = com.intellij.openapi.actionSystem.ActionUpdateThread.EDT
     }
 
     private inner class StartStopServerAction : AnAction() {
@@ -223,5 +248,7 @@ class NetworkInspectorPanel(
                 else -> { /* ignore */ }
             }
         }
+
+        override fun getActionUpdateThread() = com.intellij.openapi.actionSystem.ActionUpdateThread.EDT
     }
 }
