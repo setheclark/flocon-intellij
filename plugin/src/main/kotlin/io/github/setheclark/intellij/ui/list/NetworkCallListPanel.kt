@@ -1,4 +1,4 @@
-package io.github.openflocon.intellij.ui.list
+package io.github.setheclark.intellij.ui.list
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
@@ -7,10 +7,10 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
-import io.github.openflocon.intellij.services.FloconProjectService
-import io.github.openflocon.intellij.services.NetworkCallEntry
-import io.github.openflocon.intellij.services.NetworkFilter
-import io.github.openflocon.intellij.services.StatusFilter
+import io.github.setheclark.intellij.services.FloconProjectService
+import io.github.setheclark.intellij.services.NetworkCallEntry
+import io.github.setheclark.intellij.services.NetworkFilter
+import io.github.setheclark.intellij.services.StatusFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -267,11 +267,46 @@ class NetworkCallListPanel(
         }
     }
 
+    /**
+     * Check if a network call matches the search text.
+     * Searches across URL, method, headers, body, status, and device info.
+     */
+    private fun matchesSearchText(call: NetworkCallEntry, searchText: String): Boolean {
+        val search = searchText.lowercase()
+
+        // Search in request fields
+        if (call.request.url.lowercase().contains(search)) return true
+        if (call.request.method.lowercase().contains(search)) return true
+        if (call.request.body?.lowercase()?.contains(search) == true) return true
+        if (call.request.contentType?.lowercase()?.contains(search) == true) return true
+        if (call.request.headers.any { (key, value) ->
+            key.lowercase().contains(search) || value.lowercase().contains(search)
+        }) return true
+
+        // Search in response fields
+        call.response?.let { response ->
+            if (response.statusCode.toString().contains(search)) return true
+            if (response.statusMessage?.lowercase()?.contains(search) == true) return true
+            if (response.body?.lowercase()?.contains(search) == true) return true
+            if (response.contentType?.lowercase()?.contains(search) == true) return true
+            if (response.error?.lowercase()?.contains(search) == true) return true
+            if (response.headers.any { (key, value) ->
+                key.lowercase().contains(search) || value.lowercase().contains(search)
+            }) return true
+        }
+
+        // Search in device/app info
+        if (call.deviceId.lowercase().contains(search)) return true
+        if (call.packageName.lowercase().contains(search)) return true
+
+        return false
+    }
+
     private fun applyFilter(calls: List<NetworkCallEntry>, filter: NetworkFilter): List<NetworkCallEntry> {
         return calls.filter { call ->
-            // URL search filter
+            // Text search filter - searches across all fields
             if (filter.searchText.isNotEmpty()) {
-                if (!call.request.url.contains(filter.searchText, ignoreCase = true)) {
+                if (!matchesSearchText(call, filter.searchText)) {
                     return@filter false
                 }
             }

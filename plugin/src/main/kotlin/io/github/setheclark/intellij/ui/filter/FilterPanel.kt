@@ -1,4 +1,4 @@
-package io.github.openflocon.intellij.ui.filter
+package io.github.setheclark.intellij.ui.filter
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
@@ -8,11 +8,11 @@ import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
-import io.github.openflocon.intellij.services.ConnectedDevice
-import io.github.openflocon.intellij.services.FloconApplicationService
-import io.github.openflocon.intellij.services.FloconProjectService
-import io.github.openflocon.intellij.services.NetworkFilter
-import io.github.openflocon.intellij.services.StatusFilter
+import io.github.setheclark.intellij.services.ConnectedDevice
+import io.github.setheclark.intellij.services.FloconApplicationService
+import io.github.setheclark.intellij.services.FloconProjectService
+import io.github.setheclark.intellij.services.NetworkFilter
+import io.github.setheclark.intellij.services.StatusFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -103,12 +103,14 @@ class FilterPanel(
         val deviceItem = deviceComboBox.selectedItem as? DeviceFilterItem
         val deviceFilter = deviceItem?.deviceId
 
-        floconService.updateFilter(NetworkFilter(
-            searchText = searchText,
-            methodFilter = methodFilter,
-            statusFilter = statusFilter,
-            deviceFilter = deviceFilter,
-        ))
+        floconService.updateFilter(
+            NetworkFilter(
+                searchText = searchText,
+                methodFilter = methodFilter,
+                statusFilter = statusFilter,
+                deviceFilter = deviceFilter,
+            )
+        )
     }
 
     private fun observeConnectedDevices() {

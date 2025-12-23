@@ -1,4 +1,4 @@
-package io.github.openflocon.intellij.ui
+package io.github.setheclark.intellij.ui
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
@@ -15,16 +15,15 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
-import io.github.openflocon.intellij.services.AdbService
-import io.github.openflocon.intellij.services.AdbStatus
-import io.github.openflocon.intellij.services.FloconApplicationService
-import io.github.openflocon.intellij.services.FloconProjectService
-import io.github.openflocon.intellij.services.ServerState
-import io.github.openflocon.intellij.ui.detail.DetailPanel
-import io.github.openflocon.intellij.ui.filter.FilterPanel
-import io.github.openflocon.intellij.ui.list.NetworkCallListPanel
+import io.github.setheclark.intellij.services.AdbService
+import io.github.setheclark.intellij.services.AdbStatus
+import io.github.setheclark.intellij.services.FloconApplicationService
+import io.github.setheclark.intellij.services.FloconProjectService
+import io.github.setheclark.intellij.services.ServerState
+import io.github.setheclark.intellij.ui.detail.DetailPanel
+import io.github.setheclark.intellij.ui.filter.FilterPanel
+import io.github.setheclark.intellij.ui.list.NetworkCallListPanel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

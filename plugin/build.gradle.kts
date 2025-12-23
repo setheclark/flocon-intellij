@@ -55,7 +55,9 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = "243"
-            untilBuild = "251.*"
+            // No upper bound - allow all future versions for broader compatibility
+            // with both IntelliJ IDEA and Android Studio
+            untilBuild = provider { null }
         }
     }
 

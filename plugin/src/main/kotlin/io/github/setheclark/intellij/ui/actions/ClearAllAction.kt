@@ -1,10 +1,10 @@
-package io.github.openflocon.intellij.ui.actions
+package io.github.setheclark.intellij.ui.actions
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
-import io.github.openflocon.intellij.services.FloconProjectService
+import io.github.setheclark.intellij.services.FloconProjectService
 
 /**
  * Action to clear all captured network traffic.

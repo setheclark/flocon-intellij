@@ -1,6 +1,5 @@
-package io.github.openflocon.intellij.services
+package io.github.setheclark.intellij.services
 
-import com.flocon.data.remote.models.FloconDeviceIdAndPackageNameDataModel
 import com.flocon.data.remote.models.FloconIncomingMessageDataModel
 import com.flocon.data.remote.server.Server
 import com.flocon.data.remote.server.ServerJvm

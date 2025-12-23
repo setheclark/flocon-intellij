@@ -1,16 +1,17 @@
-package io.github.openflocon.intellij.ui.detail
+package io.github.setheclark.intellij.ui.detail
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
+import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
-import io.github.openflocon.intellij.services.FloconProjectService
-import io.github.openflocon.intellij.services.NetworkCallEntry
+import io.github.setheclark.intellij.services.FloconProjectService
+import io.github.setheclark.intellij.services.NetworkCallEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,8 +19,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import java.awt.BorderLayout
 import java.awt.Font
+import java.time.Instant
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
@@ -106,7 +109,7 @@ class HeadersPanel : JPanel(BorderLayout()) {
     private val responseHeadersArea = createTextArea()
 
     init {
-        val splitPane = com.intellij.ui.JBSplitter(true, 0.5f).apply {
+        val splitPane = JBSplitter(true, 0.5f).apply {
             firstComponent = createSection("Request Headers", requestHeadersArea)
             secondComponent = createSection("Response Headers", responseHeadersArea)
         }
@@ -176,7 +179,7 @@ class BodyPanel(title: String) : JPanel(BorderLayout()) {
     private fun formatJson(jsonString: String): String {
         return try {
             val element = json.parseToJsonElement(jsonString)
-            json.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), element)
+            json.encodeToString(JsonElement.serializer(), element)
         } catch (e: Exception) {
             jsonString // Return original if parsing fails
         }
@@ -209,7 +212,7 @@ class TimingPanel : JPanel(BorderLayout()) {
         sb.appendLine()
         sb.appendLine("URL:        ${call.request.url}")
         sb.appendLine("Method:     ${call.request.method}")
-        sb.appendLine("Start Time: ${java.time.Instant.ofEpochMilli(call.startTime)}")
+        sb.appendLine("Start Time: ${Instant.ofEpochMilli(call.startTime)}")
 
         call.duration?.let {
             sb.appendLine("Duration:   ${it}ms")

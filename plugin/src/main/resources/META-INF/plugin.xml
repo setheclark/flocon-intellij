@@ -1,7 +1,7 @@
 <idea-plugin>
-    <id>io.github.openflocon.intellij</id>
-    <name>Flocon Network Inspector</name>
-    <vendor email="support@openflocon.io" url="https://github.com/openflocon">Open Flocon</vendor>
+    <id>io.github.setheclark.flocon_plugin</id>
+    <name>Network Inspector</name>
+    <vendor email="todo@example.com" url="https://example.com">TODO</vendor>
 
     <description><![CDATA[
         Network traffic inspector for Android apps using the Flocon SDK.
@@ -33,27 +33,27 @@
         <toolWindow
             id="Flocon"
             anchor="bottom"
-            icon="/icons/flocon.svg"
-            factoryClass="io.github.openflocon.intellij.ui.FloconToolWindowFactory"/>
+            icon="/icons/icon.svg"
+            factoryClass="io.github.setheclark.intellij.ui.FloconToolWindowFactory"/>
 
         <!-- Project Service - manages server lifecycle per project -->
         <projectService
-            serviceImplementation="io.github.openflocon.intellij.services.FloconProjectService"/>
+            serviceImplementation="io.github.setheclark.intellij.services.FloconProjectService"/>
 
         <!-- Application Service - shared across all projects -->
         <applicationService
-            serviceImplementation="io.github.openflocon.intellij.services.FloconApplicationService"/>
+            serviceImplementation="io.github.setheclark.intellij.services.FloconApplicationService"/>
 
         <!-- ADB Service - manages ADB reverse forwarding -->
         <applicationService
-            serviceImplementation="io.github.openflocon.intellij.services.AdbService"/>
+            serviceImplementation="io.github.setheclark.intellij.services.AdbService"/>
     </extensions>
 
     <actions>
         <group id="Flocon.ToolbarActions" text="Flocon Actions">
             <action
                 id="Flocon.ClearAll"
-                class="io.github.openflocon.intellij.ui.actions.ClearAllAction"
+                class="io.github.setheclark.intellij.ui.actions.ClearAllAction"
                 text="Clear All"
                 description="Clear all captured network traffic"
                 icon="AllIcons.Actions.GC"/>

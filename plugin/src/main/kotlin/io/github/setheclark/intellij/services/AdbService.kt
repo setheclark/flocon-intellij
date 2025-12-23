@@ -1,4 +1,4 @@
-package io.github.openflocon.intellij.services
+package io.github.setheclark.intellij.services
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service

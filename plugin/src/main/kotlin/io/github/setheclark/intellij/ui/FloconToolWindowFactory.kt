@@ -1,4 +1,4 @@
-package io.github.openflocon.intellij.ui
+package io.github.setheclark.intellij.ui
 
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
