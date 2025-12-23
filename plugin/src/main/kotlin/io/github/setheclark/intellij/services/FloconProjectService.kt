@@ -53,6 +53,7 @@ class FloconProjectService(private val project: Project) : Disposable {
             thisLogger().info(">>> Started collecting networkRequests")
             appService.networkRequests.collect { event ->
                 thisLogger().info(">>> Received network request in ProjectService: ${event.request.method} ${event.request.url}")
+                val requestHeaders = event.request.requestHeaders ?: emptyMap()
                 val entry = NetworkCallEntry(
                     id = event.callId,
                     deviceId = event.deviceId,
@@ -60,9 +61,11 @@ class FloconProjectService(private val project: Project) : Disposable {
                     request = NetworkRequest(
                         url = event.request.url ?: "",
                         method = event.request.method ?: "UNKNOWN",
-                        headers = event.request.requestHeaders ?: emptyMap(),
+                        headers = requestHeaders,
                         body = event.request.requestBody,
-                        contentType = event.request.requestHeaders?.get("Content-Type"),
+                        contentType = requestHeaders.entries.find {
+                            it.key.equals("Content-Type", ignoreCase = true)
+                        }?.value,
                         size = event.request.requestSize,
                     ),
                     startTime = event.request.startTime ?: System.currentTimeMillis(),

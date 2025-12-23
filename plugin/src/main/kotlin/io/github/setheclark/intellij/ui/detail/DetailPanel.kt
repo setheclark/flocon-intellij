@@ -3,16 +3,12 @@ package io.github.setheclark.intellij.ui.detail
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.ex.EditorEx
-import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.fileTypes.PlainTextFileType
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
+import com.intellij.ui.EditorTextField
 import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
@@ -158,7 +154,7 @@ class HeadersPanel : JPanel(BorderLayout()) {
 
 /**
  * Panel for displaying request or response body with syntax highlighting and code folding.
- * Uses IntelliJ's Editor component for a rich editing experience.
+ * Uses IntelliJ's EditorTextField for proper IDE-style rendering.
  */
 class BodyPanel(
     private val project: Project,
@@ -175,14 +171,14 @@ class BodyPanel(
         foreground = JBColor.GRAY
     }
 
-    private var currentEditor: Editor? = null
+    private var currentEditorTextField: EditorTextField? = null
 
     init {
         showEmpty()
     }
 
     private fun showEmpty() {
-        disposeCurrentEditor()
+        currentEditorTextField = null
         removeAll()
         add(emptyLabel, BorderLayout.CENTER)
         revalidate()
@@ -205,14 +201,36 @@ class BodyPanel(
             body
         }
 
-        // Create editor with syntax highlighting
+        // Create EditorTextField with syntax highlighting
         try {
-            disposeCurrentEditor()
-            val editor = createEditor(formattedBody, fileType)
-            currentEditor = editor
+            val editorTextField = object : EditorTextField(formattedBody, project, fileType) {
+                override fun createEditor(): EditorEx {
+                    val editor = super.createEditor()
+                    editor.settings.apply {
+                        isLineNumbersShown = true
+                        isWhitespacesShown = false
+                        isFoldingOutlineShown = true
+                        isAutoCodeFoldingEnabled = true
+                        additionalLinesCount = 0
+                        additionalColumnsCount = 0
+                        isRightMarginShown = false
+                        isCaretRowShown = false
+                        isUseSoftWraps = true
+                    }
+                    editor.setVerticalScrollbarVisible(true)
+                    editor.setHorizontalScrollbarVisible(true)
+                    return editor
+                }
+            }.apply {
+                @Suppress("UsePropertyAccessSyntax")
+                setOneLineMode(false)
+                isViewer = true
+            }
+
+            currentEditorTextField = editorTextField
 
             removeAll()
-            add(editor.component, BorderLayout.CENTER)
+            add(editorTextField, BorderLayout.CENTER)
             revalidate()
             repaint()
         } catch (e: Exception) {
@@ -222,7 +240,7 @@ class BodyPanel(
     }
 
     private fun showFallbackText(text: String) {
-        disposeCurrentEditor()
+        currentEditorTextField = null
         removeAll()
         val textArea = JBTextArea(text).apply {
             isEditable = false
@@ -232,64 +250,6 @@ class BodyPanel(
         add(JBScrollPane(textArea), BorderLayout.CENTER)
         revalidate()
         repaint()
-    }
-
-    private fun createEditor(text: String, fileType: FileType): Editor {
-        val document = EditorFactory.getInstance().createDocument(text)
-        val editor = EditorFactory.getInstance().createEditor(
-            document,
-            project,
-            fileType,
-            true // isViewer (read-only)
-        ) as EditorEx
-
-        // Get the global color scheme first
-        val colorsScheme = EditorColorsManager.getInstance().schemeForCurrentUITheme
-
-        // Configure editor settings
-        editor.settings.apply {
-            isLineNumbersShown = true
-            isWhitespacesShown = false
-            isFoldingOutlineShown = true
-            isAutoCodeFoldingEnabled = true
-            additionalLinesCount = 0
-            additionalColumnsCount = 0
-            isRightMarginShown = false
-            isCaretRowShown = false
-            isUseSoftWraps = true
-        }
-
-        // Set color scheme before highlighter
-        editor.colorsScheme = colorsScheme
-
-        // Apply syntax highlighting with the file type and color scheme
-        val highlighter = EditorHighlighterFactory.getInstance().createEditorHighlighter(
-            fileType,
-            colorsScheme,
-            project
-        )
-        editor.highlighter = highlighter
-
-        // Ensure background matches the scheme
-        editor.backgroundColor = colorsScheme.defaultBackground
-
-        // Register for disposal
-        Disposer.register(parentDisposable) {
-            if (!editor.isDisposed) {
-                EditorFactory.getInstance().releaseEditor(editor)
-            }
-        }
-
-        return editor
-    }
-
-    private fun disposeCurrentEditor() {
-        currentEditor?.let { editor ->
-            if (!editor.isDisposed) {
-                EditorFactory.getInstance().releaseEditor(editor)
-            }
-        }
-        currentEditor = null
     }
 
     private fun getFileType(contentType: String?): FileType {
