@@ -20,6 +20,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.Component
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -123,6 +127,30 @@ class NetworkCallListPanel(
                     }
                 }
             }
+
+            // Mouse listener - double-click to deselect
+            addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) {
+                        val clickedRow = rowAtPoint(e.point)
+                        if (clickedRow >= 0 && clickedRow == selectedRow) {
+                            // Double-clicked the selected row - deselect
+                            clearSelection()
+                            floconService.selectCall(null)
+                        }
+                    }
+                }
+            })
+
+            // Key listener - press Escape to deselect
+            addKeyListener(object : KeyAdapter() {
+                override fun keyPressed(e: KeyEvent) {
+                    if (e.keyCode == KeyEvent.VK_ESCAPE) {
+                        clearSelection()
+                        floconService.selectCall(null)
+                    }
+                }
+            })
         }
 
         // Use JBScrollPane to properly handle the table header (keeps it pinned at top)

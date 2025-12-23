@@ -12,17 +12,21 @@ import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
+import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import io.github.setheclark.intellij.services.AdbService
 import io.github.setheclark.intellij.services.AdbStatus
+import io.github.setheclark.intellij.services.ConnectedDevice
 import io.github.setheclark.intellij.services.FloconApplicationService
 import io.github.setheclark.intellij.services.FloconProjectService
+import io.github.setheclark.intellij.services.NetworkFilter
 import io.github.setheclark.intellij.services.ServerState
+import io.github.setheclark.intellij.services.StatusFilter
 import io.github.setheclark.intellij.ui.detail.DetailPanel
-import io.github.setheclark.intellij.ui.filter.FilterPanel
 import io.github.setheclark.intellij.ui.list.NetworkCallListPanel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,8 +37,11 @@ import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.FlowLayout
 import javax.swing.BorderFactory
+import javax.swing.DefaultComboBoxModel
+import javax.swing.JComboBox
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
+import javax.swing.event.DocumentEvent
 
 /**
  * Main panel for the Flocon Network Inspector tool window.
@@ -46,34 +53,46 @@ class NetworkInspectorPanel(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val floconService = project.service<FloconProjectService>()
+    private val appService = service<FloconApplicationService>()
     private val adbService = service<AdbService>()
 
     private val networkCallListPanel = NetworkCallListPanel(project)
     private val detailPanel = DetailPanel(project)
-    private val filterPanel = FilterPanel(project)
     private val statusLabel = JBLabel()
     private val warningBanner = createWarningBanner()
+    private lateinit var mainSplitter: JBSplitter
+
+    // Filter components (integrated into toolbar)
+    private val searchField = SearchTextField().apply {
+        textEditor.emptyText.text = "Filter requests..."
+        preferredSize = JBUI.size(200, 28)
+    }
+    private val deviceComboBox = JComboBox<DeviceFilterItem>().apply {
+        addItem(DeviceFilterItem("All Devices", null, null))
+    }
 
     init {
-        // Create toolbar
-        val toolbar = createToolbar()
-        setToolbar(toolbar.component)
+        // Create combined toolbar with actions and filters
+        val toolbarPanel = createToolbarPanel()
+        setToolbar(toolbarPanel)
 
-        // Create main content with split pane
-        val mainSplitter = JBSplitter(false, 0.5f).apply {
-            firstComponent = networkCallListPanel  // Panel handles its own scrolling
-            secondComponent = detailPanel
-        }
+        // Setup filter listeners
+        setupFilterListeners()
 
-        // Create top panel with warning and filters
-        val topPanel = JPanel(BorderLayout()).apply {
-            add(warningBanner, BorderLayout.NORTH)
-            add(filterPanel, BorderLayout.SOUTH)
+        // Observe connected devices for filter dropdown
+        observeConnectedDevices()
+
+        // Create main content with split pane (horizontal: list on left, details on right)
+        // Detail panel gets full vertical height for easier reading
+        mainSplitter = JBSplitter(false, 0.35f).apply {
+            firstComponent = networkCallListPanel
+            secondComponent = null  // Hidden initially until a request is selected
+            setHonorComponentsMinimumSize(true)
         }
 
         // Add status bar at bottom
         val contentPanel = JPanel(BorderLayout()).apply {
-            add(topPanel, BorderLayout.NORTH)
+            add(warningBanner, BorderLayout.NORTH)
             add(mainSplitter, BorderLayout.CENTER)
             add(createStatusBar(), BorderLayout.SOUTH)
         }
@@ -84,9 +103,11 @@ class NetworkInspectorPanel(
         observeServerState()
         // Observe ADB status for warning banner
         observeAdbStatus()
+        // Observe selected call to show/hide detail panel
+        observeSelectedCall()
     }
 
-    private fun createToolbar(): ActionToolbar {
+    private fun createToolbarPanel(): JPanel {
         val actionGroup = DefaultActionGroup().apply {
             add(ClearAction())
             addSeparator()
@@ -95,11 +116,97 @@ class NetworkInspectorPanel(
             add(StartStopServerAction())
         }
 
-        return ActionManager.getInstance()
+        val actionToolbar = ActionManager.getInstance()
             .createActionToolbar("FloconNetworkToolbar", actionGroup, true)
             .apply {
                 targetComponent = this@NetworkInspectorPanel
             }
+
+        // Create filter panel with search and device filter
+        val filterPanel = JPanel(FlowLayout(FlowLayout.LEFT, 8, 0)).apply {
+            border = JBUI.Borders.empty()
+            add(searchField)
+            add(deviceComboBox)
+        }
+
+        // Combine action toolbar and filter panel
+        return JPanel(BorderLayout()).apply {
+            add(actionToolbar.component, BorderLayout.WEST)
+            add(filterPanel, BorderLayout.CENTER)
+        }
+    }
+
+    private fun setupFilterListeners() {
+        searchField.addDocumentListener(object : DocumentAdapter() {
+            override fun textChanged(e: DocumentEvent) {
+                updateFilter()
+            }
+        })
+
+        deviceComboBox.addActionListener { updateFilter() }
+    }
+
+    private fun updateFilter() {
+        val searchText = searchField.text.trim()
+        val deviceItem = deviceComboBox.selectedItem as? DeviceFilterItem
+        val deviceFilter = deviceItem?.deviceId
+
+        floconService.updateFilter(
+            NetworkFilter(
+                searchText = searchText,
+                methodFilter = null,
+                statusFilter = StatusFilter.ALL,
+                deviceFilter = deviceFilter,
+            )
+        )
+    }
+
+    private fun observeConnectedDevices() {
+        scope.launch {
+            appService.connectedDevices.collectLatest { devices ->
+                SwingUtilities.invokeLater {
+                    updateDeviceComboBox(devices)
+                }
+            }
+        }
+    }
+
+    private fun updateDeviceComboBox(devices: Set<ConnectedDevice>) {
+        val currentSelection = deviceComboBox.selectedItem as? DeviceFilterItem
+        val model = DefaultComboBoxModel<DeviceFilterItem>()
+
+        model.addElement(DeviceFilterItem("All Devices", null, null))
+
+        devices.forEach { device ->
+            val displayName = buildString {
+                if (device.deviceName.isNotEmpty()) {
+                    append(device.deviceName)
+                } else {
+                    append(device.deviceId.take(12))
+                }
+                append(" - ")
+                if (device.appName.isNotEmpty()) {
+                    append(device.appName)
+                } else {
+                    append(device.packageName.substringAfterLast('.'))
+                }
+            }
+            model.addElement(DeviceFilterItem(displayName, device.deviceId, device.packageName))
+        }
+
+        deviceComboBox.model = model
+
+        // Restore selection if device still connected
+        if (currentSelection != null && currentSelection.deviceId != null) {
+            for (i in 0 until model.size) {
+                val item = model.getElementAt(i)
+                if (item.deviceId == currentSelection.deviceId &&
+                    item.packageName == currentSelection.packageName) {
+                    deviceComboBox.selectedIndex = i
+                    break
+                }
+            }
+        }
     }
 
     private fun createStatusBar(): JPanel {
@@ -160,6 +267,24 @@ class NetworkInspectorPanel(
         warningBanner.repaint()
     }
 
+    private fun observeSelectedCall() {
+        scope.launch {
+            floconService.selectedCall.collectLatest { call ->
+                SwingUtilities.invokeLater {
+                    if (call != null) {
+                        // Show detail panel when a call is selected
+                        if (mainSplitter.secondComponent == null) {
+                            mainSplitter.secondComponent = detailPanel
+                        }
+                    } else {
+                        // Hide detail panel when no call is selected
+                        mainSplitter.secondComponent = null
+                    }
+                }
+            }
+        }
+    }
+
     private fun observeServerState() {
         scope.launch {
             floconService.serverState.collectLatest { state ->
@@ -182,7 +307,6 @@ class NetworkInspectorPanel(
 
     override fun dispose() {
         scope.cancel()
-        filterPanel.dispose()
     }
 
     // Action implementations
@@ -259,4 +383,15 @@ class NetworkInspectorPanel(
 
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
     }
+}
+
+/**
+ * Combo box item for device filter.
+ */
+private data class DeviceFilterItem(
+    val displayName: String,
+    val deviceId: String?,
+    val packageName: String?
+) {
+    override fun toString(): String = displayName
 }

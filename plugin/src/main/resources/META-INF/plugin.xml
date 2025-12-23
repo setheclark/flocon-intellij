@@ -31,7 +31,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- Tool Window -->
         <toolWindow
-            id="Flocon"
+            id="Network Inspector"
             anchor="bottom"
             icon="/icons/icon.svg"
             factoryClass="io.github.setheclark.intellij.ui.FloconToolWindowFactory"/>
