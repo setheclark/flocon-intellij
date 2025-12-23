@@ -4,9 +4,11 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -17,6 +19,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
 import io.github.openflocon.intellij.services.AdbService
 import io.github.openflocon.intellij.services.AdbStatus
+import io.github.openflocon.intellij.services.FloconApplicationService
 import io.github.openflocon.intellij.services.FloconProjectService
 import io.github.openflocon.intellij.services.ServerState
 import io.github.openflocon.intellij.ui.detail.DetailPanel
@@ -195,10 +198,10 @@ class NetworkInspectorPanel(
             networkCallListPanel.resetAutoScroll()
         }
 
-        override fun getActionUpdateThread() = com.intellij.openapi.actionSystem.ActionUpdateThread.BGT
+        override fun getActionUpdateThread() = ActionUpdateThread.BGT
     }
 
-    private inner class AutoScrollAction : com.intellij.openapi.actionSystem.ToggleAction(
+    private inner class AutoScrollAction : ToggleAction(
         "Auto-scroll to Latest",
         "Automatically scroll to show new requests",
         AllIcons.RunConfigurations.Scroll_down
@@ -215,7 +218,7 @@ class NetworkInspectorPanel(
             // user interaction already disables auto-scroll
         }
 
-        override fun getActionUpdateThread() = com.intellij.openapi.actionSystem.ActionUpdateThread.EDT
+        override fun getActionUpdateThread() = ActionUpdateThread.EDT
     }
 
     private inner class StartStopServerAction : AnAction() {
@@ -241,7 +244,7 @@ class NetworkInspectorPanel(
         }
 
         override fun actionPerformed(e: AnActionEvent) {
-            val appService = service<io.github.openflocon.intellij.services.FloconApplicationService>()
+            val appService = service<FloconApplicationService>()
             when (floconService.serverState.value) {
                 is ServerState.Running -> appService.stopServer()
                 is ServerState.Stopped -> appService.startServer()
@@ -249,6 +252,6 @@ class NetworkInspectorPanel(
             }
         }
 
-        override fun getActionUpdateThread() = com.intellij.openapi.actionSystem.ActionUpdateThread.EDT
+        override fun getActionUpdateThread() = ActionUpdateThread.EDT
     }
 }

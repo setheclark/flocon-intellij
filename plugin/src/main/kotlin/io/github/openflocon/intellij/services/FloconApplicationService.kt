@@ -245,6 +245,7 @@ class FloconApplicationService : Disposable {
             Protocol.FromDevice.Device.Method.RegisterDevice -> {
                 thisLogger().info("Device registered: ${message.deviceName} (${message.appPackageName})")
             }
+
             else -> {
                 thisLogger().debug("Unknown device method: ${message.method}")
             }
