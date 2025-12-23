@@ -236,6 +236,12 @@ class NetworkInspectorPanel(
                     e.presentation.icon = AllIcons.Actions.Execute
                     e.presentation.isEnabled = true
                 }
+                is ServerState.Error -> {
+                    e.presentation.text = "Retry Server"
+                    e.presentation.description = "Retry starting the Flocon server"
+                    e.presentation.icon = AllIcons.Actions.Restart
+                    e.presentation.isEnabled = true
+                }
                 else -> {
                     e.presentation.isEnabled = false
                 }
@@ -246,7 +252,7 @@ class NetworkInspectorPanel(
             val appService = service<FloconApplicationService>()
             when (floconService.serverState.value) {
                 is ServerState.Running -> appService.stopServer()
-                is ServerState.Stopped -> appService.startServer()
+                is ServerState.Stopped, is ServerState.Error -> appService.startServer()
                 else -> { /* ignore */ }
             }
         }
