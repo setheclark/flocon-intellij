@@ -7,9 +7,9 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
+import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.services.FloconProjectService
 import io.github.setheclark.intellij.services.NetworkCallEntry
-import io.github.setheclark.intellij.services.NetworkCallFilterService
 import io.github.setheclark.intellij.services.NetworkFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,13 +40,12 @@ import javax.swing.table.TableRowSorter
 /**
  * Panel displaying the list of captured network calls in a table format.
  */
+@Inject
 class NetworkCallListPanel(
-    private val project: Project,
-    private val filterService: NetworkCallFilterService = NetworkCallFilterService()
+    private val floconService: FloconProjectService,
 ) : JPanel(BorderLayout()), Disposable {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val floconService = project.service<FloconProjectService>()
 
     private val tableModel = NetworkCallTableModel()
     private val table = JBTable(tableModel)
@@ -212,7 +211,7 @@ class NetworkCallListPanel(
                 floconService.networkCalls,
                 floconService.filter
             ) { calls, filter ->
-                filterService.applyFilter(calls, filter)
+                calls.applyFilter(filter)
             }.collectLatest { filteredCalls ->
                 SwingUtilities.invokeLater {
                     val newCallCount = filteredCalls.size

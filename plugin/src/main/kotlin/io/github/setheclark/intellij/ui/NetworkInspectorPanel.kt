@@ -18,6 +18,7 @@ import com.intellij.ui.JBSplitter
 import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
+import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.services.AdbService
 import io.github.setheclark.intellij.services.AdbStatus
 import io.github.setheclark.intellij.services.ConnectedDevice
@@ -47,20 +48,19 @@ import javax.swing.event.DocumentEvent
  * Main panel for the Flocon Network Inspector tool window.
  * Contains the toolbar, network call list, and detail panel.
  */
+@Inject
 class NetworkInspectorPanel(
-    private val project: Project
+    private val floconService: FloconProjectService,
+    private val appService: FloconApplicationService,
+    private val adbService: AdbService,
+    private val networkCallListPanel: NetworkCallListPanel,
+    private val detailPanel: DetailPanel,
 ) : SimpleToolWindowPanel(true, true), Disposable {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val floconService = project.service<FloconProjectService>()
-    private val appService = service<FloconApplicationService>()
-    private val adbService = service<AdbService>()
-
-    private val networkCallListPanel = NetworkCallListPanel(project)
-    private val detailPanel = DetailPanel(project)
     private val statusLabel = JBLabel()
     private val warningBanner = createWarningBanner()
-    private lateinit var mainSplitter: JBSplitter
+    private var mainSplitter: JBSplitter
 
     // Filter components (integrated into toolbar)
     private val searchField = SearchTextField().apply {
@@ -201,7 +201,8 @@ class NetworkInspectorPanel(
             for (i in 0 until model.size) {
                 val item = model.getElementAt(i)
                 if (item.deviceId == currentSelection.deviceId &&
-                    item.packageName == currentSelection.packageName) {
+                    item.packageName == currentSelection.packageName
+                ) {
                     deviceComboBox.selectedIndex = i
                     break
                 }
@@ -256,9 +257,10 @@ class NetworkInspectorPanel(
         when (status) {
             is AdbStatus.NotFound -> {
                 textLabel?.text = "<html><b>ADB not found.</b> USB device connections won't work. " +
-                    "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>"
+                        "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>"
                 warningBanner.isVisible = true
             }
+
             else -> {
                 warningBanner.isVisible = false
             }
@@ -354,18 +356,21 @@ class NetworkInspectorPanel(
                     e.presentation.icon = AllIcons.Actions.Suspend
                     e.presentation.isEnabled = true
                 }
+
                 is ServerState.Stopped -> {
                     e.presentation.text = "Start Server"
                     e.presentation.description = "Start the Flocon server"
                     e.presentation.icon = AllIcons.Actions.Execute
                     e.presentation.isEnabled = true
                 }
+
                 is ServerState.Error -> {
                     e.presentation.text = "Retry Server"
                     e.presentation.description = "Retry starting the Flocon server"
                     e.presentation.icon = AllIcons.Actions.Restart
                     e.presentation.isEnabled = true
                 }
+
                 else -> {
                     e.presentation.isEnabled = false
                 }
@@ -377,7 +382,8 @@ class NetworkInspectorPanel(
             when (floconService.serverState.value) {
                 is ServerState.Running -> appService.stopServer()
                 is ServerState.Stopped, is ServerState.Error -> appService.startServer()
-                else -> { /* ignore */ }
+                else -> { /* ignore */
+                }
             }
         }
 

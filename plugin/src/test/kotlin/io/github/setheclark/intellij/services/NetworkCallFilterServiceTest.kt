@@ -7,6 +7,8 @@ import io.github.setheclark.intellij.services.StatusFilter.ERROR
 import io.github.setheclark.intellij.services.StatusFilter.REDIRECT
 import io.github.setheclark.intellij.services.StatusFilter.SERVER_ERROR
 import io.github.setheclark.intellij.services.StatusFilter.SUCCESS
+import io.github.setheclark.intellij.ui.list.applyFilter
+import io.github.setheclark.intellij.ui.list.matchesSearchText
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -16,13 +18,6 @@ import org.junit.jupiter.api.Test
 
 class NetworkCallFilterServiceTest {
 
-    private lateinit var filterService: NetworkCallFilterService
-
-    @BeforeEach
-    fun setUp() {
-        filterService = NetworkCallFilterService()
-    }
-
     @Nested
     inner class ApplyFilter {
 
@@ -31,7 +26,7 @@ class NetworkCallFilterServiceTest {
             val calls = NetworkCallFactory.createEntries(5)
             val filter = NetworkFilter()
 
-            val result = filterService.applyFilter(calls, filter)
+            val result = calls.applyFilter(filter)
 
             result shouldHaveSize 5
         }
@@ -40,7 +35,7 @@ class NetworkCallFilterServiceTest {
         fun `empty list returns empty result`() {
             val filter = NetworkFilter()
 
-            val result = filterService.applyFilter(emptyList(), filter)
+            val result = emptyList<NetworkCallEntry>().applyFilter(filter)
 
             result.shouldBeEmpty()
         }
@@ -51,13 +46,19 @@ class NetworkCallFilterServiceTest {
             @Test
             fun `filters by URL`() {
                 val calls = listOf(
-                    NetworkCallFactory.createCompletedEntry(url = "https://api.mysite.com/users", packageName = "com.app"),
-                    NetworkCallFactory.createCompletedEntry(url = "https://api.mysite.com/orders", packageName = "com.app"),
+                    NetworkCallFactory.createCompletedEntry(
+                        url = "https://api.mysite.com/users",
+                        packageName = "com.app"
+                    ),
+                    NetworkCallFactory.createCompletedEntry(
+                        url = "https://api.mysite.com/orders",
+                        packageName = "com.app"
+                    ),
                     NetworkCallFactory.createCompletedEntry(url = "https://other.com/data", packageName = "com.app")
                 )
                 val filter = NetworkFilter(searchText = "mysite")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 2
             }
@@ -65,12 +66,15 @@ class NetworkCallFilterServiceTest {
             @Test
             fun `search is case insensitive`() {
                 val calls = listOf(
-                    NetworkCallFactory.createCompletedEntry(url = "https://API.MYSITE.COM/users", packageName = "com.app"),
+                    NetworkCallFactory.createCompletedEntry(
+                        url = "https://API.MYSITE.COM/users",
+                        packageName = "com.app"
+                    ),
                     NetworkCallFactory.createCompletedEntry(url = "https://other.com/data", packageName = "com.app")
                 )
                 val filter = NetworkFilter(searchText = "mysite")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
             }
@@ -84,7 +88,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(searchText = "post")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
                 result[0].request.method shouldBe "POST"
@@ -99,7 +103,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(searchText = "testuser")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
             }
@@ -112,7 +116,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(searchText = "important")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
             }
@@ -126,7 +130,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(searchText = "404")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
                 result[0].response?.statusCode shouldBe 404
@@ -140,7 +144,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(searchText = "abc")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
                 result[0].deviceId shouldBe "device-abc"
@@ -149,12 +153,18 @@ class NetworkCallFilterServiceTest {
             @Test
             fun `filters by package name`() {
                 val calls = listOf(
-                    NetworkCallFactory.createCompletedEntry(url = "https://api.mysite.com/test", packageName = "com.mypackage.app"),
-                    NetworkCallFactory.createCompletedEntry(url = "https://api.mysite.com/test", packageName = "com.other.app")
+                    NetworkCallFactory.createCompletedEntry(
+                        url = "https://api.mysite.com/test",
+                        packageName = "com.mypackage.app"
+                    ),
+                    NetworkCallFactory.createCompletedEntry(
+                        url = "https://api.mysite.com/test",
+                        packageName = "com.other.app"
+                    )
                 )
                 val filter = NetworkFilter(searchText = "mypackage")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
                 result[0].packageName shouldBe "com.mypackage.app"
@@ -173,7 +183,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(methodFilter = "GET")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 2
                 result.all { it.request.method == "GET" } shouldBe true
@@ -187,7 +197,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(methodFilter = "get")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
             }
@@ -197,7 +207,7 @@ class NetworkCallFilterServiceTest {
                 val calls = NetworkCallFactory.createEntries(5)
                 val filter = NetworkFilter(methodFilter = null)
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 5
             }
@@ -216,7 +226,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(statusFilter = ALL)
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 4
             }
@@ -232,7 +242,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(statusFilter = SUCCESS)
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 3
                 result.all { it.response?.statusCode in 200..299 } shouldBe true
@@ -248,7 +258,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(statusFilter = REDIRECT)
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 2
                 result.all { it.response?.statusCode in 300..399 } shouldBe true
@@ -264,7 +274,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(statusFilter = CLIENT_ERROR)
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 2
                 result.all { it.response?.statusCode in 400..499 } shouldBe true
@@ -280,7 +290,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(statusFilter = SERVER_ERROR)
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 2
                 result.all { it.response?.statusCode in 500..599 } shouldBe true
@@ -297,7 +307,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(statusFilter = ERROR)
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
                 result[0].response?.error shouldBe "Connection refused"
@@ -316,7 +326,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(deviceFilter = "device-1")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 2
                 result.all { it.deviceId == "device-1" } shouldBe true
@@ -330,7 +340,7 @@ class NetworkCallFilterServiceTest {
                 )
                 val filter = NetworkFilter(deviceFilter = null)
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 2
             }
@@ -342,13 +352,25 @@ class NetworkCallFilterServiceTest {
             @Test
             fun `combines search text and method filter`() {
                 val calls = listOf(
-                    NetworkCallFactory.createCompletedEntry(url = "https://api.mysite.com/users", method = "GET", packageName = "com.app"),
-                    NetworkCallFactory.createCompletedEntry(url = "https://api.mysite.com/users", method = "POST", packageName = "com.app"),
-                    NetworkCallFactory.createCompletedEntry(url = "https://other.com/users", method = "GET", packageName = "com.app")
+                    NetworkCallFactory.createCompletedEntry(
+                        url = "https://api.mysite.com/users",
+                        method = "GET",
+                        packageName = "com.app"
+                    ),
+                    NetworkCallFactory.createCompletedEntry(
+                        url = "https://api.mysite.com/users",
+                        method = "POST",
+                        packageName = "com.app"
+                    ),
+                    NetworkCallFactory.createCompletedEntry(
+                        url = "https://other.com/users",
+                        method = "GET",
+                        packageName = "com.app"
+                    )
                 )
                 val filter = NetworkFilter(searchText = "mysite", methodFilter = "GET")
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
                 result[0].request.url shouldBe "https://api.mysite.com/users"
@@ -384,7 +406,7 @@ class NetworkCallFilterServiceTest {
                     deviceFilter = "device-1"
                 )
 
-                val result = filterService.applyFilter(calls, filter)
+                val result = calls.applyFilter(filter)
 
                 result shouldHaveSize 1
                 result[0].request.url shouldBe "https://api.example.com/users"
@@ -400,8 +422,8 @@ class NetworkCallFilterServiceTest {
         fun `matches URL`() {
             val call = NetworkCallFactory.createCompletedEntry(url = "https://api.example.com/users")
 
-            filterService.matchesSearchText(call, "example") shouldBe true
-            filterService.matchesSearchText(call, "other") shouldBe false
+            call.matchesSearchText("example") shouldBe true
+            call.matchesSearchText("other") shouldBe false
         }
 
         @Test
@@ -411,9 +433,9 @@ class NetworkCallFilterServiceTest {
             )
             val call = NetworkCallFactory.createEntry(request = request)
 
-            filterService.matchesSearchText(call, "authorization") shouldBe true
-            filterService.matchesSearchText(call, "token123") shouldBe true
-            filterService.matchesSearchText(call, "notfound") shouldBe false
+            call.matchesSearchText("authorization") shouldBe true
+            call.matchesSearchText("token123") shouldBe true
+            call.matchesSearchText("notfound") shouldBe false
         }
 
         @Test
@@ -423,8 +445,8 @@ class NetworkCallFilterServiceTest {
             )
             val call = NetworkCallFactory.createEntry(response = response)
 
-            filterService.matchesSearchText(call, "x-custom") shouldBe true
-            filterService.matchesSearchText(call, "custom-value") shouldBe true
+            call.matchesSearchText("x-custom") shouldBe true
+            call.matchesSearchText("custom-value") shouldBe true
         }
 
         @Test
@@ -432,7 +454,7 @@ class NetworkCallFilterServiceTest {
             val request = NetworkCallFactory.createRequest(contentType = "application/json")
             val call = NetworkCallFactory.createEntry(request = request)
 
-            filterService.matchesSearchText(call, "json") shouldBe true
+            call.matchesSearchText("json") shouldBe true
         }
 
         @Test
@@ -444,7 +466,7 @@ class NetworkCallFilterServiceTest {
                 packageName = "com.app"
             )
 
-            filterService.matchesSearchText(call, "notfound") shouldBe false
+            call.matchesSearchText("notfound") shouldBe false
         }
     }
 }
