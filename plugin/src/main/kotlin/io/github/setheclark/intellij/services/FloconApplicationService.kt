@@ -1,14 +1,13 @@
 package io.github.setheclark.intellij.services
 
 import com.flocon.data.remote.models.FloconIncomingMessageDataModel
+import com.flocon.data.remote.network.models.FloconNetworkRequestDataModel
+import com.flocon.data.remote.network.models.FloconNetworkResponseDataModel
 import com.flocon.data.remote.server.Server
-import com.flocon.data.remote.server.ServerJvm
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
-import com.flocon.data.remote.network.models.FloconNetworkRequestDataModel
-import com.flocon.data.remote.network.models.FloconNetworkResponseDataModel
 import io.github.openflocon.domain.Protocol
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +30,10 @@ import kotlinx.serialization.json.Json
  */
 @Service(Service.Level.APP)
 class FloconApplicationService : Disposable {
+
+    // Dependencies with defaults - can be overridden for testing
+    internal var serverFactory: ServerFactory = FloconServerFactory()
+    internal var adbServiceProvider: () -> AdbService = { service<AdbService>() }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -80,24 +83,24 @@ class FloconApplicationService : Disposable {
         _serverState.value = ServerState.Starting
 
         try {
-            thisLogger().info(">>> Creating ServerJvm instance")
-            val serverJvm = ServerJvm(json)
-            server = serverJvm
+            thisLogger().info(">>> Creating Server instance")
+            val newServer = serverFactory.createServer(json)
+            server = newServer
 
             // Start WebSocket server
-            thisLogger().info(">>> Calling serverJvm.startWebsocket($port)")
-            serverJvm.startWebsocket(port)
+            thisLogger().info(">>> Calling server.startWebsocket($port)")
+            newServer.startWebsocket(port)
             thisLogger().info(">>> WebSocket server started")
 
             // Start HTTP file server
-            thisLogger().info(">>> Calling serverJvm.starHttp($DEFAULT_HTTP_PORT)")
-            serverJvm.starHttp(DEFAULT_HTTP_PORT)
+            thisLogger().info(">>> Calling server.starHttp($DEFAULT_HTTP_PORT)")
+            newServer.starHttp(DEFAULT_HTTP_PORT)
             thisLogger().info(">>> HTTP server started")
 
             // Observe connected devices
             scope.launch {
                 thisLogger().info(">>> Starting to observe activeDevices")
-                serverJvm.activeDevices.collect { devices ->
+                newServer.activeDevices.collect { devices ->
                     thisLogger().info(">>> Active devices changed: ${devices.size} device(s)")
                     devices.forEach { device ->
                         thisLogger().info(">>>   - deviceId=${device.deviceId}, package=${device.packageName}")
@@ -116,9 +119,9 @@ class FloconApplicationService : Disposable {
 
             // Process incoming messages
             scope.launch {
-                thisLogger().info(">>> Starting to collect from serverJvm.receivedMessages")
+                thisLogger().info(">>> Starting to collect from server.receivedMessages")
                 try {
-                    serverJvm.receivedMessages.collect { message ->
+                    newServer.receivedMessages.collect { message ->
                         thisLogger().info(">>> RAW MESSAGE FROM SERVER: plugin=${message.plugin}, method=${message.method}")
                         handleIncomingMessage(message)
                     }
@@ -132,7 +135,7 @@ class FloconApplicationService : Disposable {
             thisLogger().info("Flocon server started successfully on port $port")
 
             // Start ADB reverse forwarding
-            service<AdbService>().startAdbForwarding()
+            adbServiceProvider().startAdbForwarding()
 
         } catch (e: Exception) {
             thisLogger().error("Failed to start Flocon server", e)
@@ -259,7 +262,7 @@ class FloconApplicationService : Disposable {
         _serverState.value = ServerState.Stopping
 
         // Stop ADB reverse forwarding
-        service<AdbService>().stopAdbForwarding()
+        adbServiceProvider().stopAdbForwarding()
 
         server?.stop()
         server = null

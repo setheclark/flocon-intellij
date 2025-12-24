@@ -21,8 +21,11 @@ import kotlinx.coroutines.launch
 @Service(Service.Level.PROJECT)
 class FloconProjectService(private val project: Project) : Disposable {
 
+    // Dependencies with defaults - can be overridden for testing
+    internal var appServiceProvider: () -> FloconApplicationService = { service<FloconApplicationService>() }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val appService = service<FloconApplicationService>()
+    private val appService by lazy { appServiceProvider() }
 
     private val _networkCalls = MutableStateFlow<List<NetworkCallEntry>>(emptyList())
     val networkCalls: StateFlow<List<NetworkCallEntry>> = _networkCalls.asStateFlow()
@@ -34,10 +37,17 @@ class FloconProjectService(private val project: Project) : Disposable {
     val filter: StateFlow<NetworkFilter> = _filter.asStateFlow()
 
     // Delegate server state from app service
-    val serverState: StateFlow<ServerState> = appService.serverState
-    val connectedDevices: StateFlow<Set<ConnectedDevice>> = appService.connectedDevices
+    val serverState: StateFlow<ServerState> get() = appService.serverState
+    val connectedDevices: StateFlow<Set<ConnectedDevice>> get() = appService.connectedDevices
 
     init {
+        initialize()
+    }
+
+    /**
+     * Initialize the service by starting the server and subscribing to events.
+     */
+    private fun initialize() {
         thisLogger().info("FloconProjectService initialized for project: ${project.name}")
         // Auto-start server when first project service is created
         appService.startServer()

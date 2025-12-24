@@ -3,6 +3,7 @@ package io.github.setheclark.intellij.services
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.IOException
 
 /**
  * Service for managing ADB operations, particularly reverse TCP forwarding.
@@ -24,7 +24,11 @@ import java.io.IOException
 @Service(Service.Level.APP)
 class AdbService : Disposable {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Dependencies with defaults - can be overridden for testing via companion object
+    internal var processExecutor: ProcessExecutor = SystemProcessExecutor()
+    private var dispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    private val scope: CoroutineScope by lazy { CoroutineScope(SupervisorJob() + dispatcher) }
     private var adbForwardJob: Job? = null
     private var adbPath: String? = null
 
@@ -32,6 +36,13 @@ class AdbService : Disposable {
     val adbStatus: StateFlow<AdbStatus> = _adbStatus.asStateFlow()
 
     init {
+        initialize()
+    }
+
+    /**
+     * Initialize the service by finding the ADB path.
+     */
+    private fun initialize() {
         thisLogger().info("AdbService initialized")
         adbPath = findAdbPath()
         if (adbPath != null) {
@@ -102,41 +113,36 @@ class AdbService : Disposable {
      * Execute an ADB command.
      */
     private fun executeAdbCommand(adbPath: String, deviceSerial: String?, command: String): Boolean {
-        return try {
-            val fullCommand = if (deviceSerial != null) {
-                "$adbPath -s $deviceSerial $command"
-            } else {
-                "$adbPath $command"
+        val commandParts = buildList {
+            add(adbPath)
+            if (deviceSerial != null) {
+                add("-s")
+                add(deviceSerial)
             }
-
-            val process = Runtime.getRuntime().exec(fullCommand)
-            val exitCode = process.waitFor()
-            exitCode == 0
-        } catch (e: Exception) {
-            false
+            addAll(command.split(" "))
         }
+
+        val result = processExecutor.execute(*commandParts.toTypedArray())
+        return result.isSuccess
     }
 
     /**
      * List connected ADB devices.
      */
     private fun listConnectedDevices(adbPath: String): List<String> {
-        val devices = mutableListOf<String>()
-        try {
-            val process = Runtime.getRuntime().exec("$adbPath devices")
-            val reader = process.inputStream.bufferedReader()
-            reader.useLines { lines ->
-                lines.forEach { line ->
-                    if (line.endsWith("device") && !line.startsWith("List of devices attached")) {
-                        devices.add(line.split("\t")[0])
-                    }
-                }
-            }
-            process.waitFor()
-        } catch (e: Exception) {
-            thisLogger().debug("Error listing devices: ${e.message}")
+        val result = processExecutor.execute(adbPath, "devices")
+        if (!result.isSuccess) {
+            thisLogger().debug("Error listing devices: ${result.errorOutput}")
+            return emptyList()
         }
-        return devices
+
+        return result.output.lines()
+            .filter { line ->
+                line.endsWith("device") && !line.startsWith("List of devices attached")
+            }
+            .mapNotNull { line ->
+                line.split("\t").firstOrNull()
+            }
     }
 
     /**
@@ -145,17 +151,9 @@ class AdbService : Disposable {
      */
     private fun findAdbPath(): String? {
         // 1. Check if 'adb' is in system PATH
-        try {
-            val process = ProcessBuilder("adb", "version")
-                .redirectErrorStream(true)
-                .start()
-            val exitCode = process.waitFor()
-            if (exitCode == 0) {
-                thisLogger().debug("Found 'adb' in system PATH")
-                return "adb"
-            }
-        } catch (e: IOException) {
-            thisLogger().debug("'adb' not found in system PATH: ${e.message}")
+        if (processExecutor.isCommandAvailable("adb")) {
+            thisLogger().debug("Found 'adb' in system PATH")
+            return "adb"
         }
 
         // 2. Search common Android SDK locations

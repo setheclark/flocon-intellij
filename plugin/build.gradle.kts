@@ -46,6 +46,15 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.koin.core)
     implementation(libs.kermit)
+
+    // Test dependencies
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.junit.jupiter.params)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.kotest.assertions)
 }
 
 intellijPlatform {
@@ -84,5 +93,10 @@ tasks {
         compilerOptions {
             freeCompilerArgs.add("-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
         }
+    }
+
+    // Configure JUnit 5 for tests
+    test {
+        useJUnitPlatform()
     }
 }
