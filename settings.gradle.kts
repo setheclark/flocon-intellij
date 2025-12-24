@@ -17,18 +17,9 @@ dependencyResolutionManagement {
     }
 }
 
-// Include Flocon Desktop as a composite build
-// This allows us to depend on its modules directly without publishing them
-includeBuild("flocon-upstream/FloconDesktop") {
-    dependencySubstitution {
-        // Map our dependency coordinates to the Flocon projects
-        substitute(module("io.github.openflocon.desktop:domain"))
-            .using(project(":domain"))
-        substitute(module("io.github.openflocon.desktop:data-core"))
-            .using(project(":data:core"))
-        substitute(module("io.github.openflocon.desktop:data-remote"))
-            .using(project(":data:remote"))
-    }
-}
-
 include(":plugin")
+
+// Flocon source modules - include sources directly with DI.kt exclusions
+include(":flocon-sources:domain")
+include(":flocon-sources:data-core")
+include(":flocon-sources:data-remote")
