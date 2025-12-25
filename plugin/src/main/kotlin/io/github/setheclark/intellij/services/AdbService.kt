@@ -1,6 +1,6 @@
 package io.github.setheclark.intellij.services
 
-import com.intellij.openapi.diagnostic.thisLogger
+import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -17,6 +17,8 @@ import java.io.File
 @SingleIn(AppScope::class)
 @Inject
 class AdbService {
+
+    private val log = Logger.withTag("AdbService")
 
     // Dependencies with defaults - can be overridden for testing via companion object
     internal var processExecutor: ProcessExecutor = SystemProcessExecutor()
@@ -37,13 +39,13 @@ class AdbService {
      * Initialize the service by finding the ADB path.
      */
     private fun initialize() {
-        thisLogger().info("AdbService initialized")
+        log.i { "AdbService initialized" }
         adbPath = findAdbPath()
         if (adbPath != null) {
-            thisLogger().info("Found ADB at: $adbPath")
+            log.i { "Found ADB at: $adbPath" }
             _adbStatus.value = AdbStatus.Available(adbPath!!)
         } else {
-            thisLogger().warn("ADB not found. Reverse TCP forwarding will not be available.")
+            log.w { "ADB not found. Reverse TCP forwarding will not be available." }
             _adbStatus.value = AdbStatus.NotFound
         }
     }
@@ -55,16 +57,16 @@ class AdbService {
     fun startAdbForwarding() {
         val path = adbPath
         if (path == null) {
-            thisLogger().warn("Cannot start ADB forwarding - ADB path not found")
+            log.w { "Cannot start ADB forwarding - ADB path not found" }
             return
         }
 
         if (adbForwardJob?.isActive == true) {
-            thisLogger().debug("ADB forwarding already running")
+            log.d { "ADB forwarding already running" }
             return
         }
 
-        thisLogger().info("Starting ADB reverse forwarding")
+        log.i { "Starting ADB reverse forwarding" }
         _adbStatus.value = AdbStatus.Forwarding
         adbForwardJob = scope.launch {
             while (isActive) {
@@ -72,7 +74,7 @@ class AdbService {
                     executeAdbReverse(path, FloconApplicationService.DEFAULT_WEBSOCKET_PORT)
                     executeAdbReverse(path, FloconApplicationService.DEFAULT_HTTP_PORT)
                 } catch (e: Exception) {
-                    thisLogger().debug("ADB reverse failed: ${e.message}")
+                    log.d { "ADB reverse failed: ${e.message}" }
                 }
                 delay(1500) // Run every 1.5 seconds like Flocon
             }
@@ -83,7 +85,7 @@ class AdbService {
      * Stop periodic ADB reverse forwarding.
      */
     fun stopAdbForwarding() {
-        thisLogger().info("Stopping ADB reverse forwarding")
+        log.i { "Stopping ADB reverse forwarding" }
         adbForwardJob?.cancel()
         adbForwardJob = null
     }
@@ -126,7 +128,7 @@ class AdbService {
     private fun listConnectedDevices(adbPath: String): List<String> {
         val result = processExecutor.execute(adbPath, "devices")
         if (!result.isSuccess) {
-            thisLogger().debug("Error listing devices: ${result.errorOutput}")
+            log.d { "Error listing devices: ${result.errorOutput}" }
             return emptyList()
         }
 
@@ -146,7 +148,7 @@ class AdbService {
     private fun findAdbPath(): String? {
         // 1. Check if 'adb' is in system PATH
         if (processExecutor.isCommandAvailable("adb")) {
-            thisLogger().debug("Found 'adb' in system PATH")
+            log.d { "Found 'adb' in system PATH" }
             return "adb"
         }
 
@@ -163,7 +165,7 @@ class AdbService {
             val platformToolsPath = File(sdkPath, "platform-tools")
             val adbExecutable = File(platformToolsPath, "adb")
             if (adbExecutable.exists() && adbExecutable.canExecute()) {
-                thisLogger().debug("Found ADB at: ${adbExecutable.absolutePath}")
+                log.d { "Found ADB at: ${adbExecutable.absolutePath}" }
                 return adbExecutable.absolutePath
             }
         }
@@ -173,7 +175,7 @@ class AdbService {
         if (androidHome != null) {
             val adbFromEnv = File(androidHome, "platform-tools/adb")
             if (adbFromEnv.exists() && adbFromEnv.canExecute()) {
-                thisLogger().debug("Found ADB via ANDROID_HOME: ${adbFromEnv.absolutePath}")
+                log.d { "Found ADB via ANDROID_HOME: ${adbFromEnv.absolutePath}" }
                 return adbFromEnv.absolutePath
             }
         }

@@ -37,16 +37,7 @@ dependencies {
     implementation(project(":flocon-sources:data-core"))
     implementation(project(":flocon-sources:data-remote"))
 
-    // Explicit dependencies (also transitive from Flocon, but listed for clarity)
-    // Note: kotlinx-coroutines is provided by IntelliJ Platform, don't add explicitly
-//    implementation(libs.kotlinx.serialization.json)
-//    implementation(libs.ktor.server.core)
-//    implementation(libs.ktor.server.netty)
-//    implementation(libs.ktor.server.websockets)
-//    implementation(libs.ktor.server.content.negotiation)
-//    implementation(libs.ktor.serialization.kotlinx.json)
-////    implementation(libs.koin.core)
-//    implementation(libs.kermit)
+    implementation(libs.kermit)
 
     // Test dependencies
     testImplementation(libs.junit.jupiter)

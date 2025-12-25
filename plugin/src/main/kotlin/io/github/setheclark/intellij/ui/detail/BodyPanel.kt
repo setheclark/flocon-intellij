@@ -1,6 +1,6 @@
 package io.github.setheclark.intellij.ui.detail
 
-import com.intellij.openapi.diagnostic.logger
+import co.touchlab.kermit.Logger
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.FileTypeManager
@@ -28,9 +28,7 @@ class BodyPanel(
     private val project: Project,
 ) : JPanel(BorderLayout()) {
 
-    companion object {
-        private val LOG = logger<BodyPanel>()
-    }
+    private val log = Logger.withTag("BodyPanel")
 
     private val json = Json { prettyPrint = true }
     private val emptyLabel = JBLabel("(Empty body)").apply {
@@ -101,7 +99,7 @@ class BodyPanel(
             revalidate()
             repaint()
         } catch (e: Exception) {
-            LOG.warn("Failed to create editor, falling back to text area", e)
+            log.w(e) { "Failed to create editor, falling back to text area" }
             showFallbackText(formattedBody)
         }
     }

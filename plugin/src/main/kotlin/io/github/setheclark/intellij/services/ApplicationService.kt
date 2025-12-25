@@ -4,9 +4,9 @@ import com.flocon.data.remote.models.FloconIncomingMessageDataModel
 import com.flocon.data.remote.network.models.FloconNetworkRequestDataModel
 import com.flocon.data.remote.network.models.FloconNetworkResponseDataModel
 import com.flocon.data.remote.server.Server
+import co.touchlab.kermit.Logger
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.thisLogger
 import dev.zacsweers.metro.createGraphFactory
 import io.github.openflocon.domain.Protocol
 import io.github.setheclark.intellij.di.AppGraph
@@ -31,6 +31,8 @@ import kotlinx.serialization.json.Json
  */
 @Service(Service.Level.APP)
 class FloconApplicationService : Disposable {
+
+    private val log = Logger.withTag("FloconApplicationService")
 
     val appGraph: AppGraph
 
@@ -69,7 +71,7 @@ class FloconApplicationService : Disposable {
     val networkResponses: SharedFlow<NetworkResponseEvent> = _networkResponses.asSharedFlow()
 
     init {
-        thisLogger().info("FloconApplicationService initialized")
+        log.i { "FloconApplicationService initialized" }
 
         appGraph = createGraphFactory<AppGraph.Factory>().create(this)
     }
@@ -79,35 +81,35 @@ class FloconApplicationService : Disposable {
      */
     fun startServer(port: Int = DEFAULT_WEBSOCKET_PORT) {
         if (_serverState.value is ServerState.Running) {
-            thisLogger().warn("Server already running")
+            log.w { "Server already running" }
             return
         }
 
-        thisLogger().info(">>> Starting Flocon server on port $port")
+        log.i { ">>> Starting Flocon server on port $port" }
         _serverState.value = ServerState.Starting
 
         try {
-            thisLogger().info(">>> Creating Server instance")
+            log.i { ">>> Creating Server instance" }
             val newServer = serverFactory.createServer(json)
             server = newServer
 
             // Start WebSocket server
-            thisLogger().info(">>> Calling server.startWebsocket($port)")
+            log.i { ">>> Calling server.startWebsocket($port)" }
             newServer.startWebsocket(port)
-            thisLogger().info(">>> WebSocket server started")
+            log.i { ">>> WebSocket server started" }
 
             // Start HTTP file server
-            thisLogger().info(">>> Calling server.starHttp($DEFAULT_HTTP_PORT)")
+            log.i { ">>> Calling server.starHttp($DEFAULT_HTTP_PORT)" }
             newServer.starHttp(DEFAULT_HTTP_PORT)
-            thisLogger().info(">>> HTTP server started")
+            log.i { ">>> HTTP server started" }
 
             // Observe connected devices
             scope.launch {
-                thisLogger().info(">>> Starting to observe activeDevices")
+                log.i { ">>> Starting to observe activeDevices" }
                 newServer.activeDevices.collect { devices ->
-                    thisLogger().info(">>> Active devices changed: ${devices.size} device(s)")
+                    log.i { ">>> Active devices changed: ${devices.size} device(s)" }
                     devices.forEach { device ->
-                        thisLogger().info(">>>   - deviceId=${device.deviceId}, package=${device.packageName}")
+                        log.i { ">>>   - deviceId=${device.deviceId}, package=${device.packageName}" }
                     }
                     _connectedDevices.value = devices.map { device ->
                         ConnectedDevice(
@@ -123,26 +125,26 @@ class FloconApplicationService : Disposable {
 
             // Process incoming messages
             scope.launch {
-                thisLogger().info(">>> Starting to collect from server.receivedMessages")
+                log.i { ">>> Starting to collect from server.receivedMessages" }
                 try {
                     newServer.receivedMessages.collect { message ->
-                        thisLogger().info(">>> RAW MESSAGE FROM SERVER: plugin=${message.plugin}, method=${message.method}")
+                        log.i { ">>> RAW MESSAGE FROM SERVER: plugin=${message.plugin}, method=${message.method}" }
                         handleIncomingMessage(message)
                     }
                 } catch (e: Exception) {
-                    thisLogger().error(">>> Error collecting from server", e)
+                    log.e(e) { ">>> Error collecting from server" }
                 }
-                thisLogger().info(">>> Stopped collecting from serverJvm.receivedMessages")
+                log.i { ">>> Stopped collecting from serverJvm.receivedMessages" }
             }
 
             _serverState.value = ServerState.Running(port)
-            thisLogger().info("Flocon server started successfully on port $port")
+            log.i { "Flocon server started successfully on port $port" }
 
             // Start ADB reverse forwarding
             appGraph.adbService.startAdbForwarding()
 
         } catch (e: Exception) {
-            thisLogger().error("Failed to start Flocon server", e)
+            log.e(e) { "Failed to start Flocon server" }
             _serverState.value = ServerState.Error(e.message ?: "Unknown error")
             server?.stop()
             server = null
@@ -153,7 +155,7 @@ class FloconApplicationService : Disposable {
      * Handle incoming messages from connected devices.
      */
     private suspend fun handleIncomingMessage(message: FloconIncomingMessageDataModel) {
-        thisLogger().info(">>> Received message: plugin=${message.plugin}, method=${message.method}, deviceId=${message.deviceId}")
+        log.i { ">>> Received message: plugin=${message.plugin}, method=${message.method}, deviceId=${message.deviceId}" }
 
         // Update device info with name from message
         updateDeviceInfo(message)
@@ -162,7 +164,7 @@ class FloconApplicationService : Disposable {
             Protocol.FromDevice.Network.Plugin -> handleNetworkMessage(message)
             Protocol.FromDevice.Device.Plugin -> handleDeviceMessage(message)
             else -> {
-                thisLogger().debug("Ignoring message from plugin: ${message.plugin}")
+                log.d { "Ignoring message from plugin: ${message.plugin}" }
             }
         }
     }
@@ -181,17 +183,17 @@ class FloconApplicationService : Disposable {
     }
 
     private suspend fun handleNetworkMessage(message: FloconIncomingMessageDataModel) {
-        thisLogger().info(">>> handleNetworkMessage: method=${message.method}")
+        log.i { ">>> handleNetworkMessage: method=${message.method}" }
 
         when (message.method) {
             Protocol.FromDevice.Network.Method.LogNetworkCallRequest -> {
-                thisLogger().info(">>> Processing network request, body length=${message.body.length}")
+                log.i { ">>> Processing network request, body length=${message.body.length}" }
                 try {
                     val request = json.decodeFromString<FloconNetworkRequestDataModel>(message.body)
                     val callId = request.floconCallId
-                    thisLogger().info(">>> Parsed request: callId=$callId, url=${request.url}, method=${request.method}")
+                    log.i { ">>> Parsed request: callId=$callId, url=${request.url}, method=${request.method}" }
                     if (callId == null) {
-                        thisLogger().warn(">>> Request has no floconCallId, skipping")
+                        log.w { ">>> Request has no floconCallId, skipping" }
                         return
                     }
                     _networkRequests.emit(
@@ -203,21 +205,21 @@ class FloconApplicationService : Disposable {
                             request = request,
                         )
                     )
-                    thisLogger().info(">>> Emitted network request event: ${request.method} ${request.url}")
+                    log.i { ">>> Emitted network request event: ${request.method} ${request.url}" }
                 } catch (e: Exception) {
-                    thisLogger().error(">>> Failed to parse network request: ${e.message}", e)
-                    thisLogger().error(">>> Body was: ${message.body.take(500)}")
+                    log.e(e) { ">>> Failed to parse network request: ${e.message}" }
+                    log.e { ">>> Body was: ${message.body.take(500)}" }
                 }
             }
 
             Protocol.FromDevice.Network.Method.LogNetworkCallResponse -> {
-                thisLogger().info(">>> Processing network response, body length=${message.body.length}")
+                log.i { ">>> Processing network response, body length=${message.body.length}" }
                 try {
                     val response = json.decodeFromString<FloconNetworkResponseDataModel>(message.body)
                     val callId = response.floconCallId
-                    thisLogger().info(">>> Parsed response: callId=$callId, status=${response.responseHttpCode}")
+                    log.i { ">>> Parsed response: callId=$callId, status=${response.responseHttpCode}" }
                     if (callId == null) {
-                        thisLogger().warn(">>> Response has no floconCallId, skipping")
+                        log.w { ">>> Response has no floconCallId, skipping" }
                         return
                     }
                     _networkResponses.emit(
@@ -229,19 +231,19 @@ class FloconApplicationService : Disposable {
                             response = response,
                         )
                     )
-                    thisLogger().info(">>> Emitted network response event: ${response.responseHttpCode} (${response.durationMs}ms)")
+                    log.i { ">>> Emitted network response event: ${response.responseHttpCode} (${response.durationMs}ms)" }
                 } catch (e: Exception) {
-                    thisLogger().error(">>> Failed to parse network response: ${e.message}", e)
-                    thisLogger().error(">>> Body was: ${message.body.take(500)}")
+                    log.e(e) { ">>> Failed to parse network response: ${e.message}" }
+                    log.e { ">>> Body was: ${message.body.take(500)}" }
                 }
             }
 
             Protocol.FromDevice.Network.Method.LogWebSocketEvent -> {
-                thisLogger().info(">>> WebSocket event received")
+                log.i { ">>> WebSocket event received" }
             }
 
             else -> {
-                thisLogger().warn(">>> Unknown network method: ${message.method}")
+                log.w { ">>> Unknown network method: ${message.method}" }
             }
         }
     }
@@ -249,11 +251,11 @@ class FloconApplicationService : Disposable {
     private fun handleDeviceMessage(message: FloconIncomingMessageDataModel) {
         when (message.method) {
             Protocol.FromDevice.Device.Method.RegisterDevice -> {
-                thisLogger().info("Device registered: ${message.deviceName} (${message.appPackageName})")
+                log.i { "Device registered: ${message.deviceName} (${message.appPackageName})" }
             }
 
             else -> {
-                thisLogger().debug("Unknown device method: ${message.method}")
+                log.d { "Unknown device method: ${message.method}" }
             }
         }
     }
@@ -262,7 +264,7 @@ class FloconApplicationService : Disposable {
      * Stop the Flocon WebSocket server.
      */
     fun stopServer() {
-        thisLogger().info("Stopping Flocon server")
+        log.i { "Stopping Flocon server" }
         _serverState.value = ServerState.Stopping
 
         // Stop ADB reverse forwarding
@@ -276,7 +278,7 @@ class FloconApplicationService : Disposable {
     }
 
     override fun dispose() {
-        thisLogger().info("FloconApplicationService disposing")
+        log.i { "FloconApplicationService disposing" }
         stopServer()
         scope.cancel()
     }

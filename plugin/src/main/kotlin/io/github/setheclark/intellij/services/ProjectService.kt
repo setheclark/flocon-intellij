@@ -1,9 +1,9 @@
 package io.github.setheclark.intellij.services
 
+import co.touchlab.kermit.Logger
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import io.github.setheclark.intellij.di.ProjectGraph
 import io.github.setheclark.intellij.di.appGraph
@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 @Service(Service.Level.PROJECT)
 class FloconProjectService(private val project: Project) : Disposable {
+
+    private val log = Logger.withTag("FloconProjectService")
 
     val projectGraph: ProjectGraph = project.appGraph.createProjectGraph(
         project = project,
@@ -52,7 +54,7 @@ class FloconProjectService(private val project: Project) : Disposable {
      * Initialize the service by starting the server and subscribing to events.
      */
     private fun initialize() {
-        thisLogger().info("FloconProjectService initialized for project: ${project.name}")
+        log.i { "FloconProjectService initialized for project: ${project.name}" }
         // Auto-start server when first project service is created
         appService.startServer()
 
@@ -61,12 +63,12 @@ class FloconProjectService(private val project: Project) : Disposable {
     }
 
     private fun subscribeToNetworkEvents() {
-        thisLogger().info(">>> Subscribing to network events")
+        log.i { ">>> Subscribing to network events" }
         // Handle incoming network requests
         scope.launch {
-            thisLogger().info(">>> Started collecting networkRequests")
+            log.i { ">>> Started collecting networkRequests" }
             appService.networkRequests.collect { event ->
-                thisLogger().info(">>> Received network request in ProjectService: ${event.request.method} ${event.request.url}")
+                log.i { ">>> Received network request in ProjectService: ${event.request.method} ${event.request.url}" }
                 val requestHeaders = event.request.requestHeaders ?: emptyMap()
                 val entry = NetworkCallEntry(
                     id = event.callId,
@@ -90,9 +92,9 @@ class FloconProjectService(private val project: Project) : Disposable {
 
         // Handle incoming network responses
         scope.launch {
-            thisLogger().info(">>> Started collecting networkResponses")
+            log.i { ">>> Started collecting networkResponses" }
             appService.networkResponses.collect { event ->
-                thisLogger().info(">>> Received network response in ProjectService: ${event.response.responseHttpCode} (${event.response.durationMs}ms)")
+                log.i { ">>> Received network response in ProjectService: ${event.response.responseHttpCode} (${event.response.durationMs}ms)" }
                 updateNetworkCall(event.callId) { call ->
                     call.copy(
                         response = NetworkResponse(
@@ -117,7 +119,7 @@ class FloconProjectService(private val project: Project) : Disposable {
      */
     fun addNetworkCall(call: NetworkCallEntry) {
         _networkCalls.value = _networkCalls.value + call
-        thisLogger().info(">>> Added network call: ${call.request.method} ${call.request.url}, total calls: ${_networkCalls.value.size}")
+        log.i { ">>> Added network call: ${call.request.method} ${call.request.url}, total calls: ${_networkCalls.value.size}" }
     }
 
     /**
@@ -152,7 +154,7 @@ class FloconProjectService(private val project: Project) : Disposable {
     }
 
     override fun dispose() {
-        thisLogger().info("FloconProjectService disposing for project: ${project.name}")
+        log.i { "FloconProjectService disposing for project: ${project.name}" }
         scope.cancel()
     }
 }
