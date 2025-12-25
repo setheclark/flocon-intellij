@@ -5,7 +5,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
-import dev.zacsweers.metro.createGraphFactory
+import io.github.setheclark.intellij.di.projectGraph
 
 /**
  * Factory for creating the Flocon tool window.
@@ -15,12 +15,11 @@ class FloconToolWindowFactory : ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
 
-        val graph = createGraphFactory<UiGraph.Factory>()
-            .create(project)
+        val networkInspectorPanel = project.projectGraph.networkInspectorPanel
 
         val contentFactory = ContentFactory.getInstance()
         val content = contentFactory.createContent(
-            graph.networkInspectorPanel,
+            networkInspectorPanel,
             "Network",
             false
         )

@@ -5,14 +5,12 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import io.github.setheclark.intellij.di.ProjectGraph
+import io.github.setheclark.intellij.di.appGraph
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 /**
  * Project-level service for Flocon plugin.
@@ -20,6 +18,11 @@ import kotlinx.coroutines.launch
  */
 @Service(Service.Level.PROJECT)
 class FloconProjectService(private val project: Project) : Disposable {
+
+    val projectGraph: ProjectGraph = project.appGraph.createProjectGraph(
+        project = project,
+        projectService = this,
+    )
 
     // Dependencies with defaults - can be overridden for testing
     internal var appServiceProvider: () -> FloconApplicationService = { service<FloconApplicationService>() }
@@ -39,6 +42,7 @@ class FloconProjectService(private val project: Project) : Disposable {
     // Delegate server state from app service
     val serverState: StateFlow<ServerState> get() = appService.serverState
     val connectedDevices: StateFlow<Set<ConnectedDevice>> get() = appService.connectedDevices
+
 
     init {
         initialize()

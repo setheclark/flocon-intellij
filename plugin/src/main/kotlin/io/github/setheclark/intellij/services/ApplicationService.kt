@@ -6,9 +6,10 @@ import com.flocon.data.remote.network.models.FloconNetworkResponseDataModel
 import com.flocon.data.remote.server.Server
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import dev.zacsweers.metro.createGraphFactory
 import io.github.openflocon.domain.Protocol
+import io.github.setheclark.intellij.di.AppGraph
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,9 +32,10 @@ import kotlinx.serialization.json.Json
 @Service(Service.Level.APP)
 class FloconApplicationService : Disposable {
 
+    val appGraph: AppGraph
+
     // Dependencies with defaults - can be overridden for testing
     internal var serverFactory: ServerFactory = FloconServerFactory()
-    internal var adbServiceProvider: () -> AdbService = { service<AdbService>() }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -68,6 +70,8 @@ class FloconApplicationService : Disposable {
 
     init {
         thisLogger().info("FloconApplicationService initialized")
+
+        appGraph = createGraphFactory<AppGraph.Factory>().create(this)
     }
 
     /**
@@ -135,7 +139,7 @@ class FloconApplicationService : Disposable {
             thisLogger().info("Flocon server started successfully on port $port")
 
             // Start ADB reverse forwarding
-            adbServiceProvider().startAdbForwarding()
+            appGraph.adbService.startAdbForwarding()
 
         } catch (e: Exception) {
             thisLogger().error("Failed to start Flocon server", e)
@@ -262,7 +266,7 @@ class FloconApplicationService : Disposable {
         _serverState.value = ServerState.Stopping
 
         // Stop ADB reverse forwarding
-        adbServiceProvider().stopAdbForwarding()
+        appGraph.adbService.stopAdbForwarding()
 
         server?.stop()
         server = null

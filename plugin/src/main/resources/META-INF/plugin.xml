@@ -44,9 +44,6 @@
         <applicationService
             serviceImplementation="io.github.setheclark.intellij.services.FloconApplicationService"/>
 
-        <!-- ADB Service - manages ADB reverse forwarding -->
-        <applicationService
-            serviceImplementation="io.github.setheclark.intellij.services.AdbService"/>
     </extensions>
 
     <actions>

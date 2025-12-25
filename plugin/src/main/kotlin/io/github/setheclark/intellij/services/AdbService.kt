@@ -1,28 +1,22 @@
 package io.github.setheclark.intellij.services
 
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import java.io.File
 
 /**
  * Service for managing ADB operations, particularly reverse TCP forwarding.
  * This enables Android devices to connect to our WebSocket server.
  */
-@Service(Service.Level.APP)
-class AdbService : Disposable {
+@SingleIn(AppScope::class)
+@Inject
+class AdbService {
 
     // Dependencies with defaults - can be overridden for testing via companion object
     internal var processExecutor: ProcessExecutor = SystemProcessExecutor()
@@ -192,11 +186,11 @@ class AdbService : Disposable {
      */
     fun isAdbAvailable(): Boolean = adbPath != null
 
-    override fun dispose() {
-        thisLogger().info("AdbService disposing")
-        stopAdbForwarding()
-        scope.cancel()
-    }
+//    override fun dispose() {
+//        thisLogger().info("AdbService disposing")
+//        stopAdbForwarding()
+//        scope.cancel()
+//    }
 }
 
 /**
@@ -207,11 +201,12 @@ sealed class AdbStatus {
     data class Available(val path: String) : AdbStatus()
     data object NotFound : AdbStatus() {
         val message: String = "ADB not found. USB device connections require ADB.\n\n" +
-            "To fix this, either:\n" +
-            "• Add 'adb' to your system PATH\n" +
-            "• Set ANDROID_HOME or ANDROID_SDK_ROOT environment variable\n" +
-            "• Install Android SDK in ~/Library/Android/sdk (macOS)\n\n" +
-            "WiFi connections will still work if the device can reach this computer."
+                "To fix this, either:\n" +
+                "• Add 'adb' to your system PATH\n" +
+                "• Set ANDROID_HOME or ANDROID_SDK_ROOT environment variable\n" +
+                "• Install Android SDK in ~/Library/Android/sdk (macOS)\n\n" +
+                "WiFi connections will still work if the device can reach this computer."
     }
+
     data object Forwarding : AdbStatus()
 }
