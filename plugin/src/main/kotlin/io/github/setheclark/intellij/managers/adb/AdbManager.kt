@@ -1,30 +1,37 @@
-package io.github.setheclark.intellij.services
+package io.github.setheclark.intellij.managers.adb
 
 import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
-import kotlinx.coroutines.*
+import io.github.setheclark.intellij.domain.models.AdbStatus
+import io.github.setheclark.intellij.services.ProcessExecutor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * Service for managing ADB operations, particularly reverse TCP forwarding.
+ * Manager for ADB operations, particularly reverse TCP forwarding.
  * This enables Android devices to connect to our WebSocket server.
  */
 @SingleIn(AppScope::class)
 @Inject
-class AdbService {
+class AdbManager(
+    private val processExecutor: ProcessExecutor,
+) {
+    private val log = Logger.withTag("AdbManager")
 
-    private val log = Logger.withTag("AdbService")
-
-    // Dependencies with defaults - can be overridden for testing via companion object
-    internal var processExecutor: ProcessExecutor = SystemProcessExecutor()
-    private var dispatcher: CoroutineDispatcher = Dispatchers.IO
-
-    private val scope: CoroutineScope by lazy { CoroutineScope(SupervisorJob() + dispatcher) }
+    // Lazily create scope to avoid coroutine ServiceLoader issues during DI initialization
+    private val scope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
     private var adbForwardJob: Job? = null
     private var adbPath: String? = null
 
@@ -35,11 +42,8 @@ class AdbService {
         initialize()
     }
 
-    /**
-     * Initialize the service by finding the ADB path.
-     */
     private fun initialize() {
-        log.i { "AdbService initialized" }
+        log.i { "AdbManager initialized" }
         adbPath = findAdbPath()
         if (adbPath != null) {
             log.i { "Found ADB at: $adbPath" }
@@ -54,7 +58,7 @@ class AdbService {
      * Start periodic ADB reverse forwarding.
      * This runs every 1.5 seconds to maintain the reverse connection.
      */
-    fun startAdbForwarding() {
+    fun startAdbForwarding(websocketPort: Int, httpPort: Int) {
         val path = adbPath
         if (path == null) {
             log.w { "Cannot start ADB forwarding - ADB path not found" }
@@ -71,8 +75,8 @@ class AdbService {
         adbForwardJob = scope.launch {
             while (isActive) {
                 try {
-                    executeAdbReverse(path, FloconApplicationService.DEFAULT_WEBSOCKET_PORT)
-                    executeAdbReverse(path, FloconApplicationService.DEFAULT_HTTP_PORT)
+                    executeAdbReverse(path, websocketPort)
+                    executeAdbReverse(path, httpPort)
                 } catch (e: Exception) {
                     log.d { "ADB reverse failed: ${e.message}" }
                 }
@@ -88,6 +92,9 @@ class AdbService {
         log.i { "Stopping ADB reverse forwarding" }
         adbForwardJob?.cancel()
         adbForwardJob = null
+        if (adbPath != null) {
+            _adbStatus.value = AdbStatus.Available(adbPath!!)
+        }
     }
 
     /**
@@ -125,6 +132,11 @@ class AdbService {
     /**
      * List connected ADB devices.
      */
+    fun listConnectedDevices(): List<String> {
+        val path = adbPath ?: return emptyList()
+        return listConnectedDevices(path)
+    }
+
     private fun listConnectedDevices(adbPath: String): List<String> {
         val result = processExecutor.execute(adbPath, "devices")
         if (!result.isSuccess) {
@@ -145,7 +157,7 @@ class AdbService {
      * Find the ADB executable path.
      * Checks system PATH first, then common Android SDK locations.
      */
-    private fun findAdbPath(): String? {
+    fun findAdbPath(): String? {
         // 1. Check if 'adb' is in system PATH
         if (processExecutor.isCommandAvailable("adb")) {
             log.d { "Found 'adb' in system PATH" }
@@ -188,27 +200,12 @@ class AdbService {
      */
     fun isAdbAvailable(): Boolean = adbPath != null
 
-//    override fun dispose() {
-//        thisLogger().info("AdbService disposing")
-//        stopAdbForwarding()
-//        scope.cancel()
-//    }
-}
-
-/**
- * Represents the current status of ADB availability.
- */
-sealed class AdbStatus {
-    data object Initializing : AdbStatus()
-    data class Available(val path: String) : AdbStatus()
-    data object NotFound : AdbStatus() {
-        val message: String = "ADB not found. USB device connections require ADB.\n\n" +
-                "To fix this, either:\n" +
-                "• Add 'adb' to your system PATH\n" +
-                "• Set ANDROID_HOME or ANDROID_SDK_ROOT environment variable\n" +
-                "• Install Android SDK in ~/Library/Android/sdk (macOS)\n\n" +
-                "WiFi connections will still work if the device can reach this computer."
+    /**
+     * Cleanup resources.
+     */
+    fun dispose() {
+        log.i { "AdbManager disposing" }
+        stopAdbForwarding()
+        scope.cancel()
     }
-
-    data object Forwarding : AdbStatus()
 }

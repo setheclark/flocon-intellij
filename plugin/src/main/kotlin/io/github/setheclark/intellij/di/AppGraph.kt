@@ -4,14 +4,58 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import io.github.setheclark.intellij.services.AdbService
+import io.github.setheclark.intellij.data.DeviceRepository
+import io.github.setheclark.intellij.data.DeviceRepositoryImpl
+import io.github.setheclark.intellij.data.NetworkCallRepository
+import io.github.setheclark.intellij.data.NetworkCallRepositoryImpl
+import io.github.setheclark.intellij.managers.adb.AdbManager
+import io.github.setheclark.intellij.managers.network.NetworkEventProcessor
+import io.github.setheclark.intellij.managers.server.MessageRouter
+import io.github.setheclark.intellij.managers.server.ServerManager
 import io.github.setheclark.intellij.services.FloconApplicationService
+import io.github.setheclark.intellij.services.FloconServerFactory
+import io.github.setheclark.intellij.services.ProcessExecutor
+import io.github.setheclark.intellij.services.ServerFactory
+import io.github.setheclark.intellij.services.SystemProcessExecutor
+import kotlinx.serialization.json.Json
 
 @SingleIn(AppScope::class)
 @DependencyGraph
-interface AppGraph : ProjectGraph.Factory{
+interface AppGraph : ProjectGraph.Factory {
 
-    val adbService: AdbService
+    // Managers
+    val adbManager: AdbManager
+    val networkEventProcessor: NetworkEventProcessor
+    val messageRouter: MessageRouter
+    val serverManager: ServerManager
+
+    // Repositories
+    val deviceRepository: DeviceRepository
+    val networkCallRepository: NetworkCallRepository
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun bindDeviceRepository(impl: DeviceRepositoryImpl): DeviceRepository = impl
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun bindNetworkCallRepository(impl: NetworkCallRepositoryImpl): NetworkCallRepository = impl
+
+    // Infrastructure providers
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideProcessExecutor(): ProcessExecutor = SystemProcessExecutor()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideServerFactory(): ServerFactory = FloconServerFactory()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideJson(): Json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     @DependencyGraph.Factory
     fun interface Factory {

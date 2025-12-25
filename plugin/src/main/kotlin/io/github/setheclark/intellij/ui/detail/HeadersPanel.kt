@@ -5,7 +5,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
-import io.github.setheclark.intellij.services.NetworkCallEntry
+import io.github.setheclark.intellij.domain.models.NetworkCallEntry
 import java.awt.BorderLayout
 import java.awt.Font
 import javax.swing.JPanel

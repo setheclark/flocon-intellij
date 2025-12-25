@@ -1,8 +1,8 @@
 package io.github.setheclark.intellij.fixtures
 
-import io.github.setheclark.intellij.services.NetworkCallEntry
-import io.github.setheclark.intellij.services.NetworkRequest
-import io.github.setheclark.intellij.services.NetworkResponse
+import io.github.setheclark.intellij.domain.models.NetworkCallEntry
+import io.github.setheclark.intellij.domain.models.NetworkRequest
+import io.github.setheclark.intellij.domain.models.NetworkResponse
 import java.util.UUID
 
 /**

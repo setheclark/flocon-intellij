@@ -1,8 +1,8 @@
 package io.github.setheclark.intellij.ui.list
 
-import io.github.setheclark.intellij.services.NetworkCallEntry
-import io.github.setheclark.intellij.services.NetworkFilter
-import io.github.setheclark.intellij.services.StatusFilter
+import io.github.setheclark.intellij.domain.models.NetworkCallEntry
+import io.github.setheclark.intellij.domain.models.NetworkFilter
+import io.github.setheclark.intellij.domain.models.StatusFilter
 
 fun List<NetworkCallEntry>.applyFilter(filter: NetworkFilter): List<NetworkCallEntry> {
     return filter { call ->

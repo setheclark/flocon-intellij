@@ -19,14 +19,14 @@ import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.services.AdbService
-import io.github.setheclark.intellij.services.AdbStatus
-import io.github.setheclark.intellij.services.ConnectedDevice
+import io.github.setheclark.intellij.domain.models.ConnectedDevice
+import io.github.setheclark.intellij.domain.models.NetworkFilter
+import io.github.setheclark.intellij.domain.models.ServerState
+import io.github.setheclark.intellij.domain.models.StatusFilter
+import io.github.setheclark.intellij.domain.models.AdbStatus
+import io.github.setheclark.intellij.managers.adb.AdbManager
 import io.github.setheclark.intellij.services.FloconApplicationService
 import io.github.setheclark.intellij.services.FloconProjectService
-import io.github.setheclark.intellij.services.NetworkFilter
-import io.github.setheclark.intellij.services.ServerState
-import io.github.setheclark.intellij.services.StatusFilter
 import io.github.setheclark.intellij.ui.detail.DetailPanel
 import io.github.setheclark.intellij.ui.list.NetworkCallListPanel
 import kotlinx.coroutines.CoroutineScope
@@ -52,7 +52,7 @@ import javax.swing.event.DocumentEvent
 class NetworkInspectorPanel(
     private val floconService: FloconProjectService,
     private val appService: FloconApplicationService,
-    private val adbService: AdbService,
+    private val adbManager: AdbManager,
     private val networkCallListPanel: NetworkCallListPanel,
     private val detailPanel: DetailPanel,
 ) : SimpleToolWindowPanel(true, true), Disposable {
@@ -244,7 +244,7 @@ class NetworkInspectorPanel(
 
     private fun observeAdbStatus() {
         scope.launch {
-            adbService.adbStatus.collectLatest { status ->
+            adbManager.adbStatus.collectLatest { status ->
                 SwingUtilities.invokeLater {
                     updateWarningBanner(status)
                 }

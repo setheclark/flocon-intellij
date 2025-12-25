@@ -17,8 +17,8 @@ import com.intellij.ui.components.JBTabbedPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.domain.models.NetworkCallEntry
 import io.github.setheclark.intellij.services.FloconProjectService
-import io.github.setheclark.intellij.services.NetworkCallEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

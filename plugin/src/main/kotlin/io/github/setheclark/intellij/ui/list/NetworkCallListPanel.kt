@@ -8,9 +8,9 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.domain.models.NetworkCallEntry
+import io.github.setheclark.intellij.domain.models.NetworkFilter
 import io.github.setheclark.intellij.services.FloconProjectService
-import io.github.setheclark.intellij.services.NetworkCallEntry
-import io.github.setheclark.intellij.services.NetworkFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

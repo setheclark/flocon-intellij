@@ -1,12 +1,15 @@
 package io.github.setheclark.intellij.services
 
+import io.github.setheclark.intellij.domain.models.NetworkCallEntry
+import io.github.setheclark.intellij.domain.models.NetworkFilter
+import io.github.setheclark.intellij.domain.models.StatusFilter
+import io.github.setheclark.intellij.domain.models.StatusFilter.ALL
+import io.github.setheclark.intellij.domain.models.StatusFilter.CLIENT_ERROR
+import io.github.setheclark.intellij.domain.models.StatusFilter.ERROR
+import io.github.setheclark.intellij.domain.models.StatusFilter.REDIRECT
+import io.github.setheclark.intellij.domain.models.StatusFilter.SERVER_ERROR
+import io.github.setheclark.intellij.domain.models.StatusFilter.SUCCESS
 import io.github.setheclark.intellij.fixtures.NetworkCallFactory
-import io.github.setheclark.intellij.services.StatusFilter.ALL
-import io.github.setheclark.intellij.services.StatusFilter.CLIENT_ERROR
-import io.github.setheclark.intellij.services.StatusFilter.ERROR
-import io.github.setheclark.intellij.services.StatusFilter.REDIRECT
-import io.github.setheclark.intellij.services.StatusFilter.SERVER_ERROR
-import io.github.setheclark.intellij.services.StatusFilter.SUCCESS
 import io.github.setheclark.intellij.ui.list.applyFilter
 import io.github.setheclark.intellij.ui.list.matchesSearchText
 import io.kotest.matchers.collections.shouldBeEmpty
