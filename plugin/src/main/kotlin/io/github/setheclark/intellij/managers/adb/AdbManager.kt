@@ -58,7 +58,7 @@ class AdbManager(
      * Start periodic ADB reverse forwarding.
      * This runs every 1.5 seconds to maintain the reverse connection.
      */
-    fun startAdbForwarding(websocketPort: Int, httpPort: Int) {
+    fun startAdbForwarding(websocketPort: Int) {
         val path = adbPath
         if (path == null) {
             log.w { "Cannot start ADB forwarding - ADB path not found" }
@@ -71,12 +71,10 @@ class AdbManager(
         }
 
         log.i { "Starting ADB reverse forwarding" }
-        _adbStatus.value = AdbStatus.Forwarding
         adbForwardJob = scope.launch {
             while (isActive) {
                 try {
                     executeAdbReverse(path, websocketPort)
-                    executeAdbReverse(path, httpPort)
                 } catch (e: Exception) {
                     log.d { "ADB reverse failed: ${e.message}" }
                 }
@@ -127,14 +125,6 @@ class AdbManager(
 
         val result = processExecutor.execute(*commandParts.toTypedArray())
         return result.isSuccess
-    }
-
-    /**
-     * List connected ADB devices.
-     */
-    fun listConnectedDevices(): List<String> {
-        val path = adbPath ?: return emptyList()
-        return listConnectedDevices(path)
     }
 
     private fun listConnectedDevices(adbPath: String): List<String> {
@@ -194,11 +184,6 @@ class AdbManager(
 
         return null
     }
-
-    /**
-     * Check if ADB is available.
-     */
-    fun isAdbAvailable(): Boolean = adbPath != null
 
     /**
      * Cleanup resources.

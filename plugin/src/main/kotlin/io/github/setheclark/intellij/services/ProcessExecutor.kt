@@ -1,5 +1,6 @@
 package io.github.setheclark.intellij.services
 
+import dev.zacsweers.metro.Inject
 import java.io.IOException
 
 /**
@@ -43,6 +44,7 @@ interface ProcessExecutor {
 /**
  * Real implementation of ProcessExecutor that executes system processes.
  */
+@Inject
 class SystemProcessExecutor : ProcessExecutor {
 
     override fun execute(command: String): ProcessResult {

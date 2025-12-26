@@ -17,7 +17,6 @@ interface ProjectGraph {
         fun createProjectGraph(
             @Provides project: Project,
             @Provides projectService: FloconProjectService,
-            @Provides appService: FloconApplicationService,
         ): ProjectGraph
     }
 }

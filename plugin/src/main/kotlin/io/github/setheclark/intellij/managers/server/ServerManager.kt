@@ -46,7 +46,7 @@ class ServerManager(
     /**
      * Start the Flocon WebSocket server on the specified ports.
      */
-    fun startServer(websocketPort: Int, httpPort: Int) {
+    fun startServer(websocketPort: Int) {
         if (_serverState.value is ServerState.Running) {
             log.w { "Server already running" }
             return
@@ -64,11 +64,6 @@ class ServerManager(
             log.i { "Calling server.startWebsocket($websocketPort)" }
             newServer.startWebsocket(websocketPort)
             log.i { "WebSocket server started" }
-
-            // Start HTTP file server
-            log.i { "Calling server.starHttp($httpPort)" }
-            newServer.starHttp(httpPort)
-            log.i { "HTTP server started" }
 
             // Observe connected devices
             scope.launch {
@@ -114,7 +109,7 @@ class ServerManager(
             log.i { "Flocon server started successfully on port $websocketPort" }
 
             // Start ADB reverse forwarding
-            adbManager.startAdbForwarding(websocketPort, httpPort)
+            adbManager.startAdbForwarding(websocketPort)
 
         } catch (e: Exception) {
             log.e(e) { "Failed to start Flocon server" }

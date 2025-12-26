@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import dev.zacsweers.metro.createGraphFactory
+import io.github.openflocon.domain.Constant
 import io.github.setheclark.intellij.di.AppGraph
 import io.github.setheclark.intellij.domain.models.ConnectedDevice
 import io.github.setheclark.intellij.domain.models.ServerState
@@ -37,8 +38,8 @@ class FloconApplicationService : Disposable {
     /**
      * Start the Flocon WebSocket server on the specified port.
      */
-    fun startServer(port: Int = DEFAULT_WEBSOCKET_PORT) {
-        appGraph.serverManager.startServer(port, DEFAULT_HTTP_PORT)
+    fun startServer(port: Int = Constant.SERVER_WEBSOCKET_PORT) {
+        appGraph.serverManager.startServer(port)
     }
 
     /**
@@ -52,10 +53,5 @@ class FloconApplicationService : Disposable {
         log.i { "FloconApplicationService disposing" }
         appGraph.serverManager.dispose()
         appGraph.adbManager.dispose()
-    }
-
-    companion object {
-        const val DEFAULT_WEBSOCKET_PORT = 9023
-        const val DEFAULT_HTTP_PORT = 9024
     }
 }

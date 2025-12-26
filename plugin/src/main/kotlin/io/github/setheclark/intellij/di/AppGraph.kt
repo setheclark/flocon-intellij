@@ -12,11 +12,7 @@ import io.github.setheclark.intellij.managers.adb.AdbManager
 import io.github.setheclark.intellij.managers.network.NetworkEventProcessor
 import io.github.setheclark.intellij.managers.server.MessageRouter
 import io.github.setheclark.intellij.managers.server.ServerManager
-import io.github.setheclark.intellij.services.FloconApplicationService
-import io.github.setheclark.intellij.services.FloconServerFactory
-import io.github.setheclark.intellij.services.ProcessExecutor
-import io.github.setheclark.intellij.services.ServerFactory
-import io.github.setheclark.intellij.services.SystemProcessExecutor
+import io.github.setheclark.intellij.services.*
 import kotlinx.serialization.json.Json
 
 @SingleIn(AppScope::class)
@@ -44,11 +40,11 @@ interface AppGraph : ProjectGraph.Factory {
     // Infrastructure providers
     @Provides
     @SingleIn(AppScope::class)
-    fun provideProcessExecutor(): ProcessExecutor = SystemProcessExecutor()
+    fun provideProcessExecutor(impl: SystemProcessExecutor): ProcessExecutor = impl
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideServerFactory(): ServerFactory = FloconServerFactory()
+    fun provideServerFactory(impl: FloconServerFactory): ServerFactory = impl
 
     @Provides
     @SingleIn(AppScope::class)

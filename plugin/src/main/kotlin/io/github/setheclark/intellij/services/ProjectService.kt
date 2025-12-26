@@ -32,7 +32,6 @@ class FloconProjectService(private val project: Project) : Disposable {
     val projectGraph: ProjectGraph = appService.appGraph.createProjectGraph(
         project = project,
         projectService = this,
-        appService = appService,
     )
 
     // Delegate network calls to app-scoped repository (via appGraph to ensure singleton)

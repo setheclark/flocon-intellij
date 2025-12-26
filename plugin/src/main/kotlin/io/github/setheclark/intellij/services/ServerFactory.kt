@@ -2,6 +2,7 @@ package io.github.setheclark.intellij.services
 
 import com.flocon.data.remote.server.Server
 import com.flocon.data.remote.server.ServerJvm
+import dev.zacsweers.metro.Inject
 import kotlinx.serialization.json.Json
 
 /**
@@ -20,6 +21,7 @@ interface ServerFactory {
 /**
  * Default implementation that creates a real ServerJvm instance.
  */
+@Inject
 class FloconServerFactory : ServerFactory {
     override fun createServer(json: Json): Server {
         return ServerJvm(json)
