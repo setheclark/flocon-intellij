@@ -1,9 +1,6 @@
 package io.github.setheclark.intellij.di
 
-import dev.zacsweers.metro.AppScope
-import dev.zacsweers.metro.DependencyGraph
-import dev.zacsweers.metro.Provides
-import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metro.*
 import io.github.setheclark.intellij.data.DeviceRepository
 import io.github.setheclark.intellij.data.DeviceRepositoryImpl
 import io.github.setheclark.intellij.data.NetworkCallRepository
@@ -12,12 +9,16 @@ import io.github.setheclark.intellij.managers.adb.AdbManager
 import io.github.setheclark.intellij.managers.network.NetworkEventProcessor
 import io.github.setheclark.intellij.managers.server.MessageRouter
 import io.github.setheclark.intellij.managers.server.ServerManager
-import io.github.setheclark.intellij.services.*
+import io.github.setheclark.intellij.process.ProcessExecutor
+import io.github.setheclark.intellij.process.SystemProcessExecutor
+import io.github.setheclark.intellij.services.FloconServerFactory
+import io.github.setheclark.intellij.services.ServerFactory
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 
 @SingleIn(AppScope::class)
 @DependencyGraph
-interface AppGraph : ProjectGraph.Factory {
+interface AppGraph : UiGraph.Factory {
 
     // Managers
     val adbManager: AdbManager
@@ -29,22 +30,17 @@ interface AppGraph : ProjectGraph.Factory {
     val deviceRepository: DeviceRepository
     val networkCallRepository: NetworkCallRepository
 
-    @Provides
-    @SingleIn(AppScope::class)
-    fun bindDeviceRepository(impl: DeviceRepositoryImpl): DeviceRepository = impl
+    @Binds
+    val DeviceRepositoryImpl.bind: DeviceRepository
 
-    @Provides
-    @SingleIn(AppScope::class)
-    fun bindNetworkCallRepository(impl: NetworkCallRepositoryImpl): NetworkCallRepository = impl
+    @Binds
+    val NetworkCallRepositoryImpl.bind: NetworkCallRepository
 
-    // Infrastructure providers
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideProcessExecutor(impl: SystemProcessExecutor): ProcessExecutor = impl
+    @Binds
+    val SystemProcessExecutor.bind: ProcessExecutor
 
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideServerFactory(impl: FloconServerFactory): ServerFactory = impl
+    @Binds
+    val FloconServerFactory.bind: ServerFactory
 
     @Provides
     @SingleIn(AppScope::class)
@@ -55,6 +51,8 @@ interface AppGraph : ProjectGraph.Factory {
 
     @DependencyGraph.Factory
     fun interface Factory {
-        fun create(@Provides applicationService: FloconApplicationService): AppGraph
+        fun create(
+            @Provides @AppCoroutineScope scope: CoroutineScope,
+        ): AppGraph
     }
 }

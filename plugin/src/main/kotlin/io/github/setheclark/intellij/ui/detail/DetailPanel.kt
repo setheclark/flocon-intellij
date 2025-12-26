@@ -1,35 +1,15 @@
 package io.github.setheclark.intellij.ui.detail
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.editor.ex.EditorEx
-import com.intellij.openapi.fileTypes.FileType
-import com.intellij.openapi.fileTypes.FileTypeManager
-import com.intellij.openapi.fileTypes.PlainTextFileType
-import com.intellij.openapi.project.Project
-import com.intellij.ui.EditorTextField
 import com.intellij.ui.JBColor
-import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
-import com.intellij.ui.components.JBTextArea
-import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.domain.models.NetworkCallEntry
-import io.github.setheclark.intellij.services.FloconProjectService
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import io.github.setheclark.intellij.ui.UiStateManager
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import java.awt.BorderLayout
-import java.awt.Font
-import java.time.Instant
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
@@ -39,7 +19,7 @@ import javax.swing.SwingUtilities
  */
 @Inject
 class DetailPanel(
-    private val floconService: FloconProjectService,
+    private val uiStateManager: UiStateManager,
     private val timingPanel: TimingPanel,
     private val requestBodyPanel: BodyPanel,
     private val responseBodyPanel: BodyPanel,
@@ -83,7 +63,7 @@ class DetailPanel(
 
     private fun observeSelectedCall() {
         scope.launch {
-            floconService.selectedCall.collectLatest { call ->
+            uiStateManager.selectedCall.collectLatest { call ->
                 SwingUtilities.invokeLater {
                     if (call != null) {
                         updateDetails(call)

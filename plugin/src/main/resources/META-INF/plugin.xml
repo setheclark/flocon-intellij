@@ -29,31 +29,14 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Tool Window -->
         <toolWindow
-            id="Network Inspector"
-            anchor="bottom"
-            icon="/icons/icon.svg"
-            factoryClass="io.github.setheclark.intellij.ui.FloconToolWindowFactory"/>
+                id="Network Inspector"
+                anchor="bottom"
+                icon="/icons/icon.svg"
+                factoryClass="io.github.setheclark.intellij.ui.FloconToolWindowFactory"/>
 
-        <!-- Project Service - manages server lifecycle per project -->
-        <projectService
-            serviceImplementation="io.github.setheclark.intellij.services.FloconProjectService"/>
-
-        <!-- Application Service - shared across all projects -->
         <applicationService
-            serviceImplementation="io.github.setheclark.intellij.services.FloconApplicationService"/>
+                serviceImplementation="io.github.setheclark.intellij.services.ApplicationService"/>
 
     </extensions>
-
-    <actions>
-        <group id="Flocon.ToolbarActions" text="Flocon Actions">
-            <action
-                id="Flocon.ClearAll"
-                class="io.github.setheclark.intellij.ui.actions.ClearAllAction"
-                text="Clear All"
-                description="Clear all captured network traffic"
-                icon="AllIcons.Actions.GC"/>
-        </group>
-    </actions>
 </idea-plugin>

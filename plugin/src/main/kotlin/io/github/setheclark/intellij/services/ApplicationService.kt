@@ -6,9 +6,7 @@ import com.intellij.openapi.components.Service
 import dev.zacsweers.metro.createGraphFactory
 import io.github.openflocon.domain.Constant
 import io.github.setheclark.intellij.di.AppGraph
-import io.github.setheclark.intellij.domain.models.ConnectedDevice
-import io.github.setheclark.intellij.domain.models.ServerState
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * Application-level service for Flocon plugin.
@@ -16,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
  * The server is shared across all projects in the IDE.
  */
 @Service(Service.Level.APP)
-class FloconApplicationService : Disposable {
+class ApplicationService(scope: CoroutineScope) : Disposable {
 
     private val log = Logger.withTag("FloconApplicationService")
 
@@ -24,16 +22,10 @@ class FloconApplicationService : Disposable {
 
     init {
         log.i { "FloconApplicationService initialized" }
-        appGraph = createGraphFactory<AppGraph.Factory>().create(this)
+        appGraph = createGraphFactory<AppGraph.Factory>().create(scope)
+
+        startServer()
     }
-
-    // Delegate to ServerManager
-    val serverState: StateFlow<ServerState>
-        get() = appGraph.serverManager.serverState
-
-    // Delegate to DeviceRepository
-    val connectedDevices: StateFlow<Set<ConnectedDevice>>
-        get() = appGraph.deviceRepository.connectedDevices
 
     /**
      * Start the Flocon WebSocket server on the specified port.

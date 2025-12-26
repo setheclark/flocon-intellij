@@ -1,6 +1,8 @@
 package io.github.setheclark.intellij.data
 
+import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.domain.models.ConnectedDevice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +22,12 @@ interface DeviceRepository {
 }
 
 @Inject
+@SingleIn(AppScope::class)
 class DeviceRepositoryImpl : DeviceRepository {
+
+    init {
+        println("DeviceRepositoryImpl.init ${System.identityHashCode(this)}")
+    }
 
     private val _connectedDevices = MutableStateFlow<Set<ConnectedDevice>>(emptySet())
     override val connectedDevices: StateFlow<Set<ConnectedDevice>> = _connectedDevices.asStateFlow()

@@ -2,15 +2,8 @@ package io.github.setheclark.intellij.ui
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionToolbar
-import com.intellij.openapi.actionSystem.ActionUpdateThread
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.components.service
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.JBColor
@@ -19,29 +12,18 @@ import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.domain.models.ConnectedDevice
-import io.github.setheclark.intellij.domain.models.NetworkFilter
-import io.github.setheclark.intellij.domain.models.ServerState
-import io.github.setheclark.intellij.domain.models.StatusFilter
-import io.github.setheclark.intellij.domain.models.AdbStatus
+import io.github.setheclark.intellij.data.DeviceRepository
+import io.github.setheclark.intellij.domain.models.*
 import io.github.setheclark.intellij.managers.adb.AdbManager
-import io.github.setheclark.intellij.services.FloconApplicationService
-import io.github.setheclark.intellij.services.FloconProjectService
+import io.github.setheclark.intellij.managers.server.ServerManager
+import io.github.setheclark.intellij.services.ApplicationService
 import io.github.setheclark.intellij.ui.detail.DetailPanel
 import io.github.setheclark.intellij.ui.list.NetworkCallListPanel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.FlowLayout
-import javax.swing.BorderFactory
-import javax.swing.DefaultComboBoxModel
-import javax.swing.JComboBox
-import javax.swing.JPanel
-import javax.swing.SwingUtilities
+import javax.swing.*
 import javax.swing.event.DocumentEvent
 
 /**
@@ -50,8 +32,9 @@ import javax.swing.event.DocumentEvent
  */
 @Inject
 class NetworkInspectorPanel(
-    private val floconService: FloconProjectService,
-    private val appService: FloconApplicationService,
+    private val uiStateManager: UiStateManager,
+    private val serverManager: ServerManager,
+    private val deviceRepository: DeviceRepository,
     private val adbManager: AdbManager,
     private val networkCallListPanel: NetworkCallListPanel,
     private val detailPanel: DetailPanel,
@@ -151,7 +134,7 @@ class NetworkInspectorPanel(
         val deviceItem = deviceComboBox.selectedItem as? DeviceFilterItem
         val deviceFilter = deviceItem?.deviceId
 
-        floconService.updateFilter(
+        uiStateManager.updateFilter(
             NetworkFilter(
                 searchText = searchText,
                 methodFilter = null,
@@ -163,7 +146,7 @@ class NetworkInspectorPanel(
 
     private fun observeConnectedDevices() {
         scope.launch {
-            appService.connectedDevices.collectLatest { devices ->
+            deviceRepository.connectedDevices.collectLatest { devices ->
                 SwingUtilities.invokeLater {
                     updateDeviceComboBox(devices)
                 }
@@ -271,7 +254,7 @@ class NetworkInspectorPanel(
 
     private fun observeSelectedCall() {
         scope.launch {
-            floconService.selectedCall.collectLatest { call ->
+            uiStateManager.selectedCall.collectLatest { call ->
                 SwingUtilities.invokeLater {
                     if (call != null) {
                         // Show detail panel when a call is selected
@@ -289,7 +272,7 @@ class NetworkInspectorPanel(
 
     private fun observeServerState() {
         scope.launch {
-            floconService.serverState.collectLatest { state ->
+            serverManager.serverState.collectLatest { state ->
                 SwingUtilities.invokeLater {
                     updateStatusLabel(state)
                 }
@@ -319,7 +302,7 @@ class NetworkInspectorPanel(
         AllIcons.Actions.GC
     ) {
         override fun actionPerformed(e: AnActionEvent) {
-            floconService.clearAll()
+            uiStateManager.clearAll()
             networkCallListPanel.resetAutoScroll()
         }
 
@@ -348,7 +331,7 @@ class NetworkInspectorPanel(
 
     private inner class StartStopServerAction : AnAction() {
         override fun update(e: AnActionEvent) {
-            val state = floconService.serverState.value
+            val state = serverManager.serverState.value
             when (state) {
                 is ServerState.Running -> {
                     e.presentation.text = "Stop Server"
@@ -378,8 +361,8 @@ class NetworkInspectorPanel(
         }
 
         override fun actionPerformed(e: AnActionEvent) {
-            val appService = service<FloconApplicationService>()
-            when (floconService.serverState.value) {
+            val appService = service<ApplicationService>()
+            when (serverManager.serverState.value) {
                 is ServerState.Running -> appService.stopServer()
                 is ServerState.Stopped, is ServerState.Error -> appService.startServer()
                 else -> { /* ignore */

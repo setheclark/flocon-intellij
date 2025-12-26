@@ -1,6 +1,8 @@
 package io.github.setheclark.intellij.data
 
+import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.domain.models.NetworkCallEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +21,7 @@ interface NetworkCallRepository {
 }
 
 @Inject
+@SingleIn(AppScope::class)
 class NetworkCallRepositoryImpl : NetworkCallRepository {
 
     private val _networkCalls = MutableStateFlow<List<NetworkCallEntry>>(emptyList())

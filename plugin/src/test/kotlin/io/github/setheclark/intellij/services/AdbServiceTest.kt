@@ -1,5 +1,6 @@
 package io.github.setheclark.intellij.services
 
+import io.github.setheclark.intellij.process.ProcessResult
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 

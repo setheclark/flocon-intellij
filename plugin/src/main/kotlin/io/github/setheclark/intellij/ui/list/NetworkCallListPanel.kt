@@ -1,23 +1,17 @@
 package io.github.setheclark.intellij.ui.list
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.service
-import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.data.NetworkCallRepository
 import io.github.setheclark.intellij.domain.models.NetworkCallEntry
-import io.github.setheclark.intellij.domain.models.NetworkFilter
-import io.github.setheclark.intellij.services.FloconProjectService
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import io.github.setheclark.intellij.ui.UiStateManager
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.event.KeyAdapter
@@ -27,12 +21,7 @@ import java.awt.event.MouseEvent
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import javax.swing.JPanel
-import javax.swing.JTable
-import javax.swing.ListSelectionModel
-import javax.swing.SortOrder
-import javax.swing.SwingUtilities
-import javax.swing.RowSorter
+import javax.swing.*
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableRowSorter
@@ -42,7 +31,8 @@ import javax.swing.table.TableRowSorter
  */
 @Inject
 class NetworkCallListPanel(
-    private val floconService: FloconProjectService,
+    private val uiStateManager: UiStateManager,
+    private val networkCallRepository: NetworkCallRepository,
 ) : JPanel(BorderLayout()), Disposable {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -118,12 +108,12 @@ class NetworkCallListPanel(
                         userHasInteracted = true
                         val modelRow = convertRowIndexToModel(viewRow)
                         if (modelRow >= 0 && modelRow < tableModel.calls.size) {
-                            floconService.selectCall(tableModel.calls[modelRow])
+                            uiStateManager.selectCall(tableModel.calls[modelRow])
                         } else {
-                            floconService.selectCall(null)
+                            uiStateManager.selectCall(null)
                         }
                     } else {
-                        floconService.selectCall(null)
+                        uiStateManager.selectCall(null)
                     }
                 }
             }
@@ -136,7 +126,7 @@ class NetworkCallListPanel(
                         if (clickedRow >= 0 && clickedRow == selectedRow) {
                             // Double-clicked the selected row - deselect
                             clearSelection()
-                            floconService.selectCall(null)
+                            uiStateManager.selectCall(null)
                         }
                     }
                 }
@@ -147,7 +137,7 @@ class NetworkCallListPanel(
                 override fun keyPressed(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ESCAPE) {
                         clearSelection()
-                        floconService.selectCall(null)
+                        uiStateManager.selectCall(null)
                     }
                 }
             })
@@ -208,8 +198,8 @@ class NetworkCallListPanel(
     private fun observeNetworkCalls() {
         scope.launch {
             combine(
-                floconService.networkCalls,
-                floconService.filter
+                networkCallRepository.networkCalls,
+                uiStateManager.filter
             ) { calls, filter ->
                 calls.applyFilter(filter)
             }.collectLatest { filteredCalls ->

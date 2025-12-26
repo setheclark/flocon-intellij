@@ -5,7 +5,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.domain.models.AdbStatus
-import io.github.setheclark.intellij.services.ProcessExecutor
+import io.github.setheclark.intellij.process.ProcessExecutor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

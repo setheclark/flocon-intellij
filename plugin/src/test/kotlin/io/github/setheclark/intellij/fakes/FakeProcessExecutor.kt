@@ -1,7 +1,7 @@
 package io.github.setheclark.intellij.fakes
 
-import io.github.setheclark.intellij.services.ProcessExecutor
-import io.github.setheclark.intellij.services.ProcessResult
+import io.github.setheclark.intellij.process.ProcessExecutor
+import io.github.setheclark.intellij.process.ProcessResult
 
 /**
  * Fake implementation of ProcessExecutor for testing.
