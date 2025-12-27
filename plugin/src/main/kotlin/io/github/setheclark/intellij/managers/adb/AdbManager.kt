@@ -4,13 +4,12 @@ import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.domain.models.AdbStatus
 import io.github.setheclark.intellij.process.ProcessExecutor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,12 +25,11 @@ import java.io.File
 @SingleIn(AppScope::class)
 @Inject
 class AdbManager(
+    @AppCoroutineScope private val scope: CoroutineScope,
     private val processExecutor: ProcessExecutor,
 ) {
     private val log = Logger.withTag("AdbManager")
 
-    // Lazily create scope to avoid coroutine ServiceLoader issues during DI initialization
-    private val scope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
     private var adbForwardJob: Job? = null
     private var adbPath: String? = null
 
@@ -71,7 +69,7 @@ class AdbManager(
         }
 
         log.i { "Starting ADB reverse forwarding" }
-        adbForwardJob = scope.launch {
+        adbForwardJob = scope.launch(Dispatchers.IO) {
             while (isActive) {
                 try {
                     executeAdbReverse(path, websocketPort)
@@ -191,6 +189,6 @@ class AdbManager(
     fun dispose() {
         log.i { "AdbManager disposing" }
         stopAdbForwarding()
-        scope.cancel()
+        // Note: Don't cancel scope - it's the app scope, managed by ApplicationService
     }
 }

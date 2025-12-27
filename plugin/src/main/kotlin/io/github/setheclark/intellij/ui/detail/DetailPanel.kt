@@ -1,35 +1,33 @@
 package io.github.setheclark.intellij.ui.detail
 
-import com.intellij.openapi.Disposable
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTabbedPane
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.di.UiCoroutineScope
 import io.github.setheclark.intellij.domain.models.NetworkCallEntry
-import io.github.setheclark.intellij.ui.mvi.NetworkInspectorViewModel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 
 /**
  * Panel displaying detailed information about a selected network call.
  * Contains tabs for Headers, Request Body, Response Body, and Timing.
  *
- * Observes [NetworkInspectorViewModel.state] for the selected call.
+ * Observes [DetailPanelViewModel] for the selected call.
+ *
+ * Uses injected [UiCoroutineScope] for coroutines - lifecycle managed by [io.github.setheclark.intellij.ui.UiScopeDisposable].
  */
 @Inject
 class DetailPanel(
-    private val viewModel: NetworkInspectorViewModel,
+    @param:UiCoroutineScope private val scope: CoroutineScope,
+    private val viewModel: DetailPanelViewModel,
     private val timingPanel: TimingPanel,
     private val requestBodyPanel: BodyPanel,
     private val responseBodyPanel: BodyPanel,
-) : JPanel(BorderLayout()), Disposable {
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+) : JPanel(BorderLayout()) {
 
     private val tabbedPane = JBTabbedPane()
     private val headersPanel = HeadersPanel()
@@ -67,19 +65,14 @@ class DetailPanel(
 
     private fun observeSelectedCall() {
         scope.launch {
-            viewModel.state
-                .map { it.selectedCall }
-                .distinctUntilChanged()
-                .collectLatest { call ->
-                    SwingUtilities.invokeLater {
-                        if (call != null) {
-                            updateDetails(call)
-                            showDetails()
-                        } else {
-                            showEmpty()
-                        }
-                    }
+            viewModel.selectedCall.collectLatest { call ->
+                if (call != null) {
+                    updateDetails(call)
+                    showDetails()
+                } else {
+                    showEmpty()
                 }
+            }
         }
     }
 
@@ -88,9 +81,5 @@ class DetailPanel(
         requestBodyPanel.showBody(call.request.body, call.request.contentType)
         responseBodyPanel.showBody(call.response?.body, call.response?.contentType)
         timingPanel.showTiming(call)
-    }
-
-    override fun dispose() {
-        scope.cancel()
     }
 }

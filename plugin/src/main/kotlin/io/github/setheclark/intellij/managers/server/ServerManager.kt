@@ -6,14 +6,12 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.data.DeviceRepository
+import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.domain.models.ConnectedDevice
 import io.github.setheclark.intellij.domain.models.ServerState
 import io.github.setheclark.intellij.managers.adb.AdbManager
 import io.github.setheclark.intellij.services.ServerFactory
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +25,7 @@ import kotlinx.serialization.json.Json
 @SingleIn(AppScope::class)
 @Inject
 class ServerManager(
+    @AppCoroutineScope private val scope: CoroutineScope,
     private val serverFactory: ServerFactory,
     private val messageRouter: MessageRouter,
     private val deviceRepository: DeviceRepository,
@@ -34,9 +33,6 @@ class ServerManager(
     private val json: Json,
 ) {
     private val log = Logger.withTag("ServerManager")
-
-    // Lazily create scope to avoid coroutine ServiceLoader issues during DI initialization
-    private val scope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
     private var server: Server? = null
 
@@ -142,6 +138,6 @@ class ServerManager(
     fun dispose() {
         log.i { "ServerManager disposing" }
         stopServer()
-        scope.cancel()
+        // Note: Don't cancel scope - it's the app scope, managed by ApplicationService
     }
 }

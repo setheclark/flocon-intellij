@@ -14,17 +14,18 @@ import io.github.setheclark.intellij.di.appGraph
 class FloconToolWindowFactory : ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-
-        val networkInspectorPanel = project.appGraph.create(project)
-            .networkInspectorPanel
+        val uiGraph = project.appGraph.create(project)
 
         val contentFactory = ContentFactory.getInstance()
         val content = contentFactory.createContent(
-            networkInspectorPanel,
+            uiGraph.networkInspectorPanel,
             "Network",
             false
         )
         content.isCloseable = false
+
+        // Register UiScopeDisposable - cancels all UI coroutines when tool window closes
+        content.setDisposer(uiGraph.uiScopeDisposable)
 
         toolWindow.contentManager.addContent(content)
     }

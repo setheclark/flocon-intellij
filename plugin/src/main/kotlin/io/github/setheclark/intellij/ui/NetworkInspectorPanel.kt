@@ -1,8 +1,8 @@
 package io.github.setheclark.intellij.ui
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.JBColor
@@ -11,19 +11,25 @@ import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.di.UiCoroutineScope
 import io.github.setheclark.intellij.domain.models.*
 import io.github.setheclark.intellij.ui.detail.DetailPanel
 import io.github.setheclark.intellij.ui.list.NetworkCallListPanel
 import io.github.setheclark.intellij.ui.mvi.NetworkInspectorIntent
 import io.github.setheclark.intellij.ui.mvi.NetworkInspectorState
 import io.github.setheclark.intellij.ui.mvi.NetworkInspectorViewModel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.FlowLayout
-import javax.swing.*
+import javax.swing.BorderFactory
+import javax.swing.DefaultComboBoxModel
+import javax.swing.JComboBox
+import javax.swing.JPanel
 import javax.swing.event.DocumentEvent
 
 /**
@@ -32,15 +38,17 @@ import javax.swing.event.DocumentEvent
  *
  * Follows MVI pattern: observes [NetworkInspectorViewModel.state] and
  * dispatches [NetworkInspectorIntent]s for user actions.
+ *
+ * Uses injected [UiCoroutineScope] for coroutines - lifecycle managed by [UiScopeDisposable].
  */
 @Inject
 class NetworkInspectorPanel(
+    @param:UiCoroutineScope private val scope: CoroutineScope,
     private val viewModel: NetworkInspectorViewModel,
     private val networkCallListPanel: NetworkCallListPanel,
     private val detailPanel: DetailPanel,
-) : SimpleToolWindowPanel(true, true), Disposable {
+) : SimpleToolWindowPanel(true, true) {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val statusLabel = JBLabel()
     private val warningBanner = createWarningBanner()
     private var mainSplitter: JBSplitter
@@ -160,14 +168,12 @@ class NetworkInspectorPanel(
         }
     }
 
-    private inline fun <reified T> NetworkInspectorViewModel.latestUpdate(
-        crossinline transform: (NetworkInspectorState) -> T,
-        crossinline block: (T) -> Unit,
+    private fun <T> NetworkInspectorViewModel.latestUpdate(
+        transform: (NetworkInspectorState) -> T,
+        block: (T) -> Unit,
     ) {
-        scope.launch {
-            state.map(transform).distinctUntilChanged().collectLatest { t ->
-                SwingUtilities.invokeLater { block(t) }
-            }
+        scope.launch(Dispatchers.EDT) {
+            state.map(transform).distinctUntilChanged().collectLatest(block)
         }
     }
 
@@ -266,10 +272,6 @@ class NetworkInspectorPanel(
             is ServerState.Stopping -> "Stopping server..."
             is ServerState.Error -> "Error: ${state.message}"
         }
-    }
-
-    override fun dispose() {
-        scope.cancel()
     }
 
     // Action implementations - dispatch intents to ViewModel

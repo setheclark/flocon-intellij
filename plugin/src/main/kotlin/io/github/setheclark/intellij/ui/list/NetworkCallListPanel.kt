@@ -1,18 +1,16 @@
 package io.github.setheclark.intellij.ui.list
 
-import com.intellij.openapi.Disposable
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.di.UiCoroutineScope
 import io.github.setheclark.intellij.domain.models.NetworkCallEntry
-import io.github.setheclark.intellij.ui.mvi.NetworkInspectorIntent
-import io.github.setheclark.intellij.ui.mvi.NetworkInspectorViewModel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.event.KeyAdapter
@@ -30,15 +28,15 @@ import javax.swing.table.TableRowSorter
 /**
  * Panel displaying the list of captured network calls in a table format.
  *
- * Observes [NetworkInspectorViewModel.state] for filtered calls and auto-scroll settings.
- * Dispatches [NetworkInspectorIntent]s for selection changes.
+ * Observes [NetworkCallListViewModel] for filtered calls and auto-scroll settings.
+ *
+ * Uses injected [UiCoroutineScope] for coroutines - lifecycle managed by [io.github.setheclark.intellij.ui.UiScopeDisposable].
  */
 @Inject
 class NetworkCallListPanel(
-    private val viewModel: NetworkInspectorViewModel,
-) : JPanel(BorderLayout()), Disposable {
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    @UiCoroutineScope private val scope: CoroutineScope,
+    private val viewModel: NetworkCallListViewModel,
+) : JPanel(BorderLayout()) {
 
     private val tableModel = NetworkCallTableModel()
     private val table = JBTable(tableModel)
@@ -106,15 +104,15 @@ class NetworkCallListPanel(
                     val viewRow = selectedRow
                     if (viewRow >= 0) {
                         // User selected an item - disable auto-scrolling
-                        viewModel.dispatch(NetworkInspectorIntent.DisableAutoScroll)
+                        viewModel.disableAutoScroll()
                         val modelRow = convertRowIndexToModel(viewRow)
                         if (modelRow >= 0 && modelRow < tableModel.calls.size) {
-                            viewModel.dispatch(NetworkInspectorIntent.SelectCall(tableModel.calls[modelRow]))
+                            viewModel.selectCall(tableModel.calls[modelRow])
                         } else {
-                            viewModel.dispatch(NetworkInspectorIntent.SelectCall(null))
+                            viewModel.selectCall(null)
                         }
                     } else {
-                        viewModel.dispatch(NetworkInspectorIntent.SelectCall(null))
+                        viewModel.selectCall(null)
                     }
                 }
             }
@@ -127,7 +125,7 @@ class NetworkCallListPanel(
                         if (clickedRow >= 0 && clickedRow == selectedRow) {
                             // Double-clicked the selected row - deselect
                             clearSelection()
-                            viewModel.dispatch(NetworkInspectorIntent.SelectCall(null))
+                            viewModel.selectCall(null)
                         }
                     }
                 }
@@ -138,7 +136,7 @@ class NetworkCallListPanel(
                 override fun keyPressed(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ESCAPE) {
                         clearSelection()
-                        viewModel.dispatch(NetworkInspectorIntent.SelectCall(null))
+                        viewModel.selectCall(null)
                     }
                 }
             })
@@ -151,13 +149,13 @@ class NetworkCallListPanel(
         scrollPane!!.verticalScrollBar.addAdjustmentListener { e ->
             if (e.valueIsAdjusting) {
                 // User is actively dragging the scrollbar
-                viewModel.dispatch(NetworkInspectorIntent.DisableAutoScroll)
+                viewModel.disableAutoScroll()
             }
         }
 
         // Also track mouse wheel scrolling
         scrollPane!!.addMouseWheelListener {
-            viewModel.dispatch(NetworkInspectorIntent.DisableAutoScroll)
+            viewModel.disableAutoScroll()
         }
 
         add(scrollPane, BorderLayout.CENTER)
@@ -174,34 +172,33 @@ class NetworkCallListPanel(
     }
 
     private fun observeState() {
-        // Observe filtered calls from ViewModel
+        // Observe filtered calls and auto-scroll state from ViewModel
         scope.launch {
-            viewModel.state
-                .map { it.filteredCalls }
-                .distinctUntilChanged()
-                .collectLatest { filteredCalls ->
-                    val autoScrollEnabled = viewModel.state.value.autoScrollEnabled
-                    SwingUtilities.invokeLater {
-                        val newCallCount = filteredCalls.size
-                        val hasNewItems = newCallCount > previousCallCount
+            combine(
+                viewModel.filteredCalls,
+                viewModel.autoScrollEnabled
+            ) { calls, autoScroll ->
+                calls to autoScroll
+            }.collectLatest { (filteredCalls, autoScrollEnabled) ->
+                val newCallCount = filteredCalls.size
+                val hasNewItems = newCallCount > previousCallCount
 
-                        // Preserve selection by call ID
-                        val selectedCallId = getSelectedCallId()
-                        tableModel.updateCalls(filteredCalls)
+                // Preserve selection by call ID
+                val selectedCallId = getSelectedCallId()
+                tableModel.updateCalls(filteredCalls)
 
-                        // Restore selection if the call is still in the list
-                        if (selectedCallId != null) {
-                            restoreSelection(selectedCallId)
-                        }
-
-                        // Auto-scroll to show new entries if enabled
-                        if (hasNewItems && autoScrollEnabled && isSortedByTime()) {
-                            scrollToShowNewEntries()
-                        }
-
-                        previousCallCount = newCallCount
-                    }
+                // Restore selection if the call is still in the list
+                if (selectedCallId != null) {
+                    restoreSelection(selectedCallId)
                 }
+
+                // Auto-scroll to show new entries if enabled
+                if (hasNewItems && autoScrollEnabled && isSortedByTime()) {
+                    scrollToShowNewEntries()
+                }
+
+                previousCallCount = newCallCount
+            }
         }
     }
 
@@ -256,10 +253,6 @@ class NetworkCallListPanel(
                 table.setRowSelectionInterval(viewRow, viewRow)
             }
         }
-    }
-
-    override fun dispose() {
-        scope.cancel()
     }
 }
 
