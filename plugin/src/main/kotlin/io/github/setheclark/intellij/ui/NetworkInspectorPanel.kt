@@ -3,7 +3,6 @@ package io.github.setheclark.intellij.ui
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
-import com.intellij.openapi.components.service
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.JBColor
@@ -12,15 +11,16 @@ import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.data.DeviceRepository
 import io.github.setheclark.intellij.domain.models.*
-import io.github.setheclark.intellij.managers.adb.AdbManager
-import io.github.setheclark.intellij.managers.server.ServerManager
-import io.github.setheclark.intellij.services.ApplicationService
 import io.github.setheclark.intellij.ui.detail.DetailPanel
 import io.github.setheclark.intellij.ui.list.NetworkCallListPanel
+import io.github.setheclark.intellij.ui.mvi.NetworkInspectorIntent
+import io.github.setheclark.intellij.ui.mvi.NetworkInspectorState
+import io.github.setheclark.intellij.ui.mvi.NetworkInspectorViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import java.awt.BorderLayout
 import java.awt.FlowLayout
 import javax.swing.*
@@ -29,13 +29,13 @@ import javax.swing.event.DocumentEvent
 /**
  * Main panel for the Flocon Network Inspector tool window.
  * Contains the toolbar, network call list, and detail panel.
+ *
+ * Follows MVI pattern: observes [NetworkInspectorViewModel.state] and
+ * dispatches [NetworkInspectorIntent]s for user actions.
  */
 @Inject
 class NetworkInspectorPanel(
-    private val uiStateManager: UiStateManager,
-    private val serverManager: ServerManager,
-    private val deviceRepository: DeviceRepository,
-    private val adbManager: AdbManager,
+    private val viewModel: NetworkInspectorViewModel,
     private val networkCallListPanel: NetworkCallListPanel,
     private val detailPanel: DetailPanel,
 ) : SimpleToolWindowPanel(true, true), Disposable {
@@ -62,11 +62,7 @@ class NetworkInspectorPanel(
         // Setup filter listeners
         setupFilterListeners()
 
-        // Observe connected devices for filter dropdown
-        observeConnectedDevices()
-
         // Create main content with split pane (horizontal: list on left, details on right)
-        // Detail panel gets full vertical height for easier reading
         mainSplitter = JBSplitter(false, 0.35f).apply {
             firstComponent = networkCallListPanel
             secondComponent = null  // Hidden initially until a request is selected
@@ -82,12 +78,8 @@ class NetworkInspectorPanel(
 
         setContent(contentPanel)
 
-        // Observe server state for status bar
-        observeServerState()
-        // Observe ADB status for warning banner
-        observeAdbStatus()
-        // Observe selected call to show/hide detail panel
-        observeSelectedCall()
+        // Observe state from ViewModel
+        observeState()
     }
 
     private fun createToolbarPanel(): JPanel {
@@ -122,34 +114,59 @@ class NetworkInspectorPanel(
     private fun setupFilterListeners() {
         searchField.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(e: DocumentEvent) {
-                updateFilter()
+                dispatchFilterUpdate()
             }
         })
 
-        deviceComboBox.addActionListener { updateFilter() }
+        deviceComboBox.addActionListener { dispatchFilterUpdate() }
     }
 
-    private fun updateFilter() {
+    private fun dispatchFilterUpdate() {
         val searchText = searchField.text.trim()
         val deviceItem = deviceComboBox.selectedItem as? DeviceFilterItem
         val deviceFilter = deviceItem?.deviceId
 
-        uiStateManager.updateFilter(
-            NetworkFilter(
-                searchText = searchText,
-                methodFilter = null,
-                statusFilter = StatusFilter.ALL,
-                deviceFilter = deviceFilter,
+        viewModel.dispatch(
+            NetworkInspectorIntent.UpdateFilter(
+                NetworkFilter(
+                    searchText = searchText,
+                    methodFilter = null,
+                    statusFilter = StatusFilter.ALL,
+                    deviceFilter = deviceFilter,
+                )
             )
         )
     }
 
-    private fun observeConnectedDevices() {
+    private fun observeState() {
+        // Observe connected devices for filter dropdown
+        viewModel.latestUpdate(NetworkInspectorState::connectedDevices) { devices ->
+            updateDeviceComboBox(devices)
+        }
+
+        // Observe server state for status bar
+        viewModel.latestUpdate(NetworkInspectorState::serverState) { serverState ->
+            updateStatusLabel(serverState)
+        }
+
+        // Observe ADB status for warning banner
+        viewModel.latestUpdate(NetworkInspectorState::adbStatus) { status ->
+            updateWarningBanner(status)
+        }
+
+        // Observe selected call to show/hide detail panel
+        viewModel.latestUpdate(NetworkInspectorState::isDetailVisible) { isVisible ->
+            mainSplitter.secondComponent = if (isVisible) detailPanel else null
+        }
+    }
+
+    private inline fun <reified T> NetworkInspectorViewModel.latestUpdate(
+        crossinline transform: (NetworkInspectorState) -> T,
+        crossinline block: (T) -> Unit,
+    ) {
         scope.launch {
-            deviceRepository.connectedDevices.collectLatest { devices ->
-                SwingUtilities.invokeLater {
-                    updateDeviceComboBox(devices)
-                }
+            state.map(transform).distinctUntilChanged().collectLatest { t ->
+                SwingUtilities.invokeLater { block(t) }
             }
         }
     }
@@ -201,8 +218,8 @@ class NetworkInspectorPanel(
     }
 
     private fun createWarningBanner(): JPanel {
-        val warningColor = JBColor(0xFFF3CD, 0x5C4813) // Yellow warning background
-        val textColor = JBColor(0x856404, 0xFFE69C)    // Dark text on light, light text on dark
+        val warningColor = JBColor(0xFFF3CD, 0x5C4813)
+        val textColor = JBColor(0x856404, 0xFFE69C)
 
         return JPanel(FlowLayout(FlowLayout.LEFT)).apply {
             background = warningColor
@@ -210,7 +227,7 @@ class NetworkInspectorPanel(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor.border()),
                 JBUI.Borders.empty(8, 12)
             )
-            isVisible = false // Hidden by default
+            isVisible = false
 
             val iconLabel = JBLabel(AllIcons.General.Warning)
             val textLabel = JBLabel().apply {
@@ -220,18 +237,7 @@ class NetworkInspectorPanel(
             add(iconLabel)
             add(textLabel)
 
-            // Store text label for updates
             putClientProperty("textLabel", textLabel)
-        }
-    }
-
-    private fun observeAdbStatus() {
-        scope.launch {
-            adbManager.adbStatus.collectLatest { status ->
-                SwingUtilities.invokeLater {
-                    updateWarningBanner(status)
-                }
-            }
         }
     }
 
@@ -252,34 +258,6 @@ class NetworkInspectorPanel(
         warningBanner.repaint()
     }
 
-    private fun observeSelectedCall() {
-        scope.launch {
-            uiStateManager.selectedCall.collectLatest { call ->
-                SwingUtilities.invokeLater {
-                    if (call != null) {
-                        // Show detail panel when a call is selected
-                        if (mainSplitter.secondComponent == null) {
-                            mainSplitter.secondComponent = detailPanel
-                        }
-                    } else {
-                        // Hide detail panel when no call is selected
-                        mainSplitter.secondComponent = null
-                    }
-                }
-            }
-        }
-    }
-
-    private fun observeServerState() {
-        scope.launch {
-            serverManager.serverState.collectLatest { state ->
-                SwingUtilities.invokeLater {
-                    updateStatusLabel(state)
-                }
-            }
-        }
-    }
-
     private fun updateStatusLabel(state: ServerState) {
         statusLabel.text = when (state) {
             is ServerState.Stopped -> "Server stopped"
@@ -294,7 +272,7 @@ class NetworkInspectorPanel(
         scope.cancel()
     }
 
-    // Action implementations
+    // Action implementations - dispatch intents to ViewModel
 
     private inner class ClearAction : AnAction(
         "Clear All",
@@ -302,8 +280,7 @@ class NetworkInspectorPanel(
         AllIcons.Actions.GC
     ) {
         override fun actionPerformed(e: AnActionEvent) {
-            uiStateManager.clearAll()
-            networkCallListPanel.resetAutoScroll()
+            viewModel.dispatch(NetworkInspectorIntent.ClearAll)
         }
 
         override fun getActionUpdateThread() = ActionUpdateThread.BGT
@@ -315,15 +292,15 @@ class NetworkInspectorPanel(
         AllIcons.RunConfigurations.Scroll_down
     ) {
         override fun isSelected(e: AnActionEvent): Boolean {
-            return networkCallListPanel.isAutoScrollEnabled()
+            return viewModel.state.value.autoScrollEnabled
         }
 
         override fun setSelected(e: AnActionEvent, state: Boolean) {
             if (state) {
-                networkCallListPanel.enableAutoScroll()
+                viewModel.dispatch(NetworkInspectorIntent.EnableAutoScroll)
+            } else {
+                viewModel.dispatch(NetworkInspectorIntent.DisableAutoScroll)
             }
-            // When toggled off, we don't need to do anything -
-            // user interaction already disables auto-scroll
         }
 
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
@@ -331,8 +308,7 @@ class NetworkInspectorPanel(
 
     private inner class StartStopServerAction : AnAction() {
         override fun update(e: AnActionEvent) {
-            val state = serverManager.serverState.value
-            when (state) {
+            when (val state = viewModel.state.value.serverState) {
                 is ServerState.Running -> {
                     e.presentation.text = "Stop Server"
                     e.presentation.description = "Stop the Flocon server"
@@ -361,10 +337,9 @@ class NetworkInspectorPanel(
         }
 
         override fun actionPerformed(e: AnActionEvent) {
-            val appService = service<ApplicationService>()
-            when (serverManager.serverState.value) {
-                is ServerState.Running -> appService.stopServer()
-                is ServerState.Stopped, is ServerState.Error -> appService.startServer()
+            when (viewModel.state.value.serverState) {
+                is ServerState.Running -> viewModel.dispatch(NetworkInspectorIntent.StopServer)
+                is ServerState.Stopped, is ServerState.Error -> viewModel.dispatch(NetworkInspectorIntent.StartServer)
                 else -> { /* ignore */
                 }
             }

@@ -6,9 +6,11 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTabbedPane
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.domain.models.NetworkCallEntry
-import io.github.setheclark.intellij.ui.UiStateManager
+import io.github.setheclark.intellij.ui.mvi.NetworkInspectorViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import java.awt.BorderLayout
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
@@ -16,10 +18,12 @@ import javax.swing.SwingUtilities
 /**
  * Panel displaying detailed information about a selected network call.
  * Contains tabs for Headers, Request Body, Response Body, and Timing.
+ *
+ * Observes [NetworkInspectorViewModel.state] for the selected call.
  */
 @Inject
 class DetailPanel(
-    private val uiStateManager: UiStateManager,
+    private val viewModel: NetworkInspectorViewModel,
     private val timingPanel: TimingPanel,
     private val requestBodyPanel: BodyPanel,
     private val responseBodyPanel: BodyPanel,
@@ -63,16 +67,19 @@ class DetailPanel(
 
     private fun observeSelectedCall() {
         scope.launch {
-            uiStateManager.selectedCall.collectLatest { call ->
-                SwingUtilities.invokeLater {
-                    if (call != null) {
-                        updateDetails(call)
-                        showDetails()
-                    } else {
-                        showEmpty()
+            viewModel.state
+                .map { it.selectedCall }
+                .distinctUntilChanged()
+                .collectLatest { call ->
+                    SwingUtilities.invokeLater {
+                        if (call != null) {
+                            updateDetails(call)
+                            showDetails()
+                        } else {
+                            showEmpty()
+                        }
                     }
                 }
-            }
         }
     }
 

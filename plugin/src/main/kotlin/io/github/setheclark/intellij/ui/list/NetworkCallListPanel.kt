@@ -6,12 +6,13 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.data.NetworkCallRepository
 import io.github.setheclark.intellij.domain.models.NetworkCallEntry
-import io.github.setheclark.intellij.ui.UiStateManager
+import io.github.setheclark.intellij.ui.mvi.NetworkInspectorIntent
+import io.github.setheclark.intellij.ui.mvi.NetworkInspectorViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.event.KeyAdapter
@@ -28,11 +29,13 @@ import javax.swing.table.TableRowSorter
 
 /**
  * Panel displaying the list of captured network calls in a table format.
+ *
+ * Observes [NetworkInspectorViewModel.state] for filtered calls and auto-scroll settings.
+ * Dispatches [NetworkInspectorIntent]s for selection changes.
  */
 @Inject
 class NetworkCallListPanel(
-    private val uiStateManager: UiStateManager,
-    private val networkCallRepository: NetworkCallRepository,
+    private val viewModel: NetworkInspectorViewModel,
 ) : JPanel(BorderLayout()), Disposable {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -41,13 +44,11 @@ class NetworkCallListPanel(
     private val table = JBTable(tableModel)
     private var scrollPane: JBScrollPane? = null
 
-    // Track if user has interacted - stops auto-scroll
-    private var userHasInteracted = false
     private var previousCallCount = 0
 
     init {
         setupTable()
-        observeNetworkCalls()
+        observeState()
     }
 
     private fun setupTable() {
@@ -104,16 +105,16 @@ class NetworkCallListPanel(
                 if (!e.valueIsAdjusting) {
                     val viewRow = selectedRow
                     if (viewRow >= 0) {
-                        // User selected an item - stop auto-scrolling
-                        userHasInteracted = true
+                        // User selected an item - disable auto-scrolling
+                        viewModel.dispatch(NetworkInspectorIntent.DisableAutoScroll)
                         val modelRow = convertRowIndexToModel(viewRow)
                         if (modelRow >= 0 && modelRow < tableModel.calls.size) {
-                            uiStateManager.selectCall(tableModel.calls[modelRow])
+                            viewModel.dispatch(NetworkInspectorIntent.SelectCall(tableModel.calls[modelRow]))
                         } else {
-                            uiStateManager.selectCall(null)
+                            viewModel.dispatch(NetworkInspectorIntent.SelectCall(null))
                         }
                     } else {
-                        uiStateManager.selectCall(null)
+                        viewModel.dispatch(NetworkInspectorIntent.SelectCall(null))
                     }
                 }
             }
@@ -126,7 +127,7 @@ class NetworkCallListPanel(
                         if (clickedRow >= 0 && clickedRow == selectedRow) {
                             // Double-clicked the selected row - deselect
                             clearSelection()
-                            uiStateManager.selectCall(null)
+                            viewModel.dispatch(NetworkInspectorIntent.SelectCall(null))
                         }
                     }
                 }
@@ -137,7 +138,7 @@ class NetworkCallListPanel(
                 override fun keyPressed(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ESCAPE) {
                         clearSelection()
-                        uiStateManager.selectCall(null)
+                        viewModel.dispatch(NetworkInspectorIntent.SelectCall(null))
                     }
                 }
             })
@@ -146,43 +147,20 @@ class NetworkCallListPanel(
         // Use JBScrollPane to properly handle the table header (keeps it pinned at top)
         scrollPane = JBScrollPane(table)
 
-        // Track manual scrolling by user
+        // Track manual scrolling by user - disable auto-scroll
         scrollPane!!.verticalScrollBar.addAdjustmentListener { e ->
             if (e.valueIsAdjusting) {
                 // User is actively dragging the scrollbar
-                userHasInteracted = true
+                viewModel.dispatch(NetworkInspectorIntent.DisableAutoScroll)
             }
         }
 
         // Also track mouse wheel scrolling
         scrollPane!!.addMouseWheelListener {
-            userHasInteracted = true
+            viewModel.dispatch(NetworkInspectorIntent.DisableAutoScroll)
         }
 
         add(scrollPane, BorderLayout.CENTER)
-    }
-
-    /**
-     * Reset auto-scroll behavior. Called when the list is cleared.
-     */
-    fun resetAutoScroll() {
-        userHasInteracted = false
-        previousCallCount = 0
-    }
-
-    /**
-     * Check if auto-scroll is currently enabled.
-     */
-    fun isAutoScrollEnabled(): Boolean = !userHasInteracted
-
-    /**
-     * Re-enable auto-scroll and immediately scroll to show latest entries.
-     */
-    fun enableAutoScroll() {
-        userHasInteracted = false
-        if (isSortedByTime()) {
-            scrollToShowNewEntries()
-        }
     }
 
     companion object {
@@ -195,40 +173,35 @@ class NetworkCallListPanel(
         private const val COL_SIZE = 5
     }
 
-    private fun observeNetworkCalls() {
+    private fun observeState() {
+        // Observe filtered calls from ViewModel
         scope.launch {
-            combine(
-                networkCallRepository.networkCalls,
-                uiStateManager.filter
-            ) { calls, filter ->
-                calls.applyFilter(filter)
-            }.collectLatest { filteredCalls ->
-                SwingUtilities.invokeLater {
-                    val newCallCount = filteredCalls.size
-                    val hasNewItems = newCallCount > previousCallCount
+            viewModel.state
+                .map { it.filteredCalls }
+                .distinctUntilChanged()
+                .collectLatest { filteredCalls ->
+                    val autoScrollEnabled = viewModel.state.value.autoScrollEnabled
+                    SwingUtilities.invokeLater {
+                        val newCallCount = filteredCalls.size
+                        val hasNewItems = newCallCount > previousCallCount
 
-                    // Reset interaction flag if list was cleared
-                    if (newCallCount == 0) {
-                        userHasInteracted = false
+                        // Preserve selection by call ID
+                        val selectedCallId = getSelectedCallId()
+                        tableModel.updateCalls(filteredCalls)
+
+                        // Restore selection if the call is still in the list
+                        if (selectedCallId != null) {
+                            restoreSelection(selectedCallId)
+                        }
+
+                        // Auto-scroll to show new entries if enabled
+                        if (hasNewItems && autoScrollEnabled && isSortedByTime()) {
+                            scrollToShowNewEntries()
+                        }
+
+                        previousCallCount = newCallCount
                     }
-
-                    // Preserve selection by call ID
-                    val selectedCallId = getSelectedCallId()
-                    tableModel.updateCalls(filteredCalls)
-
-                    // Restore selection if the call is still in the list
-                    if (selectedCallId != null) {
-                        restoreSelection(selectedCallId)
-                    }
-
-                    // Auto-scroll to show new entries if user hasn't interacted
-                    if (hasNewItems && !userHasInteracted && isSortedByTime()) {
-                        scrollToShowNewEntries()
-                    }
-
-                    previousCallCount = newCallCount
                 }
-            }
         }
     }
 
