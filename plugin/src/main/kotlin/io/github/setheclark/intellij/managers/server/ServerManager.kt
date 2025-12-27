@@ -25,7 +25,7 @@ import kotlinx.serialization.json.Json
 @SingleIn(AppScope::class)
 @Inject
 class ServerManager(
-    @AppCoroutineScope private val scope: CoroutineScope,
+    @param:AppCoroutineScope private val scope: CoroutineScope,
     private val serverFactory: ServerFactory,
     private val messageRouter: MessageRouter,
     private val deviceRepository: DeviceRepository,
@@ -138,6 +138,5 @@ class ServerManager(
     fun dispose() {
         log.i { "ServerManager disposing" }
         stopServer()
-        // Note: Don't cancel scope - it's the app scope, managed by ApplicationService
     }
 }

@@ -34,7 +34,7 @@ import javax.swing.table.TableRowSorter
  */
 @Inject
 class NetworkCallListPanel(
-    @UiCoroutineScope private val scope: CoroutineScope,
+    @param:UiCoroutineScope private val scope: CoroutineScope,
     private val viewModel: NetworkCallListViewModel,
 ) : JPanel(BorderLayout()) {
 
@@ -180,24 +180,26 @@ class NetworkCallListPanel(
             ) { calls, autoScroll ->
                 calls to autoScroll
             }.collectLatest { (filteredCalls, autoScrollEnabled) ->
-                val newCallCount = filteredCalls.size
-                val hasNewItems = newCallCount > previousCallCount
+                SwingUtilities.invokeLater {
+                    val newCallCount = filteredCalls.size
+                    val hasNewItems = newCallCount > previousCallCount
 
-                // Preserve selection by call ID
-                val selectedCallId = getSelectedCallId()
-                tableModel.updateCalls(filteredCalls)
+                    // Preserve selection by call ID
+                    val selectedCallId = getSelectedCallId()
+                    tableModel.updateCalls(filteredCalls)
 
-                // Restore selection if the call is still in the list
-                if (selectedCallId != null) {
-                    restoreSelection(selectedCallId)
+                    // Restore selection if the call is still in the list
+                    if (selectedCallId != null) {
+                        restoreSelection(selectedCallId)
+                    }
+
+                    // Auto-scroll to show new entries if enabled
+                    if (hasNewItems && autoScrollEnabled && isSortedByTime()) {
+                        scrollToShowNewEntries()
+                    }
+
+                    previousCallCount = newCallCount
                 }
-
-                // Auto-scroll to show new entries if enabled
-                if (hasNewItems && autoScrollEnabled && isSortedByTime()) {
-                    scrollToShowNewEntries()
-                }
-
-                previousCallCount = newCallCount
             }
         }
     }
@@ -382,12 +384,12 @@ class StatusCodeRenderer : DefaultTableCellRenderer() {
         val component = super.getTableCellRendererComponent(table, displayText, isSelected, hasFocus, row, column)
 
         if (!isSelected) {
-            foreground = when {
-                statusCode == null -> JBColor.GRAY
-                statusCode in 200..299 -> JBColor.namedColor("Flocon.status.success", JBColor(0x4CAF50, 0x4CAF50))
-                statusCode in 300..399 -> JBColor.namedColor("Flocon.status.redirect", JBColor(0x2196F3, 0x2196F3))
-                statusCode in 400..499 -> JBColor.namedColor("Flocon.status.clientError", JBColor(0xFF9800, 0xFF9800))
-                statusCode in 500..599 -> JBColor.namedColor("Flocon.status.serverError", JBColor(0xF44336, 0xF44336))
+            foreground = when (statusCode) {
+                null -> JBColor.GRAY
+                in 200..299 -> JBColor.namedColor("Network.status.success", JBColor(0x4CAF50, 0x4CAF50))
+                in 300..399 -> JBColor.namedColor("Network.status.redirect", JBColor(0x2196F3, 0x2196F3))
+                in 400..499 -> JBColor.namedColor("Network.status.clientError", JBColor(0xFF9800, 0xFF9800))
+                in 500..599 -> JBColor.namedColor("Network.status.serverError", JBColor(0xF44336, 0xF44336))
                 else -> JBColor.foreground()
             }
         }
@@ -413,11 +415,11 @@ class MethodRenderer : DefaultTableCellRenderer() {
         if (!isSelected) {
             val method = value?.toString() ?: ""
             foreground = when (method.uppercase()) {
-                "GET" -> JBColor.namedColor("Flocon.method.get", JBColor(0x4CAF50, 0x4CAF50))
-                "POST" -> JBColor.namedColor("Flocon.method.post", JBColor(0x2196F3, 0x2196F3))
-                "PUT" -> JBColor.namedColor("Flocon.method.put", JBColor(0xFF9800, 0xFF9800))
-                "DELETE" -> JBColor.namedColor("Flocon.method.delete", JBColor(0xF44336, 0xF44336))
-                "PATCH" -> JBColor.namedColor("Flocon.method.patch", JBColor(0x9C27B0, 0x9C27B0))
+                "GET" -> JBColor.namedColor("Network.method.get", JBColor(0x4CAF50, 0x4CAF50))
+                "POST" -> JBColor.namedColor("Network.method.post", JBColor(0x2196F3, 0x2196F3))
+                "PUT" -> JBColor.namedColor("Network.method.put", JBColor(0xFF9800, 0xFF9800))
+                "DELETE" -> JBColor.namedColor("Network.method.delete", JBColor(0xF44336, 0xF44336))
+                "PATCH" -> JBColor.namedColor("Network.method.patch", JBColor(0x9C27B0, 0x9C27B0))
                 else -> JBColor.foreground()
             }
         }

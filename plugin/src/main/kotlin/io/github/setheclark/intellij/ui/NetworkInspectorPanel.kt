@@ -173,7 +173,9 @@ class NetworkInspectorPanel(
         block: (T) -> Unit,
     ) {
         scope.launch(Dispatchers.EDT) {
-            state.map(transform).distinctUntilChanged().collectLatest(block)
+            state.map(transform).distinctUntilChanged().collectLatest { t ->
+                SwingUtilities.invokeLater { block(t) }
+            }
         }
     }
 

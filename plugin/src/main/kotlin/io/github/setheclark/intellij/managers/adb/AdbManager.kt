@@ -189,6 +189,5 @@ class AdbManager(
     fun dispose() {
         log.i { "AdbManager disposing" }
         stopAdbForwarding()
-        // Note: Don't cancel scope - it's the app scope, managed by ApplicationService
     }
 }
