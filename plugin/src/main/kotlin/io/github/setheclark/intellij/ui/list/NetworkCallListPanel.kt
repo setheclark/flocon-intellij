@@ -180,26 +180,24 @@ class NetworkCallListPanel(
             ) { calls, autoScroll ->
                 calls to autoScroll
             }.collectLatest { (filteredCalls, autoScrollEnabled) ->
-                SwingUtilities.invokeLater {
-                    val newCallCount = filteredCalls.size
-                    val hasNewItems = newCallCount > previousCallCount
+                val newCallCount = filteredCalls.size
+                val hasNewItems = newCallCount > previousCallCount
 
-                    // Preserve selection by call ID
-                    val selectedCallId = getSelectedCallId()
-                    tableModel.updateCalls(filteredCalls)
+                // Preserve selection by call ID
+                val selectedCallId = getSelectedCallId()
+                tableModel.updateCalls(filteredCalls)
 
-                    // Restore selection if the call is still in the list
-                    if (selectedCallId != null) {
-                        restoreSelection(selectedCallId)
-                    }
-
-                    // Auto-scroll to show new entries if enabled
-                    if (hasNewItems && autoScrollEnabled && isSortedByTime()) {
-                        scrollToShowNewEntries()
-                    }
-
-                    previousCallCount = newCallCount
+                // Restore selection if the call is still in the list
+                if (selectedCallId != null) {
+                    restoreSelection(selectedCallId)
                 }
+
+                // Auto-scroll to show new entries if enabled
+                if (hasNewItems && autoScrollEnabled && isSortedByTime()) {
+                    scrollToShowNewEntries()
+                }
+
+                previousCallCount = newCallCount
             }
         }
     }

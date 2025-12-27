@@ -2,7 +2,6 @@ package io.github.setheclark.intellij.ui
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.*
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.JBColor
@@ -19,7 +18,6 @@ import io.github.setheclark.intellij.ui.mvi.NetworkInspectorIntent
 import io.github.setheclark.intellij.ui.mvi.NetworkInspectorState
 import io.github.setheclark.intellij.ui.mvi.NetworkInspectorViewModel
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -30,7 +28,6 @@ import javax.swing.BorderFactory
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
 
 /**
@@ -173,9 +170,9 @@ class NetworkInspectorPanel(
         transform: (NetworkInspectorState) -> T,
         block: (T) -> Unit,
     ) {
-        scope.launch(Dispatchers.EDT) {
+        scope.launch {
             state.map(transform).distinctUntilChanged().collectLatest { t ->
-                SwingUtilities.invokeLater { block(t) }
+                block(t)
             }
         }
     }

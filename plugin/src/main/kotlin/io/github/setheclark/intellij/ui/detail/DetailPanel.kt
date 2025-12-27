@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 
 /**
  * Panel displaying detailed information about a selected network call.
@@ -67,13 +66,11 @@ class DetailPanel(
     private fun observeSelectedCall() {
         scope.launch {
             viewModel.selectedCall.collectLatest { call ->
-                SwingUtilities.invokeLater {
-                    if (call != null) {
-                        updateDetails(call)
-                        showDetails()
-                    } else {
-                        showEmpty()
-                    }
+                if (call != null) {
+                    updateDetails(call)
+                    showDetails()
+                } else {
+                    showEmpty()
                 }
             }
         }
