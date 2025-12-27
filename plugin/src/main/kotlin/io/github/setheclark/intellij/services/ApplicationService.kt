@@ -24,6 +24,7 @@ class ApplicationService(scope: CoroutineScope) : Disposable {
         log.i { "FloconApplicationService initialized" }
         appGraph = createGraphFactory<AppGraph.Factory>().create(scope)
 
+        appGraph.applicationServiceDelegate.initialize()
         startServer()
     }
 
@@ -44,6 +45,5 @@ class ApplicationService(scope: CoroutineScope) : Disposable {
     override fun dispose() {
         log.i { "FloconApplicationService disposing" }
         appGraph.serverManager.dispose()
-        appGraph.adbManager.dispose()
     }
 }

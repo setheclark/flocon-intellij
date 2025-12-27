@@ -4,10 +4,10 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.Constant
+import io.github.setheclark.intellij.adb.AdbStatusManager
 import io.github.setheclark.intellij.data.DeviceRepository
 import io.github.setheclark.intellij.data.NetworkCallRepository
 import io.github.setheclark.intellij.di.AppCoroutineScope
-import io.github.setheclark.intellij.managers.adb.AdbManager
 import io.github.setheclark.intellij.managers.server.ServerManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +33,7 @@ class NetworkInspectorViewModel(
     private val networkCallRepository: NetworkCallRepository,
     private val deviceRepository: DeviceRepository,
     private val serverManager: ServerManager,
-    private val adbManager: AdbManager,
+    private val adbStatusManager: AdbStatusManager,
 ) {
     private val _state = MutableStateFlow(NetworkInspectorState())
     val state: StateFlow<NetworkInspectorState> = _state.asStateFlow()
@@ -98,7 +98,7 @@ class NetworkInspectorViewModel(
 
         // Observe ADB status
         scope.launch {
-            adbManager.adbStatus.collect { status ->
+            adbStatusManager.status.collect { status ->
                 _state.update { it.copy(adbStatus = status) }
             }
         }

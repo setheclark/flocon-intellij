@@ -1,0 +1,23 @@
+
+> Task :plugin:dependencies
+
+------------------------------------------------------------
+Project ':plugin'
+------------------------------------------------------------
+
+annotationProcessor - Annotation processors and their dependencies for source set 'main'.
+No dependencies
+
+api - API dependencies for the 'main' feature. (n)
+No dependencies
+
+apiDependenciesMetadata
+No dependencies
+
+apiElements - API elements for the 'main' feature. (n)
+No dependencies
+
+apiElements-published (n)
+No dependencies
+
+compileClasspath - Compile classpath for 'main'.
