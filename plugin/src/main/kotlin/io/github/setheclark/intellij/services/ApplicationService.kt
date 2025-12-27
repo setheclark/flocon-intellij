@@ -25,7 +25,7 @@ class ApplicationService(scope: CoroutineScope) : Disposable {
         appGraph = createGraphFactory<AppGraph.Factory>().create(scope)
 
         appGraph.applicationServiceDelegate.initialize()
-        startServer()
+//        startServer()
     }
 
     /**

@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.github.openflocon.data.core.device.datasource.local.LocalDevicesDataSource
 import io.github.openflocon.domain.adb.repository.AdbRepository
 import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.device.models.*
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.flowOf
 class DevicesRepositoryImpl(
     private val dispatcherProvider: DispatcherProvider,
     private val adbRepository: AdbRepository,
+    private val localDevicesDataSource: LocalDevicesDataSource,
 ) : DevicesRepository {
 
     private val log = Logger.withTag("DevicesRepository")

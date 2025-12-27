@@ -3,13 +3,14 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.intellij.platform)
     alias(libs.plugins.metro)
+    alias(libs.plugins.sqldelight)
 }
 
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
 // Exclude transitive dependencies that conflict with IDE bundled libraries
-private fun ProjectDependency.excludeBundledDependencies() {
+private fun ModuleDependency.excludeBundledDependencies() {
     exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
 }
 
@@ -24,6 +25,14 @@ repositories {
 
     intellijPlatform {
         defaultRepositories()
+    }
+}
+
+sqldelight {
+    databases {
+        create("FloconDb") {
+            packageName.set("io.github.setheclark.intellij")
+        }
     }
 }
 
@@ -49,6 +58,15 @@ dependencies {
     }
 
     implementation(libs.kermit)
+    implementation(libs.sqldelight) {
+        excludeBundledDependencies()
+    }
+    implementation(libs.sqldelight.coroutines) {
+        excludeBundledDependencies()
+    }
+    implementation(libs.sqldelight.paging) {
+        excludeBundledDependencies()
+    }
 
     // Test dependencies
     testImplementation(libs.junit.jupiter)

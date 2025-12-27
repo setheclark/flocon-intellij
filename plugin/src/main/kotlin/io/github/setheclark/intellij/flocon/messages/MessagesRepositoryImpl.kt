@@ -1,11 +1,13 @@
 package io.github.setheclark.intellij.flocon.messages
 
+import dev.zacsweers.metro.Inject
 import io.github.openflocon.data.core.messages.datasource.MessageRemoteDataSource
 import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainModel
 import io.github.openflocon.domain.messages.models.FloconReceivedFileDomainModel
 import io.github.openflocon.domain.messages.repository.MessagesRepository
 import kotlinx.coroutines.flow.Flow
 
+@Inject
 class MessagesRepositoryImpl(
     private val remote: MessageRemoteDataSource,
 ) : MessagesRepository {

@@ -1,0 +1,58 @@
+import kotlin.collections.Map;
+import kotlin.String;
+import kotlin.Boolean;
+
+CREATE TABLE IF NOT EXISTS NetworkCallEntity (
+    callId TEXT NOT NULL PRIMARY KEY,
+    deviceId TEXT NOT NULL,
+    packageName TEXT NOT NULL,
+    appInstance INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    isReplayed INTEGER AS Boolean NOT NULL,
+    request_url TEXT NOT NULL,
+    request_method TEXT NOT NULL,
+    request_startTime INTEGER NOT NULL,
+    request_startTimeFormatted TEXT NOT NULL,
+    request_byteSizeFormatted TEXT NOT NULL,
+    request_headers TEXT AS Map<String, String> NOT NULL,
+    request_body TEXT,
+    request_byteSize INTEGER NOT NULL,
+    request_isMocked INTEGER AS Boolean NOT NULL,
+    request_domainFormatted TEXT NOT NULL,
+    request_methodFormatted TEXT NOT NULL,
+    request_queryFormatted TEXT NOT NULL,
+    request_graphql_query TEXT,
+    request_graphql_operationType TEXT,
+    request_websocket_event TEXT,
+    response_durationMs REAL,
+    response_durationFormatted TEXT,
+    response_contentType TEXT,
+    response_body TEXT,
+    response_headers TEXT AS Map<String, String>,
+    response_byteSize INTEGER,
+    response_byteSizeFormatted TEXT,
+    response_error TEXT,
+    response_isImage INTEGER AS Boolean,
+    response_statusFormatted TEXT,
+    response_graphql_isSuccess INTEGER AS Boolean,
+    response_graphql_httpCode INTEGER,
+    response_http_httpCode INTEGER,
+    response_grpc_status TEXT,
+    FOREIGN KEY(deviceId, packageName)
+ REFERENCES DeviceAppEntity(deviceId, packageName)
+ );
+
+selectAll:
+SELECT * FROM NetworkCallEntity
+WHERE
+    ((:filterText IS NULL)
+    OR lower(request_url) LIKE lower(:filterText)
+    OR lower(request_body) LIKE lower(:filterText)
+    OR lower(response_body) LIKE lower(:filterText)
+    OR lower(request_domainFormatted) LIKE lower(:filterText)
+    OR lower(request_queryFormatted) LIKE lower(:filterText)
+    OR lower(request_methodFormatted) LIKE lower(:filterText))
+    AND (:appInstance IS NULL OR appInstance = :appInstance)
+ORDER BY
+    CASE WHEN :sort = 'START_ASC' THEN request_startTime END ASC,
+    CASE WHEN :sort = 'START_DESC' THEN request_startTime END DESC;

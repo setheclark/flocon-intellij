@@ -15,13 +15,14 @@ import kotlinx.serialization.json.Json
 @SingleIn(AppScope::class)
 @DependencyGraph(
     bindingContainers = [
-        FloconBindingContainer::class
+        DataBindingContainer::class,
+        FloconBindingContainer::class,
     ]
 )
 interface AppGraph : UiGraph.Factory {
 
     val applicationServiceDelegate: ApplicationServiceDelegate
-    
+
     val serverManager: ServerManager
 
     @Binds

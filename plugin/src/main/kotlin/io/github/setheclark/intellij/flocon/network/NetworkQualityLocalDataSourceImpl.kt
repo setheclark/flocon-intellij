@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.flocon.network
 
 import co.touchlab.kermit.Logger
+import dev.zacsweers.metro.Inject
 import io.github.openflocon.data.core.network.datasource.NetworkQualityLocalDataSource
 import io.github.openflocon.domain.device.models.DeviceIdAndPackageNameDomainModel
 import io.github.openflocon.domain.network.models.BadQualityConfigDomainModel
@@ -8,6 +9,7 @@ import io.github.openflocon.domain.network.models.BadQualityConfigId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
+@Inject
 class NetworkQualityLocalDataSourceImpl : NetworkQualityLocalDataSource {
 
     private val log = Logger.withTag("NetworkQualityLocalDataSource")

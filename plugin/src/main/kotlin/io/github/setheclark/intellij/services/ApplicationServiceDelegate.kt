@@ -7,6 +7,7 @@ import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.settings.usecase.StartAdbForwardUseCase
 import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.flocon.adb.InitAdbPathUseCase
+import io.github.setheclark.intellij.flocon.messages.MessageServerDelegate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 @SingleIn(AppScope::class)
 class ApplicationServiceDelegate(
     @param:AppCoroutineScope private val coroutineScope: CoroutineScope,
+    private val messageServerDelegate: MessageServerDelegate,
     private val initAdbPathUseCase: InitAdbPathUseCase,
     private val startAdbForwardUseCase: StartAdbForwardUseCase,
 ) {
@@ -29,7 +31,7 @@ class ApplicationServiceDelegate(
             log.i { "Initializing adb path" }
             initAdbPathUseCase()
 
-            // TODO Start message server
+            messageServerDelegate.initialize()
 
             launch {
                 while (isActive) {

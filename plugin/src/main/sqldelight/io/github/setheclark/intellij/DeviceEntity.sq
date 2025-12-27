@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS DeviceEntity (
+    deviceId TEXT NOT NULL PRIMARY KEY,
+    deviceName TEXT NOT NULL,
+    platform TEXT NOT NULL
+);
+
+selectAll:
+SELECT * FROM DeviceEntity;
+
+insert:
+INSERT INTO DeviceEntity(deviceId, deviceName, platform)
+VALUES (?, ?, ?);
+
+forDeviceId:
+SELECT * FROM DeviceEntity WHERE deviceId = ?;
+
+delete:
+DELETE FROM DeviceEntity WHERE deviceId = ?;
+
+clear:
+DELETE FROM DeviceEntity;

@@ -1,0 +1,30 @@
+package io.github.setheclark.intellij.flocon.network
+
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import io.github.openflocon.data.core.network.datasource.NetworkLocalWebsocketDataSource
+import io.github.openflocon.domain.device.models.DeviceIdAndPackageNameDomainModel
+import io.github.openflocon.domain.network.models.NetworkWebsocketId
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+
+@Inject
+@SingleIn(AppScope::class)
+class NetworkLocalWebsocketDataSourceImpl : NetworkLocalWebsocketDataSource {
+    private val websocketsIds =
+        MutableStateFlow<Map<DeviceIdAndPackageNameDomainModel, List<NetworkWebsocketId>>>(emptyMap())
+
+    override suspend fun registerWebsocketClients(
+        deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
+        ids: List<NetworkWebsocketId>
+    ) {
+        websocketsIds.update { it + (deviceIdAndPackageName to ids) }
+    }
+
+    override suspend fun observeWebsocketClients(deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel): Flow<List<NetworkWebsocketId>> =
+        websocketsIds.map { it.get(deviceIdAndPackageName) ?: emptyList() }.map { it.distinct() }
+
+}
