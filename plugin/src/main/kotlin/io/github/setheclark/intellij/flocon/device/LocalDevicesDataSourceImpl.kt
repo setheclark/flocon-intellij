@@ -1,140 +1,104 @@
 package io.github.setheclark.intellij.flocon.device
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
 import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.Inject
 import io.github.openflocon.data.core.device.datasource.local.LocalDevicesDataSource
 import io.github.openflocon.data.core.device.datasource.local.model.InsertResult
-import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.device.models.AppPackageName
 import io.github.openflocon.domain.device.models.DeviceAppDomainModel
 import io.github.openflocon.domain.device.models.DeviceDomainModel
 import io.github.openflocon.domain.device.models.DeviceId
-import io.github.setheclark.intellij.DeviceAppEntity
-import io.github.setheclark.intellij.DeviceAppEntityQueries
-import io.github.setheclark.intellij.DeviceEntity
-import io.github.setheclark.intellij.DeviceEntityQueries
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.update
 
+/**
+ * In-memory implementation of [LocalDevicesDataSource].
+ *
+ * Uses [MutableStateFlow] for reactive updates, providing the same
+ * observable behavior as the SQLite implementation without requiring
+ * a JDBC driver.
+ */
 @Inject
-class LocalDevicesDataSourceImpl(
-    private val dispatcherProvider: DispatcherProvider,
-    private val deviceEntityQueries: DeviceEntityQueries,
-    private val deviceAppEntityQueries: DeviceAppEntityQueries,
-) : LocalDevicesDataSource {
+class LocalDevicesDataSourceImpl : LocalDevicesDataSource {
 
     private val log = Logger.withTag("LocalDevicesDataSource")
 
+    // In-memory storage using StateFlow for reactivity
+    private val devicesState = MutableStateFlow<Map<DeviceId, DeviceDomainModel>>(emptyMap())
+    private val appsState = MutableStateFlow<Map<DeviceId, Map<AppPackageName, DeviceAppDomainModel>>>(emptyMap())
+
+    // region device
+
     override val devices: Flow<List<DeviceDomainModel>>
-        get() = deviceEntityQueries.selectAll()
-            .asFlow()
-            .mapToList(dispatcherProvider.data)
-            .map { items ->
-                items.map { it.toModel() }
-            }
+        get() = devicesState.map { it.values.toList() }
 
     override fun observeDeviceById(it: DeviceId): Flow<DeviceDomainModel?> {
-        return deviceEntityQueries.forDeviceId(it)
-            .asFlow()
-            .mapToOneOrNull(dispatcherProvider.data)
-            .map { it?.toModel() }
+        return devicesState.map { devices -> devices[it] }
     }
 
-    override suspend fun getDeviceById(it: DeviceId): DeviceDomainModel? = withContext(dispatcherProvider.data) {
-        deviceEntityQueries.forDeviceId(it)
-            .executeAsOneOrNull()
-            ?.toModel()
+    override suspend fun getDeviceById(it: DeviceId): DeviceDomainModel? {
+        return devicesState.value[it]
     }
 
     override suspend fun insertDevice(device: DeviceDomainModel): InsertResult {
-        val entity = withContext(dispatcherProvider.data) {
-            deviceEntityQueries.forDeviceId(device.deviceId).executeAsOneOrNull()
-        }
-        return if (entity != null) {
+        val exists = devicesState.value.containsKey(device.deviceId)
+        return if (exists) {
             InsertResult.Exists
         } else {
-            withContext(dispatcherProvider.data) {
-                deviceEntityQueries.insert(device.deviceId, device.deviceName, device.platform)
+            devicesState.update { current ->
+                current + (device.deviceId to device)
             }
             InsertResult.New
         }
     }
 
+    // endregion
+
+    // region apps
+
     override suspend fun insertDeviceApp(
         deviceId: DeviceId,
         app: DeviceAppDomainModel
     ): InsertResult {
-        val entity = deviceAppEntityQueries.fromDeviceAndPackage(deviceId, app.packageName).executeAsOneOrNull()
-        return if (entity != null) {
+        val deviceApps = appsState.value[deviceId] ?: emptyMap()
+        val exists = deviceApps.containsKey(app.packageName)
+        return if (exists) {
             InsertResult.Exists
         } else {
-            withContext(dispatcherProvider.data) {
-                deviceAppEntityQueries.insert(
-                    deviceId = deviceId,
-                    name = app.name,
-                    packageName = app.packageName,
-                    iconEncoded = app.iconEncoded,
-                    lastAppInstance = app.lastAppInstance,
-                    floconVersionOnDevice = app.floconVersionOnDevice,
-                )
+            appsState.update { current ->
+                val updatedDeviceApps = (current[deviceId] ?: emptyMap()) + (app.packageName to app)
+                current + (deviceId to updatedDeviceApps)
             }
             InsertResult.New
         }
     }
 
     override fun observeDeviceApps(deviceId: DeviceId): Flow<List<DeviceAppDomainModel>> {
-        return deviceAppEntityQueries.fromDevice(deviceId)
-            .asFlow()
-            .mapToList(dispatcherProvider.data)
-            .map { items ->
-                items.map { it.toModel() }
-            }
+        return appsState.map { apps ->
+            apps[deviceId]?.values?.toList() ?: emptyList()
+        }
     }
 
     override suspend fun getDeviceAppByPackage(
         deviceId: DeviceId,
         packageName: AppPackageName
-    ): DeviceAppDomainModel? = withContext(dispatcherProvider.data) {
-        deviceAppEntityQueries.fromDeviceAndPackage(deviceId, packageName)
-            .executeAsOneOrNull()
-            ?.toModel()
+    ): DeviceAppDomainModel? {
+        return appsState.value[deviceId]?.get(packageName)
     }
 
     override fun observeDeviceAppByPackage(
         deviceId: DeviceId,
         packageName: AppPackageName
     ): Flow<DeviceAppDomainModel?> {
-        return deviceAppEntityQueries.fromDeviceAndPackage(deviceId, packageName)
-            .asFlow()
-            .mapToOneOrNull(dispatcherProvider.data)
-            .map { it?.toModel() }
-    }
-
-    override suspend fun delete(deviceId: DeviceId) {
-        withContext(dispatcherProvider.data) {
-            deviceEntityQueries.delete(deviceId)
+        return appsState.map { apps ->
+            apps[deviceId]?.get(packageName)
         }
     }
 
-    override suspend fun deleteApp(
-        deviceId: DeviceId,
-        packageName: AppPackageName
-    ) {
-        withContext(dispatcherProvider.data) {
-            deviceAppEntityQueries.delete(deviceId, packageName)
-        }
-    }
-
-    override suspend fun clear() {
-        withContext(dispatcherProvider.data) {
-            deviceEntityQueries.clear()
-        }
-    }
+    // endregion
 
     // region no-op
 
@@ -162,27 +126,34 @@ class LocalDevicesDataSourceImpl(
         return flowOf(null)
     }
 
-    // endregion no-op
-
-    // region utils
-
-    private fun DeviceEntity.toModel(): DeviceDomainModel {
-        return DeviceDomainModel(
-            deviceId = deviceId,
-            deviceName = deviceName,
-            platform = platform,
-        )
+    override suspend fun delete(deviceId: DeviceId) {
+        devicesState.update { current ->
+            current - deviceId
+        }
+        appsState.update { current ->
+            current - deviceId
+        }
     }
 
-    private fun DeviceAppEntity.toModel(): DeviceAppDomainModel {
-        return DeviceAppDomainModel(
-            name = name,
-            packageName = packageName,
-            iconEncoded = iconEncoded,
-            lastAppInstance = lastAppInstance,
-            floconVersionOnDevice = floconVersionOnDevice,
-        )
+    override suspend fun deleteApp(
+        deviceId: DeviceId,
+        packageName: AppPackageName
+    ) {
+        appsState.update { current ->
+            val deviceApps = current[deviceId] ?: return@update current
+            val updatedDeviceApps = deviceApps - packageName
+            if (updatedDeviceApps.isEmpty()) {
+                current - deviceId
+            } else {
+                current + (deviceId to updatedDeviceApps)
+            }
+        }
     }
 
-    // endregion utils
+    override suspend fun clear() {
+        devicesState.value = emptyMap()
+        appsState.value = emptyMap()
+    }
+
+    // endregion
 }

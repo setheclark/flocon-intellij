@@ -4,16 +4,18 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.Constant
+import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
+import io.github.openflocon.domain.network.models.FloconNetworkCallDomainModel
+import io.github.openflocon.domain.network.models.NetworkFilterDomainModel
 import io.github.setheclark.intellij.adb.AdbStatusManager
 import io.github.setheclark.intellij.data.DeviceRepository
 import io.github.setheclark.intellij.data.NetworkCallRepository
 import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.managers.server.ServerManager
+import io.github.setheclark.intellij.network.usecase.ObserveNetworkRequestsUseCase
+import io.github.setheclark.intellij.ui.list.NetworkCallListItem
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
@@ -34,12 +36,40 @@ class NetworkInspectorViewModel(
     private val deviceRepository: DeviceRepository,
     private val serverManager: ServerManager,
     private val adbStatusManager: AdbStatusManager,
+    private val observeNetworkRequestsUseCase: ObserveNetworkRequestsUseCase,
+    private val observeCurrentDeviceIdAndPackageNameUseCase: ObserveCurrentDeviceIdAndPackageNameUseCase,
 ) {
     private val _state = MutableStateFlow(NetworkInspectorState())
     val state: StateFlow<NetworkInspectorState> = _state.asStateFlow()
 
     init {
         observeDataSources()
+    }
+
+    val items: Flow<List<NetworkCallListItem>> =
+        observeCurrentDeviceIdAndPackageNameUseCase()
+            .flatMapLatest { deviceIdAndPackageName ->
+                observeNetworkRequestsUseCase(
+                    sortedBy = null,
+                    filter = NetworkFilterDomainModel(
+                        null, null, null, false,
+                    ),
+                    deviceIdAndPackageName = deviceIdAndPackageName,
+                ).map { items ->
+                    items.map { it.toUi() }
+                }
+            }
+
+    private fun FloconNetworkCallDomainModel.toUi(): NetworkCallListItem {
+        return NetworkCallListItem(
+            callId = callId,
+            startTime = request.startTimeFormatted,
+            url = request.url,
+            method = request.method,
+            status = (response as? FloconNetworkCallDomainModel.Response.Success)?.statusFormatted,
+            duration = response?.durationFormatted,
+            size = (response as? FloconNetworkCallDomainModel.Response.Success)?.byteSizeFormatted
+        )
     }
 
     /**

@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.intellij.platform)
     alias(libs.plugins.metro)
-    alias(libs.plugins.sqldelight)
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -12,6 +11,10 @@ version = providers.gradleProperty("pluginVersion").get()
 // Exclude transitive dependencies that conflict with IDE bundled libraries
 private fun ModuleDependency.excludeBundledDependencies() {
     exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-com")
 }
 
 kotlin {
@@ -28,12 +31,9 @@ repositories {
     }
 }
 
-sqldelight {
-    databases {
-        create("FloconDb") {
-            packageName.set("io.github.setheclark.intellij")
-        }
-    }
+// https://plugins.jetbrains.com/docs/intellij/plugin-class-loaders.html#overriding-ide-dependencies
+configurations.all {
+    resolutionStrategy.sortArtifacts(ResolutionStrategy.SortOrder.DEPENDENCY_FIRST)
 }
 
 dependencies {
@@ -47,26 +47,11 @@ dependencies {
 
     // Flocon Desktop modules (source inclusion with DI.kt exclusions)
     // These provide the WebSocket server, protocol handling, and domain logic
-    implementation(project(":flocon-sources:domain")) {
-        excludeBundledDependencies()
-    }
-    implementation(project(":flocon-sources:data-core")) {
-        excludeBundledDependencies()
-    }
-    implementation(project(":flocon-sources:data-remote")) {
-        excludeBundledDependencies()
-    }
+    implementation(project(":flocon-sources:domain")) { excludeBundledDependencies() }
+    implementation(project(":flocon-sources:data-core")) { excludeBundledDependencies() }
+    implementation(project(":flocon-sources:data-remote")) { excludeBundledDependencies() }
 
-    implementation(libs.kermit)
-    implementation(libs.sqldelight) {
-        excludeBundledDependencies()
-    }
-    implementation(libs.sqldelight.coroutines) {
-        excludeBundledDependencies()
-    }
-    implementation(libs.sqldelight.paging) {
-        excludeBundledDependencies()
-    }
+    implementation(libs.kermit) { excludeBundledDependencies() }
 
     // Test dependencies
     testImplementation(libs.junit.jupiter)

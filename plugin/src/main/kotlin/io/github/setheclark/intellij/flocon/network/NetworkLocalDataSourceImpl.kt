@@ -1,41 +1,59 @@
 package io.github.setheclark.intellij.flocon.network
 
 import androidx.paging.PagingData
-import app.cash.sqldelight.Query
-import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.Inject
 import io.github.openflocon.data.core.network.datasource.NetworkLocalDataSource
-import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.device.models.DeviceIdAndPackageNameDomainModel
 import io.github.openflocon.domain.network.models.FloconNetworkCallDomainModel
 import io.github.openflocon.domain.network.models.NetworkFilterDomainModel
 import io.github.openflocon.domain.network.models.NetworkSortDomainModel
-import io.github.setheclark.intellij.NetworkCallEntity
-import io.github.setheclark.intellij.NetworkCallEntityQueries
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import io.github.openflocon.domain.network.models.httpCode
+import kotlinx.coroutines.flow.*
 
+/**
+ * In-memory implementation of [NetworkLocalDataSource].
+ */
 @Inject
-class NetworkLocalDataSourceImpl(
-    private val dispatcherProvider: DispatcherProvider,
-    private val networkCallEntityQueries: NetworkCallEntityQueries
-) : NetworkLocalDataSource {
+class NetworkLocalDataSourceImpl : NetworkLocalDataSource {
 
-    private val log = Logger.withTag(">>> NetworkLocalDataSource")
+    /**
+     * Key for storing calls by device and package.
+     */
+    private data class DevicePackageKey(
+        val deviceId: String,
+        val packageName: String,
+    )
+
+    // In-memory storage: DevicePackageKey -> (CallId -> Call)
+    private val callsState =
+        MutableStateFlow<Map<DevicePackageKey, Map<String, FloconNetworkCallDomainModel>>>(emptyMap())
+
+    private fun DeviceIdAndPackageNameDomainModel.toKey() = DevicePackageKey(deviceId, packageName)
 
     override suspend fun getRequests(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
         sortedBy: NetworkSortDomainModel?,
-        filter: NetworkFilterDomainModel
+        filter: NetworkFilterDomainModel,
     ): List<FloconNetworkCallDomainModel> {
-        return networkCallEntityQueries
-            .selectAll(
-                deviceIdAndPackageName = deviceIdAndPackageName,
-                sortedBy = sortedBy,
-                filter = filter,
-            )
-            .executeAsList()
-            .map { it.toModel() }
+        val key = deviceIdAndPackageName.toKey()
+        val calls = callsState.value[key]?.values ?: return emptyList()
+        return calls
+            .filter { call -> matchesFilter(call, filter, deviceIdAndPackageName) }
+            .let { filtered -> applySorting(filtered, sortedBy) }
+    }
+
+    fun requestsFlow(
+        deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
+        sortedBy: NetworkSortDomainModel?,
+        filter: NetworkFilterDomainModel,
+    ): Flow<List<FloconNetworkCallDomainModel>> {
+        val key = deviceIdAndPackageName.toKey()
+        return callsState.map { state ->
+            val calls = state[key]?.values ?: emptyList()
+            calls
+                .filter { call -> matchesFilter(call, filter, deviceIdAndPackageName) }
+                .let { filtered -> applySorting(filtered, sortedBy) }
+        }
     }
 
     override fun observeRequests(
@@ -43,7 +61,8 @@ class NetworkLocalDataSourceImpl(
         sortedBy: NetworkSortDomainModel?,
         filter: NetworkFilterDomainModel
     ): Flow<PagingData<FloconNetworkCallDomainModel>> {
-        log.w { "no-op:observeRequests: $deviceIdAndPackageName" }
+        // PagingData is complex to implement in-memory; return empty for now
+        // The getRequests method provides the core functionality
         return flowOf(PagingData.empty())
     }
 
@@ -51,166 +70,200 @@ class NetworkLocalDataSourceImpl(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
         ids: List<String>
     ): List<FloconNetworkCallDomainModel> {
-        log.w { "no-op:getCalls: $deviceIdAndPackageName|$ids" }
-        return emptyList()
+        val key = deviceIdAndPackageName.toKey()
+        val deviceCalls = callsState.value[key] ?: return emptyList()
+        return ids.mapNotNull { id -> deviceCalls[id] }
     }
 
     override suspend fun getCall(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
         callId: String
     ): FloconNetworkCallDomainModel? {
-        log.w { "no-op:getCall: $deviceIdAndPackageName|$callId" }
-        return null
+        val key = deviceIdAndPackageName.toKey()
+        return callsState.value[key]?.get(callId)
     }
 
     override fun observeCall(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
         callId: String
     ): Flow<FloconNetworkCallDomainModel?> {
-        log.w { "no-op:observeCall: $deviceIdAndPackageName|$callId" }
-        return flowOf(null)
+        val key = deviceIdAndPackageName.toKey()
+        return callsState.map { state ->
+            state[key]?.get(callId)
+        }
     }
 
     override suspend fun save(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
         call: FloconNetworkCallDomainModel
     ) {
-        log.w { "no-op:save: $deviceIdAndPackageName|$call" }
+        val key = deviceIdAndPackageName.toKey()
+        callsState.update { current ->
+            val deviceCalls = current[key] ?: emptyMap()
+            val updatedDeviceCalls = deviceCalls + (call.callId to call)
+            (current + (key to updatedDeviceCalls)).also {
+                println("Call size after update: ${it.size}")
+            }
+        }
     }
 
     override suspend fun save(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
         calls: List<FloconNetworkCallDomainModel>
     ) {
-        log.w { "no-op:save: $deviceIdAndPackageName|$calls" }
+        if (calls.isEmpty()) return
+        val key = deviceIdAndPackageName.toKey()
+        callsState.update { current ->
+            val deviceCalls = current[key] ?: emptyMap()
+            val updatedDeviceCalls = deviceCalls + calls.associateBy { it.callId }
+            current + (key to updatedDeviceCalls)
+        }
     }
 
     override suspend fun clearDeviceCalls(deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel) {
-        log.w { "no-op:clearDeviceCalls: $deviceIdAndPackageName" }
+        val key = deviceIdAndPackageName.toKey()
+        callsState.update { current ->
+            current - key
+        }
     }
 
     override suspend fun deleteRequest(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
         callId: String
     ) {
-        log.w { "no-op:deleteRequest: $deviceIdAndPackageName|$callId" }
+        val key = deviceIdAndPackageName.toKey()
+        callsState.update { current ->
+            val deviceCalls = current[key] ?: return@update current
+            val updatedDeviceCalls = deviceCalls - callId
+            if (updatedDeviceCalls.isEmpty()) {
+                current - key
+            } else {
+                current + (key to updatedDeviceCalls)
+            }
+        }
     }
 
     override suspend fun deleteRequestsBefore(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
         callId: String
     ) {
-        log.w { "no-op:deleteRequestsBefore: $deviceIdAndPackageName|$callId" }
+        val key = deviceIdAndPackageName.toKey()
+        callsState.update { current ->
+            val deviceCalls = current[key] ?: return@update current
+            val targetCall = deviceCalls[callId] ?: return@update current
+            val targetStartTime = targetCall.request.startTime
+
+            val updatedDeviceCalls = deviceCalls.filterValues { call ->
+                call.request.startTime >= targetStartTime
+            }
+
+            if (updatedDeviceCalls.isEmpty()) {
+                current - key
+            } else {
+                current + (key to updatedDeviceCalls)
+            }
+        }
     }
 
-    override suspend fun deleteRequestOnDifferentSession(deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel) {
-        log.w { "no-op:deleteRequestOnDifferentSession: $deviceIdAndPackageName" }
+    override suspend fun deleteRequestOnDifferentSession(
+        deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel
+    ) {
+        val key = deviceIdAndPackageName.toKey()
+        val currentAppInstance = deviceIdAndPackageName.appInstance
+        callsState.update { current ->
+            val deviceCalls = current[key] ?: return@update current
+            val updatedDeviceCalls = deviceCalls.filterValues { call ->
+                call.appInstance == currentAppInstance
+            }
+
+            if (updatedDeviceCalls.isEmpty()) {
+                current - key
+            } else {
+                current + (key to updatedDeviceCalls)
+            }
+        }
     }
 
     override suspend fun clear() {
-        log.w { "no-op:clear" }
+        callsState.value = emptyMap()
     }
 
-    private fun NetworkCallEntity.toModel(): FloconNetworkCallDomainModel {
-        return FloconNetworkCallDomainModel(
-            callId = callId,
-            appInstance = appInstance,
-            isReplayed = isReplayed,
-            request = toRequestModel(),
-            response = toResponseModel(),
-        )
-    }
+    // region filtering and sorting
 
-    private fun NetworkCallEntityQueries.selectAll(
-        deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
-        sortedBy: NetworkSortDomainModel?,
-        filter: NetworkFilterDomainModel
-    ): Query<NetworkCallEntity> {
-        return selectAll(
-            filterText = filter.filterOnAllColumns?.let { "%it%" },
-            sort = if (sortedBy?.asc == true) "START_ASC" else "START_DESC",
-            appInstance = deviceIdAndPackageName.appInstance.takeUnless { filter.displayOldSessions }
-        )
-    }
+    private fun matchesFilter(
+        call: FloconNetworkCallDomainModel,
+        filter: NetworkFilterDomainModel,
+        deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel
+    ): Boolean {
+        // Filter by session if displayOldSessions is false
+        if (!filter.displayOldSessions && call.appInstance != deviceIdAndPackageName.appInstance) {
+            return false
+        }
 
-    private fun NetworkCallEntity.toRequestModel(): FloconNetworkCallDomainModel.Request {
-        return FloconNetworkCallDomainModel.Request(
-            url = request_url,
-            method = request_method,
-            startTime = request_startTime,
-            headers = request_headers,
-            body = request_body,
-            byteSize = request_byteSize,
-            isMocked = request_isMocked,
-            startTimeFormatted = request_startTimeFormatted,
-            byteSizeFormatted = request_byteSizeFormatted,
-            domainFormatted = request_domainFormatted,
-            queryFormatted = request_queryFormatted,
-            methodFormatted = request_methodFormatted,
-            specificInfos = when (type) {
-                "GRAPHQL" -> FloconNetworkCallDomainModel.Request.SpecificInfos.GraphQl(
-                    query = request_graphql_query.orEmpty(),
-                    operationType = request_graphql_operationType.orEmpty(),
-                )
-
-                "GRPC" -> FloconNetworkCallDomainModel.Request.SpecificInfos.Grpc
-                "WEBSOCKET" -> FloconNetworkCallDomainModel.Request.SpecificInfos.WebSocket(
-                    event = request_websocket_event ?: "unknown",
-                )
-
-                "HTTP" -> FloconNetworkCallDomainModel.Request.SpecificInfos.Http
-                // TODO Log?
-                else -> FloconNetworkCallDomainModel.Request.SpecificInfos.Http
+        // Filter by method if specified
+        val methodFilter = filter.methodFilter
+        if (!methodFilter.isNullOrEmpty()) {
+            if (call.request.method !in methodFilter) {
+                return false
             }
-        )
+        }
+
+        // Filter by text search across all columns
+        val filterText = filter.filterOnAllColumns
+        if (!filterText.isNullOrBlank()) {
+            val searchText = filterText.lowercase()
+            val searchableFields = listOf(
+                call.request.url,
+                call.request.method,
+                call.request.domainFormatted,
+                call.request.queryFormatted,
+                call.request.startTimeFormatted,
+                call.response?.statusFormatted.orEmpty(),
+                call.response?.durationFormatted.orEmpty(),
+            )
+            if (searchableFields.none { it.lowercase().contains(searchText) }) {
+                return false
+            }
+        }
+
+        return true
     }
 
-    private fun NetworkCallEntity.toResponseModel(): FloconNetworkCallDomainModel.Response? {
-        // Assuming durationMs will be non-null for any non-null response...
-        return response_durationMs?.let {
-            if (response_error != null) {
-                FloconNetworkCallDomainModel.Response.Failure(
-                    durationMs = it,
-                    durationFormatted = response_durationFormatted.orEmpty(),
-                    issue = response_error,
-                    statusFormatted = response_statusFormatted.orEmpty(),
-                )
-            } else {
-                FloconNetworkCallDomainModel.Response.Success(
-                    contentType = response_contentType.orEmpty(),
-                    body = response_body.orEmpty(),
-                    headers = response_headers.orEmpty(),
-                    byteSize = response_byteSize ?: 0L,
-                    durationMs = it,
-                    durationFormatted = response_durationFormatted.orEmpty(),
-                    byteSizeFormatted = response_byteSizeFormatted.orEmpty(),
-                    isImage = response_isImage == true,
-                    statusFormatted = response_statusFormatted.orEmpty(),
-                    specificInfos = when {
-                        response_graphql_isSuccess != null -> {
-                            FloconNetworkCallDomainModel.Response.Success.SpecificInfos.GraphQl(
-                                httpCode = response_graphql_httpCode?.toInt() ?: -1,
-                                isSuccess = response_graphql_isSuccess,
-                            )
-                        }
+    private fun applySorting(
+        calls: Collection<FloconNetworkCallDomainModel>,
+        sortedBy: NetworkSortDomainModel?
+    ): List<FloconNetworkCallDomainModel> {
+        if (sortedBy == null) {
+            // Default: sort by start time descending
+            return calls.sortedByDescending { it.request.startTime }
+        }
 
-                        response_grpc_status != null -> {
-                            FloconNetworkCallDomainModel.Response.Success.SpecificInfos.Grpc(
-                                grpcStatus = response_grpc_status,
-                            )
-                        }
+        val comparator: Comparator<FloconNetworkCallDomainModel> = when (sortedBy.column) {
+            NetworkSortDomainModel.Column.RequestStartTimeFormatted ->
+                compareBy { it.request.startTime }
 
-                        response_http_httpCode != null -> {
-                            FloconNetworkCallDomainModel.Response.Success.SpecificInfos.Http(
-                                httpCode = response_http_httpCode.toInt()
-                            )
-                        }
+            NetworkSortDomainModel.Column.Method ->
+                compareBy { it.request.method }
 
-                        else -> return null
-                    }
-                )
-            }
+            NetworkSortDomainModel.Column.Domain ->
+                compareBy { it.request.domainFormatted }
 
+            NetworkSortDomainModel.Column.Query ->
+                compareBy { it.request.queryFormatted }
+
+            NetworkSortDomainModel.Column.Status ->
+                compareBy { it.httpCode() ?: Int.MAX_VALUE }
+
+            NetworkSortDomainModel.Column.Duration ->
+                compareBy { it.response?.durationMs ?: Double.MAX_VALUE }
+        }
+
+        return if (sortedBy.asc) {
+            calls.sortedWith(comparator)
+        } else {
+            calls.sortedWith(comparator.reversed())
         }
     }
+
+    // endregion
 }

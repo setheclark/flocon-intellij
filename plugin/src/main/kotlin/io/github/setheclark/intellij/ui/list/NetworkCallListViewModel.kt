@@ -27,10 +27,8 @@ class NetworkCallListViewModel(
     /**
      * Filtered network calls to display in the list.
      */
-    val filteredCalls: Flow<List<NetworkCallEntry>> =
-        parentViewModel.state
-            .map { it.filteredCalls }
-            .distinctUntilChanged()
+    val filteredCalls: Flow<List<NetworkCallListItem>> =
+        parentViewModel.items.distinctUntilChanged()
 
     /**
      * Whether auto-scroll is enabled for new entries.
@@ -43,8 +41,8 @@ class NetworkCallListViewModel(
     /**
      * Select a network call to view details.
      */
-    fun selectCall(call: NetworkCallEntry?) {
-        parentViewModel.dispatch(NetworkInspectorIntent.SelectCall(call))
+    fun selectCall(call: NetworkCallListItem?) {
+//        parentViewModel.dispatch(NetworkInspectorIntent.SelectCall(call))
     }
 
     /**

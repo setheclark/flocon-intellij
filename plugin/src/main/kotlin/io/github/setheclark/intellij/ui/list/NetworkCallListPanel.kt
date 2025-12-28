@@ -6,7 +6,6 @@ import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.di.UiCoroutineScope
-import io.github.setheclark.intellij.domain.models.NetworkCallEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -17,7 +16,6 @@ import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.swing.*
@@ -242,11 +240,11 @@ class NetworkCallListPanel(
         val viewRow = table.selectedRow
         if (viewRow < 0) return null
         val modelRow = table.convertRowIndexToModel(viewRow)
-        return tableModel.calls.getOrNull(modelRow)?.id
+        return tableModel.calls.getOrNull(modelRow)?.callId
     }
 
     private fun restoreSelection(callId: String) {
-        val modelRow = tableModel.calls.indexOfFirst { it.id == callId }
+        val modelRow = tableModel.calls.indexOfFirst { it.callId == callId }
         if (modelRow >= 0) {
             val viewRow = table.convertRowIndexToView(modelRow)
             if (viewRow >= 0) {
@@ -264,10 +262,10 @@ class NetworkCallTableModel : AbstractTableModel() {
 
     private val columns = arrayOf("Time", "Status", "Method", "URL", "Duration", "Size")
 
-    var calls: List<NetworkCallEntry> = emptyList()
+    var calls: List<NetworkCallListItem> = emptyList()
         private set
 
-    fun updateCalls(newCalls: List<NetworkCallEntry>) {
+    fun updateCalls(newCalls: List<NetworkCallListItem>) {
         calls = newCalls
         fireTableDataChanged()
     }
@@ -280,23 +278,24 @@ class NetworkCallTableModel : AbstractTableModel() {
         val call = calls.getOrNull(rowIndex) ?: return null
         return when (columnIndex) {
             0 -> call.startTime                                    // Raw Long for sorting
-            1 -> call.response?.statusCode                         // Raw Int? for sorting
-            2 -> call.request.method
-            3 -> call.request.url
+            1 -> call.status                        // Raw Int? for sorting
+            2 -> call.method
+            3 -> call.url
             4 -> call.duration                                     // Raw Long? for sorting
-            5 -> call.response?.size ?: call.request.size          // Raw Long? for sorting
+            5 -> call.size          // Raw Long? for sorting
             else -> null
         }
     }
 
     override fun getColumnClass(columnIndex: Int): Class<*> {
-        return when (columnIndex) {
-            0 -> Long::class.java
-            1 -> Integer::class.java
-            4 -> Long::class.java
-            5 -> Long::class.java
-            else -> String::class.java
-        }
+        return String::class.java
+//        return when (columnIndex) {
+//            0 -> Long::class.java
+//            1 -> Integer::class.java
+//            4 -> Long::class.java
+//            5 -> Long::class.java
+//            else -> String::class.java
+//        }
     }
 }
 
@@ -315,10 +314,7 @@ class TimeRenderer : DefaultTableCellRenderer() {
         row: Int,
         column: Int
     ): Component {
-        val formatted = (value as? Long)?.let {
-            timeFormatter.format(Instant.ofEpochMilli(it))
-        } ?: ""
-        return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
+        return super.getTableCellRendererComponent(table, value ?: "", isSelected, hasFocus, row, column)
     }
 }
 
@@ -334,7 +330,7 @@ class DurationRenderer : DefaultTableCellRenderer() {
         row: Int,
         column: Int
     ): Component {
-        val formatted = (value as? Long)?.let { "${it}ms" } ?: "..."
+        val formatted = value ?: "..."
         return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
     }
 }
@@ -351,17 +347,7 @@ class SizeRenderer : DefaultTableCellRenderer() {
         row: Int,
         column: Int
     ): Component {
-        val formatted = formatSize(value as? Long)
-        return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
-    }
-
-    private fun formatSize(size: Long?): String {
-        if (size == null) return "-"
-        return when {
-            size < 1024 -> "${size}B"
-            size < 1024 * 1024 -> "${size / 1024}KB"
-            else -> "${size / (1024 * 1024)}MB"
-        }
+        return super.getTableCellRendererComponent(table, value ?: "", isSelected, hasFocus, row, column)
     }
 }
 
@@ -377,20 +363,19 @@ class StatusCodeRenderer : DefaultTableCellRenderer() {
         row: Int,
         column: Int
     ): Component {
-        val statusCode = value as? Int
-        val displayText = statusCode?.toString() ?: "..."
+        val displayText = value ?: "..."
         val component = super.getTableCellRendererComponent(table, displayText, isSelected, hasFocus, row, column)
 
-        if (!isSelected) {
-            foreground = when (statusCode) {
-                null -> JBColor.GRAY
-                in 200..299 -> JBColor.namedColor("Network.status.success", JBColor(0x4CAF50, 0x4CAF50))
-                in 300..399 -> JBColor.namedColor("Network.status.redirect", JBColor(0x2196F3, 0x2196F3))
-                in 400..499 -> JBColor.namedColor("Network.status.clientError", JBColor(0xFF9800, 0xFF9800))
-                in 500..599 -> JBColor.namedColor("Network.status.serverError", JBColor(0xF44336, 0xF44336))
-                else -> JBColor.foreground()
-            }
-        }
+//        if (!isSelected) {
+//            foreground = when (statusCode) {
+//                null -> JBColor.GRAY
+//                in 200..299 -> JBColor.namedColor("Network.status.success", JBColor(0x4CAF50, 0x4CAF50))
+//                in 300..399 -> JBColor.namedColor("Network.status.redirect", JBColor(0x2196F3, 0x2196F3))
+//                in 400..499 -> JBColor.namedColor("Network.status.clientError", JBColor(0xFF9800, 0xFF9800))
+//                in 500..599 -> JBColor.namedColor("Network.status.serverError", JBColor(0xF44336, 0xF44336))
+//                else -> JBColor.foreground()
+//            }
+//        }
 
         return component
     }
