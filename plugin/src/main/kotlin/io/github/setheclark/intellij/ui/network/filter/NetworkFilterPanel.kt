@@ -23,7 +23,7 @@ class NetworkFilterPanel(
 
     private val searchField = SearchTextField().apply {
         textEditor.emptyText.text = "Filter requests..."
-        preferredSize = JBUI.size(200, 28)
+        preferredSize = JBUI.size(200, 32)
     }
 
     private val deviceComboBox = JComboBox<DeviceFilterItem>()
@@ -32,7 +32,7 @@ class NetworkFilterPanel(
         // Setup filter listeners
         setupFilterListeners()
 
-        layout = FlowLayout(FlowLayout.LEADING, 8, 0).apply {
+        layout = FlowLayout(FlowLayout.LEADING, 8, 4).apply {
             border = JBUI.Borders.empty()
             add(searchField)
             add(deviceComboBox)
