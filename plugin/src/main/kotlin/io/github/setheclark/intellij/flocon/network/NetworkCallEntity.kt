@@ -6,6 +6,7 @@ data class NetworkCallEntity(
     val packageName: String,
     val appInstance: String,
     val startTime: Long,
+    val name: String,
     val request: NetworkRequest,
     val response: NetworkResponse?,
 )
@@ -23,6 +24,7 @@ data class NetworkRequest(
         data class GraphQl(
             val persisted: Boolean,
             val query: String,
+            val operationName: String?,
             val operationType: String,
         ) : Type
 

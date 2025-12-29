@@ -68,6 +68,7 @@ class NetworkCallListViewModel(
         return NetworkCallListItem(
             callId = callId,
             startTime = startTime,
+            name = name,
             url = request.url,
             method = request.method,
             status = (response as? NetworkResponse.Success)?.statusCode,

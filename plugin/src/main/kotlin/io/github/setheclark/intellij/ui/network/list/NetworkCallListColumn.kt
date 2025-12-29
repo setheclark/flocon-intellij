@@ -17,9 +17,15 @@ enum class NetworkCallListColumn(
 ) {
     TIME(
         displayName = "Time",
-        preferredWidth = 100,
+        preferredWidth = 75,
         valueClass = Long::class.java,
         getValue = { it.startTime },
+    ),
+    NAME(
+        displayName = "Name",
+        preferredWidth = 150,
+        valueClass = String::class.java,
+        getValue = { it.name },
     ),
     STATUS(
         displayName = "Status",
@@ -29,7 +35,7 @@ enum class NetworkCallListColumn(
     ),
     METHOD(
         displayName = "Method",
-        preferredWidth = 60,
+        preferredWidth = 50,
         valueClass = String::class.java,
         getValue = { it.method },
     ),
@@ -41,13 +47,13 @@ enum class NetworkCallListColumn(
     ),
     DURATION(
         displayName = "Duration",
-        preferredWidth = 80,
+        preferredWidth = 50,
         valueClass = Double::class.javaObjectType,
         getValue = { it.duration },
     ),
     SIZE(
         displayName = "Size",
-        preferredWidth = 80,
+        preferredWidth = 50,
         valueClass = Long::class.java,
         getValue = { it.size ?: 0L },
     );
@@ -55,6 +61,7 @@ enum class NetworkCallListColumn(
     val renderer: TableCellRenderer by lazy {
         when (this) {
             TIME -> TimeRenderer()
+            NAME -> DefaultTableCellRenderer()
             STATUS -> StatusCodeRenderer()
             METHOD -> MethodRenderer()
             URL -> DefaultTableCellRenderer()
@@ -124,8 +131,17 @@ enum class NetworkCallListColumn(
             row: Int,
             column: Int
         ): Component {
-            val formatted = (value as? Double)?.let { "${it}ms" } ?: "..."
+            val formatted = (value as? Double)?.let { formatDuration(it) } ?: "..."
             return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
+        }
+
+        private fun formatDuration(durationMs: Double): String {
+            return if (durationMs >= 1000) {
+                val seconds = durationMs / 1000
+                "%.3fs".format(seconds)
+            } else {
+                "%.3fms".format(durationMs)
+            }
         }
     }
 
