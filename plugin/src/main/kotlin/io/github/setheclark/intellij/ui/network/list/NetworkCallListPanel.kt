@@ -8,7 +8,6 @@ import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.di.UiCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.Component
@@ -22,7 +21,14 @@ import java.time.format.DateTimeFormatter
 import javax.swing.*
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
+import javax.swing.table.TableCellRenderer
 import javax.swing.table.TableRowSorter
+
+/**
+ * Defines all columns for the network call table.
+ * Each column encapsulates its display name, width, value extraction, rendering, and comparison logic.
+ */
+
 
 /**
  * Panel displaying the list of captured network calls in a table format.
@@ -51,27 +57,12 @@ class NetworkCallListPanel(
     private fun setupTable() {
         // Set up row sorter for column sorting
         val sorter = TableRowSorter(tableModel).apply {
-            // Set comparators that use the raw sortable values from the model
-            setComparator(COL_TIME) { a: Any?, b: Any? ->
-                ((a as? Long) ?: 0L).compareTo((b as? Long) ?: 0L)
-            }
-            setComparator(COL_STATUS) { a: Any?, b: Any? ->
-                val aVal = (a as? Int) ?: Int.MAX_VALUE
-                val bVal = (b as? Int) ?: Int.MAX_VALUE
-                aVal.compareTo(bVal)
-            }
-            setComparator(COL_DURATION) { a: Any?, b: Any? ->
-                val aVal = (a as? Long) ?: Long.MAX_VALUE
-                val bVal = (b as? Long) ?: Long.MAX_VALUE
-                aVal.compareTo(bVal)
-            }
-            setComparator(COL_SIZE) { a: Any?, b: Any? ->
-                val aVal = (a as? Long) ?: Long.MAX_VALUE
-                val bVal = (b as? Long) ?: Long.MAX_VALUE
-                aVal.compareTo(bVal)
+            // Set comparators from Column enum
+            NetworkCallListColumn.entries.forEachIndexed { index, column ->
+                column.comparator?.let { setComparator(index, it) }
             }
             // Default sort by time ascending
-            sortKeys = listOf(RowSorter.SortKey(COL_TIME, SortOrder.ASCENDING))
+            sortKeys = listOf(RowSorter.SortKey(NetworkCallListColumn.TIME.ordinal, SortOrder.ASCENDING))
         }
 
         table.apply {
@@ -80,22 +71,13 @@ class NetworkCallListPanel(
             selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
             rowSorter = sorter
 
-            // Column widths
-            columnModel.apply {
-                getColumn(0).preferredWidth = 100  // Time
-                getColumn(1).preferredWidth = 50   // Status
-                getColumn(2).preferredWidth = 60   // Method
-                getColumn(3).preferredWidth = 400  // URL
-                getColumn(4).preferredWidth = 80   // Duration
-                getColumn(5).preferredWidth = 80   // Size
+            // Configure columns from Column enum
+            NetworkCallListColumn.entries.forEach { column ->
+                columnModel.getColumn(column.ordinal).apply {
+                    preferredWidth = column.preferredWidth
+                    cellRenderer = column.renderer
+                }
             }
-
-            // Custom renderers
-            columnModel.getColumn(COL_TIME).cellRenderer = TimeRenderer()
-            columnModel.getColumn(COL_STATUS).cellRenderer = StatusCodeRenderer()
-            columnModel.getColumn(COL_METHOD).cellRenderer = MethodRenderer()
-            columnModel.getColumn(COL_DURATION).cellRenderer = DurationRenderer()
-            columnModel.getColumn(COL_SIZE).cellRenderer = SizeRenderer()
 
             // Selection listener - convert view row to model row for proper selection
             selectionModel.addListSelectionListener { e ->
@@ -167,15 +149,6 @@ class NetworkCallListPanel(
         viewModel.dispatch(NetworkCallListIntent.DisableAutoScroll)
     }
 
-    companion object {
-        // Column indices
-        private const val COL_TIME = 0
-        private const val COL_STATUS = 1
-        private const val COL_METHOD = 2
-        private const val COL_URL = 3
-        private const val COL_DURATION = 4
-        private const val COL_SIZE = 5
-    }
 
     private fun observeState() {
         // Observe filtered calls and auto-scroll state from ViewModel
@@ -209,7 +182,7 @@ class NetworkCallListPanel(
     private fun isSortedByTime(): Boolean {
         val sortKeys = table.rowSorter?.sortKeys ?: return false
         if (sortKeys.isEmpty()) return false
-        return sortKeys[0].column == COL_TIME
+        return sortKeys[0].column == NetworkCallListColumn.TIME.ordinal
     }
 
     /**
@@ -259,11 +232,9 @@ class NetworkCallListPanel(
 
 /**
  * Table model for the network call list.
- * Returns raw values for proper sorting; cell renderers handle formatting.
+ * Uses [Column] enum to define structure; returns raw values for proper sorting.
  */
 class NetworkCallTableModel : AbstractTableModel() {
-
-    private val columns = arrayOf("Time", "Status", "Method", "URL", "Duration", "Size")
 
     var calls: List<NetworkCallListItem> = emptyList()
         private set
@@ -274,156 +245,12 @@ class NetworkCallTableModel : AbstractTableModel() {
     }
 
     override fun getRowCount(): Int = calls.size
-    override fun getColumnCount(): Int = columns.size
-    override fun getColumnName(column: Int): String = columns[column]
+    override fun getColumnCount(): Int = NetworkCallListColumn.entries.size
+    override fun getColumnName(column: Int): String = NetworkCallListColumn.entries[column].displayName
+    override fun getColumnClass(columnIndex: Int): Class<*> = NetworkCallListColumn.entries[columnIndex].valueClass
 
     override fun getValueAt(rowIndex: Int, columnIndex: Int): Any? {
         val call = calls.getOrNull(rowIndex) ?: return null
-        return when (columnIndex) {
-            0 -> call.startTime                                    // Raw Long for sorting
-            1 -> call.status                         // Raw Int? for sorting
-            2 -> call.method
-            3 -> call.url
-            4 -> call.duration                                     // Raw Long? for sorting
-            5 -> call.size ?: 0L
-//            5 -> call.response?.size ?: call.request.size          // Raw Long? for sorting
-            else -> null
-        }
-    }
-
-    override fun getColumnClass(columnIndex: Int): Class<*> {
-        return when (columnIndex) {
-            0 -> Long::class.java
-            1 -> Integer::class.java
-            4 -> Double::class.java
-            5 -> Long::class.java
-            else -> String::class.java
-        }
-    }
-}
-
-/**
- * Renderer for the Time column - formats epoch millis to HH:mm:ss.SSS
- */
-class TimeRenderer : DefaultTableCellRenderer() {
-    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
-        .withZone(ZoneId.systemDefault())
-
-    override fun getTableCellRendererComponent(
-        table: JTable?,
-        value: Any?,
-        isSelected: Boolean,
-        hasFocus: Boolean,
-        row: Int,
-        column: Int
-    ): Component {
-        val formatted = (value as? Long)?.let {
-            timeFormatter.format(Instant.ofEpochMilli(it))
-        } ?: ""
-        return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
-    }
-}
-
-/**
- * Renderer for the Duration column - formats milliseconds
- */
-class DurationRenderer : DefaultTableCellRenderer() {
-    override fun getTableCellRendererComponent(
-        table: JTable?,
-        value: Any?,
-        isSelected: Boolean,
-        hasFocus: Boolean,
-        row: Int,
-        column: Int
-    ): Component {
-        val formatted = (value as? Double)?.let { "${it}ms" } ?: "..."
-        return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
-    }
-}
-
-/**
- * Renderer for the Size column - formats bytes to human readable
- */
-class SizeRenderer : DefaultTableCellRenderer() {
-    override fun getTableCellRendererComponent(
-        table: JTable?,
-        value: Any?,
-        isSelected: Boolean,
-        hasFocus: Boolean,
-        row: Int,
-        column: Int
-    ): Component {
-        val formatted = formatSize(value as? Long)
-        return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
-    }
-
-    private fun formatSize(size: Long?): String {
-        if (size == null) return "-"
-        return when {
-            size < 1024 -> "${size}B"
-            size < 1024 * 1024 -> "${size / 1024}KB"
-            else -> "${size / (1024 * 1024)}MB"
-        }
-    }
-}
-
-/**
- * Renderer for HTTP status codes with color coding.
- */
-class StatusCodeRenderer : DefaultTableCellRenderer() {
-    override fun getTableCellRendererComponent(
-        table: JTable?,
-        value: Any?,
-        isSelected: Boolean,
-        hasFocus: Boolean,
-        row: Int,
-        column: Int
-    ): Component {
-        val statusCode = value as? Int
-        val displayText = statusCode?.toString() ?: "..."
-        val component = super.getTableCellRendererComponent(table, displayText, isSelected, hasFocus, row, column)
-
-        if (!isSelected) {
-            foreground = when (statusCode) {
-                null -> JBColor.GRAY
-                in 200..299 -> JBColor.namedColor("Network.status.success", JBColor(0x4CAF50, 0x4CAF50))
-                in 300..399 -> JBColor.namedColor("Network.status.redirect", JBColor(0x2196F3, 0x2196F3))
-                in 400..499 -> JBColor.namedColor("Network.status.clientError", JBColor(0xFF9800, 0xFF9800))
-                in 500..599 -> JBColor.namedColor("Network.status.serverError", JBColor(0xF44336, 0xF44336))
-                else -> JBColor.foreground()
-            }
-        }
-
-        return component
-    }
-}
-
-/**
- * Renderer for HTTP methods with styling.
- */
-class MethodRenderer : DefaultTableCellRenderer() {
-    override fun getTableCellRendererComponent(
-        table: JTable?,
-        value: Any?,
-        isSelected: Boolean,
-        hasFocus: Boolean,
-        row: Int,
-        column: Int
-    ): Component {
-        val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
-
-        if (!isSelected) {
-            val method = value?.toString() ?: ""
-            foreground = when (method.uppercase()) {
-                "GET" -> JBColor.namedColor("Network.method.get", JBColor(0x4CAF50, 0x4CAF50))
-                "POST" -> JBColor.namedColor("Network.method.post", JBColor(0x2196F3, 0x2196F3))
-                "PUT" -> JBColor.namedColor("Network.method.put", JBColor(0xFF9800, 0xFF9800))
-                "DELETE" -> JBColor.namedColor("Network.method.delete", JBColor(0xF44336, 0xF44336))
-                "PATCH" -> JBColor.namedColor("Network.method.patch", JBColor(0x9C27B0, 0x9C27B0))
-                else -> JBColor.foreground()
-            }
-        }
-
-        return component
+        return NetworkCallListColumn.entries[columnIndex].getValue(call)
     }
 }
