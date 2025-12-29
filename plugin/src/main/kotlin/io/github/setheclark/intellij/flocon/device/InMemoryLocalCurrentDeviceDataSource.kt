@@ -1,0 +1,101 @@
+package io.github.setheclark.intellij.flocon.device
+
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import io.github.openflocon.data.core.device.datasource.local.LocalCurrentDeviceDataSource
+import io.github.openflocon.domain.device.models.AppPackageName
+import io.github.openflocon.domain.device.models.DeviceId
+import io.github.openflocon.domain.device.models.DeviceIdAndPackageNameDomainModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+
+@Inject
+@SingleIn(AppScope::class)
+class InMemoryLocalCurrentDeviceDataSource : LocalCurrentDeviceDataSource {
+
+    private val _currentDeviceId = MutableStateFlow<DeviceId?>(null)
+    override val currentDeviceId = _currentDeviceId.asStateFlow()
+
+    private val connectedDevicesForSession = MutableStateFlow(emptySet<DeviceId>())
+    private val connectedDevicesAndAppsForSession = MutableStateFlow(emptySet<DeviceIdAndPackageNameDomainModel>())
+    private val currentDeviceApp = MutableStateFlow(emptyMap<DeviceId, AppPackageName>())
+
+    override suspend fun getCurrentDeviceId(): DeviceId? = _currentDeviceId.value
+
+    override suspend fun selectDevice(deviceId: DeviceId) {
+        _currentDeviceId.value = deviceId
+    }
+
+    override suspend fun selectApp(deviceId: DeviceId, packageName: AppPackageName) {
+        currentDeviceApp.update {
+            it + (deviceId to packageName)
+        }
+    }
+
+    override suspend fun addNewDeviceConnectedForThisSession(deviceId: DeviceId) {
+        connectedDevicesForSession.update { it + deviceId }
+    }
+
+    override suspend fun isKnownDeviceForThisSession(deviceId: DeviceId): Boolean =
+        connectedDevicesForSession.first().contains(deviceId)
+
+    override fun observeDeviceSelectedApp(deviceId: DeviceId): Flow<AppPackageName?> =
+        currentDeviceApp.map { it[deviceId] }
+
+    override suspend fun getDeviceSelectedApp(deviceId: DeviceId): AppPackageName? = currentDeviceApp.first()[deviceId]
+
+    override suspend fun isKnownAppForThisSession(
+        deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
+    ): Boolean = connectedDevicesAndAppsForSession.first().contains(deviceIdAndPackageName)
+
+    override suspend fun addNewDeviceAppConnectedForThisSession(
+        deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
+    ) {
+        connectedDevicesAndAppsForSession.update { it + deviceIdAndPackageName }
+    }
+
+    override suspend fun deleteApp(deviceId: DeviceId, packageName: AppPackageName) {
+        connectedDevicesAndAppsForSession.update {
+            it.filterNot {
+                it.deviceId == deviceId && it.packageName == packageName
+            }.toSet()
+        }
+        currentDeviceApp.update { map ->
+            if (map[deviceId] == packageName)
+                map - deviceId
+            else map
+        }
+    }
+
+    override suspend fun delete(deviceId: DeviceId) {
+        _currentDeviceId.update {
+            if (it == deviceId)
+                null
+            else it
+        }
+        connectedDevicesAndAppsForSession.update {
+            it.filterNot {
+                it.deviceId == deviceId
+            }.toSet()
+        }
+        connectedDevicesAndAppsForSession.update {
+            it.filterNot {
+                it.deviceId == deviceId
+            }.toSet()
+        }
+        currentDeviceApp.update {
+            it.filterNot {
+                it.key == deviceId
+            }
+        }
+    }
+
+    override suspend fun clear() {
+        _currentDeviceId.update { null }
+    }
+}

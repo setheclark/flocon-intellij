@@ -9,8 +9,12 @@ group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
 // Exclude transitive dependencies that conflict with IDE bundled libraries
-private fun ProjectDependency.excludeBundledDependencies() {
+private fun ModuleDependency.excludeBundledDependencies() {
     exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
 }
 
 kotlin {
@@ -38,17 +42,11 @@ dependencies {
 
     // Flocon Desktop modules (source inclusion with DI.kt exclusions)
     // These provide the WebSocket server, protocol handling, and domain logic
-    implementation(project(":flocon-sources:domain")) {
-        excludeBundledDependencies()
-    }
-    implementation(project(":flocon-sources:data-core")) {
-        excludeBundledDependencies()
-    }
-    implementation(project(":flocon-sources:data-remote")) {
-        excludeBundledDependencies()
-    }
+    implementation(project(":flocon-sources:domain")) { excludeBundledDependencies() }
+    implementation(project(":flocon-sources:data-core")) { excludeBundledDependencies() }
+    implementation(project(":flocon-sources:data-remote")) { excludeBundledDependencies() }
 
-    implementation(libs.kermit)
+    implementation(libs.kermit) { excludeBundledDependencies() }
 
     // Test dependencies
     testImplementation(libs.junit.jupiter)

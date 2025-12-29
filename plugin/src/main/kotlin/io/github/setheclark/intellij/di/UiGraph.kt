@@ -4,8 +4,9 @@ import com.intellij.openapi.project.Project
 import dev.zacsweers.metro.GraphExtension
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import io.github.setheclark.intellij.ui.NetworkInspectorPanel
+import io.github.setheclark.intellij.ui.network.NetworkInspectorPanel
 import io.github.setheclark.intellij.ui.UiScopeDisposable
+import com.intellij.openapi.application.EDT
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,7 +26,7 @@ interface UiGraph {
     @Provides
     @SingleIn(UiScope::class)
     @UiCoroutineScope
-    fun provideUiScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    fun provideUiScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.EDT)
 
     @GraphExtension.Factory
     fun interface Factory {

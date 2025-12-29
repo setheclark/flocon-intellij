@@ -6,44 +6,28 @@ import com.intellij.openapi.components.Service
 import dev.zacsweers.metro.createGraphFactory
 import io.github.openflocon.domain.Constant
 import io.github.setheclark.intellij.di.AppGraph
+import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
 
 /**
  * Application-level service for Flocon plugin.
  * Thin orchestrator that delegates to injected managers.
- * The server is shared across all projects in the IDE.
  */
 @Service(Service.Level.APP)
 class ApplicationService(scope: CoroutineScope) : Disposable {
 
-    private val log = Logger.withTag("FloconApplicationService")
+    private val log = Logger.withPluginTag("ApplicationService")
 
     val appGraph: AppGraph
 
     init {
-        log.i { "FloconApplicationService initialized" }
+        log.i { "initialized" }
         appGraph = createGraphFactory<AppGraph.Factory>().create(scope)
 
-        startServer()
-    }
-
-    /**
-     * Start the Flocon WebSocket server on the specified port.
-     */
-    fun startServer(port: Int = Constant.SERVER_WEBSOCKET_PORT) {
-        appGraph.serverManager.startServer(port)
-    }
-
-    /**
-     * Stop the Flocon WebSocket server.
-     */
-    fun stopServer() {
-        appGraph.serverManager.stopServer()
+        appGraph.applicationServiceDelegate.initialize()
     }
 
     override fun dispose() {
         log.i { "FloconApplicationService disposing" }
-        appGraph.serverManager.dispose()
-        appGraph.adbManager.dispose()
     }
 }

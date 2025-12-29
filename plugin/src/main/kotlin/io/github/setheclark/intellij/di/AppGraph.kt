@@ -1,46 +1,29 @@
 package io.github.setheclark.intellij.di
 
-import dev.zacsweers.metro.*
-import io.github.setheclark.intellij.data.DeviceRepository
-import io.github.setheclark.intellij.data.DeviceRepositoryImpl
-import io.github.setheclark.intellij.data.NetworkCallRepository
-import io.github.setheclark.intellij.data.NetworkCallRepositoryImpl
-import io.github.setheclark.intellij.managers.adb.AdbManager
-import io.github.setheclark.intellij.managers.network.NetworkEventProcessor
-import io.github.setheclark.intellij.managers.server.MessageRouter
-import io.github.setheclark.intellij.managers.server.ServerManager
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Binds
+import dev.zacsweers.metro.DependencyGraph
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
+import io.github.setheclark.intellij.flocon.FloconBindingContainer
 import io.github.setheclark.intellij.process.ProcessExecutor
 import io.github.setheclark.intellij.process.SystemProcessExecutor
-import io.github.setheclark.intellij.services.FloconServerFactory
-import io.github.setheclark.intellij.services.ServerFactory
+import io.github.setheclark.intellij.services.ApplicationServiceDelegate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 
 @SingleIn(AppScope::class)
-@DependencyGraph
+@DependencyGraph(
+    bindingContainers = [
+        FloconBindingContainer::class,
+    ]
+)
 interface AppGraph : UiGraph.Factory {
 
-    // Managers
-    val adbManager: AdbManager
-    val networkEventProcessor: NetworkEventProcessor
-    val messageRouter: MessageRouter
-    val serverManager: ServerManager
-
-    // Repositories
-    val deviceRepository: DeviceRepository
-    val networkCallRepository: NetworkCallRepository
-
-    @Binds
-    val DeviceRepositoryImpl.bind: DeviceRepository
-
-    @Binds
-    val NetworkCallRepositoryImpl.bind: NetworkCallRepository
+    val applicationServiceDelegate: ApplicationServiceDelegate
 
     @Binds
     val SystemProcessExecutor.bind: ProcessExecutor
-
-    @Binds
-    val FloconServerFactory.bind: ServerFactory
 
     @Provides
     @SingleIn(AppScope::class)

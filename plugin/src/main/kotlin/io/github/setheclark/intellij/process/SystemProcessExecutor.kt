@@ -1,8 +1,12 @@
 package io.github.setheclark.intellij.process
 
+import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.github.openflocon.domain.common.Failure
+import io.github.openflocon.domain.common.Success
+import io.github.setheclark.intellij.util.withPluginTag
 import java.io.IOException
 
 /**
@@ -19,11 +23,11 @@ class SystemProcessExecutor : ProcessExecutor {
             val output = process.inputStream.bufferedReader().readText()
             val errorOutput = process.errorStream.bufferedReader().readText()
             val exitCode = process.waitFor()
-            ProcessResult(exitCode, output, errorOutput)
+            result(exitCode, output, errorOutput)
         } catch (e: IOException) {
-            ProcessResult(-1, "", e.message ?: "IOException occurred")
+            e.asResult(command)
         } catch (e: InterruptedException) {
-            ProcessResult(-1, "", e.message ?: "Process interrupted")
+            e.asResult(command)
         }
     }
 
@@ -35,23 +39,31 @@ class SystemProcessExecutor : ProcessExecutor {
             val output = process.inputStream.bufferedReader().readText()
             val errorOutput = process.errorStream.bufferedReader().readText()
             val exitCode = process.waitFor()
-            ProcessResult(exitCode, output, errorOutput)
+            result(exitCode, output, errorOutput)
         } catch (e: IOException) {
-            ProcessResult(-1, "", e.message ?: "IOException occurred")
+            e.asResult(command.joinToString(" "))
         } catch (e: InterruptedException) {
-            ProcessResult(-1, "", e.message ?: "Process interrupted")
+            e.asResult(command.joinToString(" "))
         }
     }
 
-    override fun isCommandAvailable(command: String): Boolean {
-        return try {
-            val process = ProcessBuilder(command, "version")
-                .redirectErrorStream(true)
-                .start()
-            val exitCode = process.waitFor()
-            exitCode == 0
-        } catch (e: IOException) {
-            false
+    private fun result(exitCode: Int, output: String, errorOutput: String): ProcessResult {
+        return if (exitCode == 0) {
+            Success(output)
+        } else {
+            val errorMessage =
+                "Command failed with exit code $exitCode. Error:\n$errorOutput"
+            Failure(IOException(errorMessage))
         }
+    }
+
+    private fun IOException.asResult(command: String): ProcessResult {
+        val errorMessage = "Error executing command '$command': $message"
+        return Failure(IOException(errorMessage))
+    }
+
+    private fun InterruptedException.asResult(command: String): ProcessResult {
+        val errorMessage = "Command execution interrupted for '$command': $message"
+        return Failure(IOException(errorMessage))
     }
 }

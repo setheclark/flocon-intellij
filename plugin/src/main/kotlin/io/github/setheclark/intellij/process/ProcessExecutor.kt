@@ -18,11 +18,4 @@ interface ProcessExecutor {
      * @return The result of the process execution
      */
     fun execute(vararg command: String): ProcessResult
-
-    /**
-     * Check if a command exists and is executable.
-     * @param command The command to check
-     * @return true if the command can be executed
-     */
-    fun isCommandAvailable(command: String): Boolean
 }

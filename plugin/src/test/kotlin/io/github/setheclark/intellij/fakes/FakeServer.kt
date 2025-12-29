@@ -5,11 +5,9 @@ import com.flocon.data.remote.models.FloconIncomingMessageDataModel
 import com.flocon.data.remote.models.FloconOutgoingMessageDataModel
 import com.flocon.data.remote.server.Server
 import io.github.openflocon.domain.messages.models.FloconReceivedFileDomainModel
-import io.github.setheclark.intellij.services.ServerFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.serialization.json.Json
 
 /**
  * Fake implementation of Server for testing.
@@ -102,13 +100,4 @@ class FakeServer : Server {
         sentMessages.clear()
         _activeDevices.value = emptySet()
     }
-}
-
-/**
- * Fake implementation of ServerFactory that returns a FakeServer.
- */
-class FakeServerFactory(
-    val server: FakeServer = FakeServer()
-) : ServerFactory {
-    override fun createServer(json: Json): Server = server
 }
