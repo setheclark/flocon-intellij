@@ -1,6 +1,5 @@
 package io.github.setheclark.intellij.ui.network.list
 
-import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
@@ -10,33 +9,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
-import java.awt.Component
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import javax.swing.*
+import javax.swing.JPanel
+import javax.swing.ListSelectionModel
+import javax.swing.RowSorter
+import javax.swing.SortOrder
 import javax.swing.table.AbstractTableModel
-import javax.swing.table.DefaultTableCellRenderer
-import javax.swing.table.TableCellRenderer
 import javax.swing.table.TableRowSorter
 
-/**
- * Defines all columns for the network call table.
- * Each column encapsulates its display name, width, value extraction, rendering, and comparison logic.
- */
-
-
-/**
- * Panel displaying the list of captured network calls in a table format.
- *
- * Observes [NetworkCallListViewModel] for filtered calls and auto-scroll settings.
- *
- * Uses injected [UiCoroutineScope] for coroutines - lifecycle managed by [io.github.setheclark.intellij.ui.UiScopeDisposable].
- */
 @Inject
 class NetworkCallListPanel(
     @param:UiCoroutineScope private val scope: CoroutineScope,

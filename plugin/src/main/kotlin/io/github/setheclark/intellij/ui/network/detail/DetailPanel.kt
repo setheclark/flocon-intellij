@@ -3,35 +3,29 @@ package io.github.setheclark.intellij.ui.network.detail
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTabbedPane
+import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.di.UiCoroutineScope
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
-import io.github.setheclark.intellij.flocon.network.NetworkResponse
+import io.github.setheclark.intellij.ui.network.detail.overview.OverviewPanel
+import io.github.setheclark.intellij.ui.network.detail.request.RequestPanel
+import io.github.setheclark.intellij.ui.network.detail.response.ResponsePanel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
-/**
- * Panel displaying detailed information about a selected network call.
- * Contains tabs for Headers, Request Body, Response Body, and Timing.
- *
- * Observes [DetailPanelViewModel] for the selected call.
- *
- * Uses injected [UiCoroutineScope] for coroutines - lifecycle managed by [io.github.setheclark.intellij.ui.UiScopeDisposable].
- */
 @Inject
 class DetailPanel(
     @param:UiCoroutineScope private val scope: CoroutineScope,
     private val viewModel: DetailPanelViewModel,
-    private val timingPanel: TimingPanel,
-    private val requestBodyPanel: BodyPanel,
-    private val responseBodyPanel: BodyPanel,
+    private val overviewPanel: OverviewPanel,
+    private val requestPanel: RequestPanel,
+    private val responsePanel: ResponsePanel,
 ) : JPanel(BorderLayout()) {
 
     private val tabbedPane = JBTabbedPane()
-    private val headersPanel = HeadersPanel()
 
     private val emptyLabel = JBLabel("Select a request to view details").apply {
         horizontalAlignment = JBLabel.CENTER
@@ -39,11 +33,12 @@ class DetailPanel(
     }
 
     init {
+        border = JBUI.Borders.customLineLeft(JBColor.border())
+
         tabbedPane.apply {
-            addTab("Headers", headersPanel)
-            addTab("Request", requestBodyPanel)
-            addTab("Response", responseBodyPanel)
-            addTab("Timing", timingPanel)
+            addTab("Overview", overviewPanel)
+            addTab("Response", responsePanel)
+            addTab("Request", requestPanel)
         }
 
         showEmpty()
@@ -78,13 +73,8 @@ class DetailPanel(
     }
 
     private fun updateDetails(call: NetworkCallEntity) {
-        headersPanel.showHeaders(call)
-        requestBodyPanel.showBody(call.request.body, null)
-        (call.response as? NetworkResponse.Success)?.let {
-            responseBodyPanel.showBody(call.response.body, call.response.contentType)
-        } ?: run {
-            responseBodyPanel.showBody(null, null)
-        }
-        timingPanel.showTiming(call)
+        overviewPanel.showOverview(call)
+        requestPanel.showRequest(call.request)
+        responsePanel.showResponse(call.response)
     }
 }

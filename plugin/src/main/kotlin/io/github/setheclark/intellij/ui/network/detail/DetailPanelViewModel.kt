@@ -7,15 +7,17 @@ import io.github.setheclark.intellij.ui.network.usecase.ObserveCallUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 @Inject
 class DetailPanelViewModel(
     parentViewModel: NetworkInspectorViewModel,
     observeCallUseCase: ObserveCallUseCase,
 ) {
-    val selectedCall: Flow<NetworkCallEntity> = parentViewModel.state
-        .mapNotNull { it.selectedCallId }
+    val selectedCall: Flow<NetworkCallEntity?> = parentViewModel.state
+        .map { it.selectedCallId }
         .distinctUntilChanged()
-        .flatMapLatest { observeCallUseCase.invoke(it) }
+        .flatMapLatest { it?.let(observeCallUseCase::invoke) ?: flowOf(null) }
+        .distinctUntilChanged()
 }

@@ -1,6 +1,7 @@
-package io.github.setheclark.intellij.ui.network.detail
+package io.github.setheclark.intellij.ui.network.detail.common
 
 import co.touchlab.kermit.Logger
+import com.intellij.formatting.visualLayer.VisualFormattingLayerService.Companion.visualFormattingLayerCodeStyleSettings
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.FileTypeManager
@@ -23,16 +24,17 @@ import javax.swing.JPanel
 /**
  * Panel for displaying request or response body with syntax highlighting and code folding.
  * Uses IntelliJ's EditorTextField for proper IDE-style rendering.
+ * Shows "Not available" when body is null/empty.
  */
 @Inject
-class BodyPanel(
+class BodyContentPanel(
     private val project: Project,
 ) : JPanel(BorderLayout()) {
 
-    private val log = Logger.withPluginTag("BodyPanel")
+    private val log = Logger.withPluginTag("BodyContentPanel")
 
     private val json = Json { prettyPrint = true }
-    private val emptyLabel = JBLabel("(Empty body)").apply {
+    private val emptyLabel = JBLabel("Not available").apply {
         horizontalAlignment = JBLabel.CENTER
         foreground = JBColor.GRAY
     }
@@ -57,17 +59,14 @@ class BodyPanel(
             return
         }
 
-        // Determine file type based on content type
         val fileType = getFileType(contentType)
 
-        // Format content if JSON
         val formattedBody = if (contentType?.contains("json", ignoreCase = true) == true) {
             formatJson(body)
         } else {
             body
         }
 
-        // Create EditorTextField with syntax highlighting
         try {
             val editorTextField = object : EditorTextField(formattedBody, project, fileType) {
                 override fun createEditor(): EditorEx {
@@ -141,7 +140,7 @@ class BodyPanel(
             val element = json.parseToJsonElement(jsonString)
             json.encodeToString(JsonElement.serializer(), element)
         } catch (e: Exception) {
-            jsonString // Return original if parsing fails
+            jsonString
         }
     }
 }

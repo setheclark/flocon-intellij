@@ -53,7 +53,7 @@ class NetworkInspectorPanel(
         mainSplitter = JBSplitter(false, 0.35f).apply {
             firstComponent = networkCallListPanel
             secondComponent = null  // Hidden initially until a request is selected
-            setHonorComponentsMinimumSize(true)
+            setHonorComponentsMinimumSize(false)
         }
 
         // Add status bar at bottom
