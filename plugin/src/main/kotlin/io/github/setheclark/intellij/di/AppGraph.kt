@@ -6,6 +6,8 @@ import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.flocon.FloconBindingContainer
+import io.github.setheclark.intellij.network.InMemoryNetworkDataSource
+import io.github.setheclark.intellij.network.NetworkDataSource
 import io.github.setheclark.intellij.process.ProcessExecutor
 import io.github.setheclark.intellij.process.SystemProcessExecutor
 import io.github.setheclark.intellij.services.ApplicationServiceDelegate
@@ -24,6 +26,9 @@ interface AppGraph : UiGraph.Factory {
 
     @Binds
     val SystemProcessExecutor.bind: ProcessExecutor
+
+    @Binds
+    val InMemoryNetworkDataSource.bind: NetworkDataSource
 
     @Provides
     @SingleIn(AppScope::class)

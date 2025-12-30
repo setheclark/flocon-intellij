@@ -9,7 +9,7 @@ import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.device.models.DeviceIdAndPackageNameDomainModel
 import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainModel
 import io.github.openflocon.domain.messages.repository.MessagesReceiverRepository
-import io.github.setheclark.intellij.flocon.network.datasource.NetworkDataSource
+import io.github.setheclark.intellij.network.NetworkDataSource
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext

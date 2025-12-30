@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.flocon.network.datasource
+package io.github.setheclark.intellij.network
 
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import kotlinx.coroutines.flow.Flow

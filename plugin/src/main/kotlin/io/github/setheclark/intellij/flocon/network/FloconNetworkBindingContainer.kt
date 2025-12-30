@@ -7,15 +7,15 @@ import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import io.github.setheclark.intellij.flocon.network.datasource.InMemoryNetworkDataSource
-import io.github.setheclark.intellij.flocon.network.datasource.NetworkDataSource
+import io.github.setheclark.intellij.network.InMemoryNetworkDataSource
+import io.github.setheclark.intellij.network.NetworkDataSource
 import kotlinx.serialization.json.Json
 
 @BindingContainer
 interface FloconNetworkBindingContainer {
 
-    @Binds
-    val InMemoryNetworkDataSource.bind: NetworkDataSource
+//    @Binds
+//    val InMemoryNetworkDataSource.bind: NetworkDataSource
 
     @Binds
     val NetworkRepositoryImpl.bind: NetworkRepository
