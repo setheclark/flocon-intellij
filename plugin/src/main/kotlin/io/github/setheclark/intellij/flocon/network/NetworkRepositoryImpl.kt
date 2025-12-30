@@ -30,6 +30,9 @@ class NetworkRepositoryImpl(
     override fun observeCall(callId: String): Flow<NetworkCallEntity?> =
         networkDataSource.observeByCallId(callId)
 
+    override fun observeCurrentAppInstance(deviceId: String, packageName: String): Flow<String?> =
+        networkDataSource.observeCurrentAppInstance(deviceId, packageName)
+
     override suspend fun deleteAll() {
         networkDataSource.deleteAll()
     }

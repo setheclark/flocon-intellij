@@ -11,6 +11,7 @@ import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
@@ -39,8 +40,30 @@ class InMemoryNetworkDataSource(
     // Using LinkedHashMap to maintain insertion order for FIFO eviction
     private val calls = MutableStateFlow<LinkedHashMap<String, StoredCall>>(linkedMapOf())
 
+    // Tracks current appInstance for each device/package combination
+    // When a new session starts (different appInstance), old calls are cleared
+    private val currentAppInstances = MutableStateFlow<Map<DevicePackageKey, String>>(emptyMap())
+
+    override fun observeCurrentAppInstance(deviceId: String, packageName: String): Flow<String?> {
+        val key = DevicePackageKey(deviceId, packageName)
+        return currentAppInstances
+            .map { it[key] }
+            .distinctUntilChanged()
+    }
+
     override suspend fun insert(entity: NetworkCallEntity) {
         val settings = settingsProvider.getSettings()
+
+        // Check for new session - if appInstance changed, clear previous session's calls
+        val devicePackageKey = DevicePackageKey(entity.deviceId, entity.packageName)
+        mutex.withLock {
+            val previousAppInstance = currentAppInstances.value[devicePackageKey]
+            if (previousAppInstance != null && previousAppInstance != entity.appInstance) {
+                log.i { "New session detected for ${entity.packageName} on ${entity.deviceId}. Clearing previous session calls." }
+                clearCallsForDevicePackageUnsafe(entity.deviceId, entity.packageName)
+            }
+            currentAppInstances.update { it + (devicePackageKey to entity.appInstance) }
+        }
 
         // Store bodies separately
         val requestBodyKey = bodyStore.store(entity.callId, BodyType.REQUEST, entity.request.body)
@@ -175,6 +198,26 @@ class InMemoryNetworkDataSource(
         }
     }
 
+    /**
+     * Clears all calls for a specific device/package.
+     * MUST be called while holding the mutex lock.
+     */
+    private suspend fun clearCallsForDevicePackageUnsafe(deviceId: String, packageName: String) {
+        val toRemove = calls.value.values
+            .filter { it.entity.deviceId == deviceId && it.entity.packageName == packageName }
+            .map { it.entity.callId }
+
+        toRemove.forEach { callId ->
+            bodyStore.removeAll(callId)
+        }
+
+        calls.update { current ->
+            val updated = LinkedHashMap(current)
+            toRemove.forEach { updated.remove(it) }
+            updated
+        }
+    }
+
     private fun NetworkCallEntity.stripBodies(): NetworkCallEntity {
         return copy(
             request = request.copy(body = null),
@@ -209,4 +252,12 @@ private data class StoredCall(
     val entity: NetworkCallEntity,
     val requestBodyKey: String?,
     val responseBodyKey: String?,
+)
+
+/**
+ * Key for tracking app sessions by device and package.
+ */
+private data class DevicePackageKey(
+    val deviceId: String,
+    val packageName: String,
 )

@@ -6,6 +6,12 @@ import kotlinx.coroutines.flow.Flow
 interface NetworkDataSource {
 
     /**
+     * Observes the current app instance for a device/package combination.
+     * Emits the new appInstance whenever it changes (i.e., when a new session starts).
+     */
+    fun observeCurrentAppInstance(deviceId: String, packageName: String): Flow<String?>
+
+    /**
      * Inserts a new network call entry.
      */
     suspend fun insert(entity: NetworkCallEntity)

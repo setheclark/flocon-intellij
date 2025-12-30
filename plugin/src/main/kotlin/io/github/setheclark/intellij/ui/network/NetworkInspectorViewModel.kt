@@ -4,17 +4,23 @@ import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
 import io.github.openflocon.domain.messages.usecase.StartServerUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ClearAllNetworkCallsUseCase
+import io.github.setheclark.intellij.ui.network.usecase.ObserveCurrentAppInstanceUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveServerStatusUseCase
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,6 +33,8 @@ class NetworkInspectorViewModel(
     private val clearAllNetworkCallsUseCase: ClearAllNetworkCallsUseCase,
     private val startServerUseCase: StartServerUseCase,
     private val stopServerUseCase: StopMessageServerUseCase,
+    private val observeCurrentDeviceIdAndPackageNameUseCase: ObserveCurrentDeviceIdAndPackageNameUseCase,
+    private val observeCurrentAppInstanceUseCase: ObserveCurrentAppInstanceUseCase,
 ) {
     private val log = Logger.withPluginTag("NetworkInspectorViewModel")
 
@@ -89,6 +97,26 @@ class NetworkInspectorViewModel(
             adbStatusDataSource.status.collect { status ->
                 _state.update { it.copy(adbStatus = status) }
             }
+        }
+
+        // Observe session changes to reset auto-scroll when a new app session starts
+        scope.launch {
+            observeCurrentDeviceIdAndPackageNameUseCase()
+                .flatMapLatest { deviceAndPackage ->
+                    observeCurrentAppInstanceUseCase(deviceAndPackage)
+                        .scan<String?, Pair<String?, String?>>(null to null) { (_, prev), current ->
+                            prev to current
+                        }
+                        .filter { (prev, current) ->
+                            // Only emit when transitioning from one non-null instance to another
+                            prev != null && current != null && prev != current
+                        }
+                        .map { }
+                }
+                .collect {
+                    log.i { "New session detected, enabling auto-scroll" }
+                    _state.update { it.copy(autoScrollEnabled = true) }
+                }
         }
     }
 }
