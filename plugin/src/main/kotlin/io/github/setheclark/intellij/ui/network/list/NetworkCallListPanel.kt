@@ -134,11 +134,12 @@ class NetworkCallListPanel(
 
 
     private fun observeState() {
-        // Observe filtered calls and auto-scroll state from ViewModel
         scope.launch {
+            var previousAutoScrollEnabled = false
             viewModel.state.collectLatest { (calls, autoScrollEnabled) ->
                 val newCallCount = calls.size
                 val hasNewItems = newCallCount > previousCallCount
+                val autoScrollJustEnabled = autoScrollEnabled && !previousAutoScrollEnabled
 
                 // Preserve selection by call ID
                 val selectedCallId = getSelectedCallId()
@@ -149,12 +150,13 @@ class NetworkCallListPanel(
                     restoreSelection(selectedCallId)
                 }
 
-                // Auto-scroll to show new entries if enabled
-                if (hasNewItems && autoScrollEnabled && isSortedByTime()) {
+                // Auto-scroll when new items arrive or when auto-scroll is just enabled
+                if ((hasNewItems || autoScrollJustEnabled) && autoScrollEnabled && isSortedByTime()) {
                     scrollToShowNewEntries()
                 }
 
                 previousCallCount = newCallCount
+                previousAutoScrollEnabled = autoScrollEnabled
             }
         }
     }

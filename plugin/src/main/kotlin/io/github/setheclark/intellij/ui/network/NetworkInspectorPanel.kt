@@ -3,6 +3,7 @@ package io.github.setheclark.intellij.ui.network
 import co.touchlab.kermit.Logger
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -42,12 +43,13 @@ class NetworkInspectorPanel(
 
     private val statusLabel = JBLabel()
     private val warningBanner = WarningBanner()
-    private var mainSplitter: JBSplitter
+    private lateinit var actionToolbar: ActionToolbar
+    private val mainSplitter: JBSplitter
 
     init {
         // Create combined toolbar with actions and filters
         val toolbarPanel = createToolbarPanel()
-        setToolbar(toolbarPanel)
+        toolbar = toolbarPanel
 
         // Create main content with split pane (horizontal: list on left, details on right)
         mainSplitter = JBSplitter(false, 0.35f).apply {
@@ -78,7 +80,7 @@ class NetworkInspectorPanel(
             add(StartStopServerAction())
         }
 
-        val actionToolbar = ActionManager.getInstance()
+        actionToolbar = ActionManager.getInstance()
             .createActionToolbar("NetworkToolbar", actionGroup, true)
             .apply {
                 targetComponent = this@NetworkInspectorPanel
@@ -107,6 +109,11 @@ class NetworkInspectorPanel(
         viewModel.latestUpdate(NetworkInspectorState::isDetailVisible) { isVisible ->
             log.v { "isDetailVisible: $isVisible" }
             mainSplitter.secondComponent = if (isVisible) detailPanel else null
+        }
+
+        // Observe action state to update toolbar toggle button
+        viewModel.latestUpdate({ it.autoScrollEnabled to it.serverState }) {
+            actionToolbar.updateActionsAsync()
         }
     }
 
