@@ -8,40 +8,27 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ToggleAction
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.adb.AdbStatus
 import io.github.setheclark.intellij.di.UiCoroutineScope
-import io.github.setheclark.intellij.network.ServerState
+import io.github.setheclark.intellij.server.MessageServerState
+import io.github.setheclark.intellij.ui.WarningBanner
 import io.github.setheclark.intellij.ui.network.detail.DetailPanel
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterPanel
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListPanel
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
-import java.awt.FlowLayout
-import javax.swing.BorderFactory
 import javax.swing.JPanel
 
-/**
- * Main panel for the Flocon Network Inspector tool window.
- * Contains the toolbar, network call list, and detail panel.
- *
- * Follows MVI pattern: observes [NetworkInspectorViewModel.state] and
- * dispatches [NetworkInspectorIntent]s for user actions.
- *
- * Uses injected [UiCoroutineScope] for coroutines - lifecycle managed by [io.github.setheclark.intellij.ui.UiScopeDisposable].
- */
 @Inject
 class NetworkInspectorPanel(
     @param:UiCoroutineScope private val scope: CoroutineScope,
@@ -54,7 +41,7 @@ class NetworkInspectorPanel(
     private val log = Logger.withPluginTag("NetworkInspectorPanel")
 
     private val statusLabel = JBLabel()
-    private val warningBanner = createWarningBanner()
+    private val warningBanner = WarningBanner()
     private var mainSplitter: JBSplitter
 
     init {
@@ -112,8 +99,8 @@ class NetworkInspectorPanel(
         }
 
         // Observe ADB status for warning banner
-        viewModel.latestUpdate(NetworkInspectorState::adbStatus) { status ->
-            updateWarningBanner(status)
+        viewModel.latestUpdate({ it.serverState to it.adbStatus }) { (serverState, adbState) ->
+            updateWarningBanner(adbState, serverState)
         }
 
         // Observe selected call to show/hide detail panel
@@ -141,36 +128,25 @@ class NetworkInspectorPanel(
         }
     }
 
-    private fun createWarningBanner(): JPanel {
-        val warningColor = JBColor(0xFFF3CD, 0x5C4813)
-        val textColor = JBColor(0x856404, 0xFFE69C)
-
-        return JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-            background = warningColor
-            border = BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor.border()),
-                JBUI.Borders.empty(8, 12)
-            )
-            isVisible = false
-
-            val iconLabel = JBLabel(AllIcons.General.Warning)
-            val textLabel = JBLabel().apply {
-                foreground = textColor
+    private fun updateWarningBanner(
+        adbStatus: AdbStatus,
+        serverStatus: MessageServerState
+    ) {
+        when {
+            adbStatus == AdbStatus.NotFound -> {
+                warningBanner.setText(
+                    "<html><b>ADB not found.</b> USB device connections won't work. " +
+                            "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>"
+                )
+                warningBanner.isVisible = true
             }
 
-            add(iconLabel)
-            add(textLabel)
-
-            putClientProperty("textLabel", textLabel)
-        }
-    }
-
-    private fun updateWarningBanner(status: AdbStatus) {
-        val textLabel = warningBanner.getClientProperty("textLabel") as? JBLabel
-        when (status) {
-            is AdbStatus.NotFound -> {
-                textLabel?.text = "<html><b>ADB not found.</b> USB device connections won't work. " +
-                        "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>"
+            serverStatus is MessageServerState.Error -> {
+                val message = serverStatus.message
+                warningBanner.setText(
+                    "<html><b>ERROR: '$message'</b> You may have the Flocon desktop app running.  " +
+                            "If so, close the app and click the server retry action above.</html>"
+                )
                 warningBanner.isVisible = true
             }
 
@@ -182,13 +158,13 @@ class NetworkInspectorPanel(
         warningBanner.repaint()
     }
 
-    private fun updateStatusLabel(state: ServerState) {
+    private fun updateStatusLabel(state: MessageServerState) {
         statusLabel.text = when (state) {
-            is ServerState.Stopped -> "Server stopped"
-            is ServerState.Starting -> "Starting server..."
-            is ServerState.Running -> "Server running on port ${state.port}"
-            is ServerState.Stopping -> "Stopping server..."
-            is ServerState.Error -> "Error: ${state.message}"
+            MessageServerState.Stopped -> "Message server stopped"
+            MessageServerState.Running -> "Message server running"
+            is MessageServerState.Error -> "Error: ${state.message}"
+            MessageServerState.Starting -> "Message server starting"
+            MessageServerState.Stopping -> "Message server stopping"
         }
     }
 
@@ -207,7 +183,7 @@ class NetworkInspectorPanel(
     }
 
     private inner class AutoScrollAction : ToggleAction(
-        "Auto-scroll to Latest",
+        "Auto-scroll to latest",
         "Automatically scroll to show new requests",
         AllIcons.RunConfigurations.Scroll_down
     ) {
@@ -228,29 +204,35 @@ class NetworkInspectorPanel(
 
     private inner class StartStopServerAction : AnAction() {
         override fun update(e: AnActionEvent) {
-            when (val state = viewModel.state.value.serverState) {
-                is ServerState.Running -> {
-                    e.presentation.text = "Stop Server"
-                    e.presentation.description = "Stop the Flocon server"
+            when (viewModel.state.value.serverState) {
+                is MessageServerState.Running -> {
+                    e.presentation.text = "Stop Message Server"
+                    e.presentation.description = "Stop the server"
                     e.presentation.icon = AllIcons.Actions.Suspend
                     e.presentation.isEnabled = true
                 }
 
-                is ServerState.Stopped -> {
-                    e.presentation.text = "Start Server"
-                    e.presentation.description = "Start the Flocon server"
+                is MessageServerState.Stopped -> {
+                    e.presentation.text = "Start Message Server"
+                    e.presentation.description = "Start the server"
                     e.presentation.icon = AllIcons.Actions.Execute
                     e.presentation.isEnabled = true
                 }
 
-                is ServerState.Error -> {
-                    e.presentation.text = "Retry Server"
-                    e.presentation.description = "Retry starting the Flocon server"
+                is MessageServerState.Error -> {
+                    e.presentation.text = "Retry Message Server"
+                    e.presentation.description = "Retry starting the server"
                     e.presentation.icon = AllIcons.Actions.Restart
                     e.presentation.isEnabled = true
                 }
 
-                else -> {
+                is MessageServerState.Starting -> {
+                    e.presentation.icon = AllIcons.Actions.Execute
+                    e.presentation.isEnabled = false
+                }
+
+                is MessageServerState.Stopping -> {
+                    e.presentation.icon = AllIcons.Actions.Suspend
                     e.presentation.isEnabled = false
                 }
             }
@@ -258,8 +240,8 @@ class NetworkInspectorPanel(
 
         override fun actionPerformed(e: AnActionEvent) {
             when (viewModel.state.value.serverState) {
-                is ServerState.Running -> viewModel.dispatch(NetworkInspectorIntent.StopServer)
-                is ServerState.Stopped, is ServerState.Error -> viewModel.dispatch(NetworkInspectorIntent.StartServer)
+                is MessageServerState.Running -> viewModel.dispatch(NetworkInspectorIntent.StopServer)
+                is MessageServerState.Stopped, is MessageServerState.Error -> viewModel.dispatch(NetworkInspectorIntent.StartServer)
                 else -> { /* ignore */
                 }
             }

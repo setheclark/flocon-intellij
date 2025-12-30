@@ -17,7 +17,6 @@ class MessagesRepositoryImpl(
     private val log = Logger.withPluginTag("MessagesRepository")
 
     override fun startServer() {
-        log.v("startServer")
         remote.startServer()
     }
 

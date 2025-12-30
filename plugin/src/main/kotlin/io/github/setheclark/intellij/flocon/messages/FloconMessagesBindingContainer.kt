@@ -13,12 +13,16 @@ import io.github.openflocon.domain.messages.repository.MessagesRepository
 import io.github.openflocon.domain.messages.usecase.HandleIncomingMessagesUseCase
 import io.github.setheclark.intellij.flocon.device.DevicesRepositoryImpl
 import io.github.setheclark.intellij.flocon.network.NetworkRepositoryImpl
+import io.github.setheclark.intellij.server.PluginMessageRemoteDataSource
 
 @BindingContainer
 interface FloconMessagesBindingContainer {
 
     @Binds
     val MessageRemoteDataSourceImpl.binds: MessageRemoteDataSource
+
+    @Binds
+    val MessageRemoteDataSourceImpl.binds2: PluginMessageRemoteDataSource
 
     @Binds
     val MessagesRepositoryImpl.binds: MessagesRepository

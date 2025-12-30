@@ -9,7 +9,7 @@ import io.github.openflocon.domain.settings.usecase.StartAdbForwardUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.flocon.device.EnsureSelectedDeviceAndPackageUseCase
-import io.github.setheclark.intellij.flocon.messages.MessageServerDelegate
+import io.github.setheclark.intellij.server.MessageServerDelegate
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay

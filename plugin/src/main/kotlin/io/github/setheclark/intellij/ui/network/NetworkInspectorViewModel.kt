@@ -4,8 +4,12 @@ import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.github.openflocon.domain.messages.usecase.StartServerUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.AppCoroutineScope
+import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
+import io.github.setheclark.intellij.ui.network.usecase.ClearAllNetworkCallsUseCase
+import io.github.setheclark.intellij.ui.network.usecase.ObserveServerStatusUseCase
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +23,10 @@ import kotlinx.coroutines.launch
 class NetworkInspectorViewModel(
     @param:AppCoroutineScope private val scope: CoroutineScope,
     private val adbStatusDataSource: AdbStatusDataSource,
+    private val observeServerStatusUseCase: ObserveServerStatusUseCase,
+    private val clearAllNetworkCallsUseCase: ClearAllNetworkCallsUseCase,
+    private val startServerUseCase: StartServerUseCase,
+    private val stopServerUseCase: StopMessageServerUseCase,
 ) {
     private val log = Logger.withPluginTag("NetworkInspectorViewModel")
 
@@ -41,10 +49,12 @@ class NetworkInspectorViewModel(
             }
 
             is NetworkInspectorIntent.ClearAll -> {
-//                networkCallRepository.clear()
-//                _state.update {
-//                    it.copy(selectedCall = null, autoScrollEnabled = true)
-//                }
+                scope.launch {
+                    clearAllNetworkCallsUseCase()
+                    _state.update {
+                        it.copy(selectedCallId = null, autoScrollEnabled = true)
+                    }
+                }
             }
 
             is NetworkInspectorIntent.EnableAutoScroll -> {
@@ -55,25 +65,24 @@ class NetworkInspectorViewModel(
                 _state.update { it.copy(autoScrollEnabled = false) }
             }
 
+
             is NetworkInspectorIntent.StartServer -> {
-//                serverManager.startServer(Constant.SERVER_WEBSOCKET_PORT)
+                scope.launch { startServerUseCase() }
             }
 
             is NetworkInspectorIntent.StopServer -> {
-//                serverManager.stopServer()
+                scope.launch { stopServerUseCase() }
             }
         }
     }
 
     private fun observeDataSources() {
-        // Observe network calls from repository
-
         // Observe server state
-//        scope.launch {
-//            serverManager.serverState.collect { serverState ->
-//                _state.update { it.copy(serverState = serverState) }
-//            }
-//        }
+        scope.launch {
+            observeServerStatusUseCase().collect { serverState ->
+                _state.update { it.copy(serverState = serverState) }
+            }
+        }
 
         // Observe ADB status
         scope.launch {

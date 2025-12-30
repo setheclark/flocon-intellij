@@ -7,4 +7,6 @@ interface NetworkRepository {
     fun observeCalls(deviceId: String, packageName: String): Flow<List<NetworkCallEntity>>
 
     fun observeCall(callId: String): Flow<NetworkCallEntity?>
+
+    suspend fun deleteAll()
 }
