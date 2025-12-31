@@ -4,7 +4,7 @@ import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.SearchTextField
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.di.AppCoroutineScope
+import io.github.setheclark.intellij.di.UiCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -17,7 +17,7 @@ import javax.swing.event.DocumentEvent
 
 @Inject
 class NetworkFilterPanel(
-    @param:AppCoroutineScope private val scope: CoroutineScope,
+    @param:UiCoroutineScope private val scope: CoroutineScope,
     private val viewModel: NetworkFilterViewModel,
 ) : JPanel() {
 
