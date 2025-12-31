@@ -26,6 +26,6 @@ dependencies {
     api(project(":flocon-sources:domain"))
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.paging.common)
     implementation(libs.kermit)
+    compileOnly(libs.paging.common)
 }

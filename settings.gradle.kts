@@ -1,17 +1,19 @@
-rootProject.name = "flocon-intellij"
+rootProject.name = "Intellij Flocon Plugin"
 
 pluginManagement {
     repositories {
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         google()
         mavenCentral()
         gradlePluginPortal()
     }
 }
 
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
 dependencyResolutionManagement {
     repositories {
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         google()
         mavenCentral()
     }
@@ -19,7 +21,7 @@ dependencyResolutionManagement {
 
 include(":plugin")
 
-// Flocon source modules - include sources directly with DI.kt exclusions
+// Flocon source modules - include sources directly with exclusions
 include(":flocon-sources:domain")
 include(":flocon-sources:data-core")
 include(":flocon-sources:data-remote")

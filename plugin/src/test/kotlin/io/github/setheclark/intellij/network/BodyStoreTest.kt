@@ -2,7 +2,6 @@ package io.github.setheclark.intellij.network
 
 import io.github.setheclark.intellij.fakes.FakeNetworkStorageSettingsProvider
 import io.github.setheclark.intellij.settings.NetworkStorageSettings
-import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.nulls.shouldBeNull

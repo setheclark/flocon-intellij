@@ -24,5 +24,5 @@ sourceSets {
 dependencies {
     api(libs.kotlinx.coroutines.core)
     api(libs.kotlinx.datetime)
-    api(libs.paging.common)
+    compileOnly(libs.paging.common)
 }

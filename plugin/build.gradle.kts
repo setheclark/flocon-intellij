@@ -8,22 +8,12 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
-// Exclude transitive dependencies that conflict with IDE bundled libraries
-private fun ModuleDependency.excludeBundledDependencies() {
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
-}
-
 kotlin {
     jvmToolchain(21)
 }
 
 repositories {
     mavenCentral()
-    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     google()
 
     intellijPlatform {
@@ -52,7 +42,6 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.platform.launcher)
-    testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.kotest.assertions)
@@ -64,9 +53,7 @@ intellijPlatform {
         version = providers.gradleProperty("pluginVersion")
 
         ideaVersion {
-            sinceBuild = "243"
-            // No upper bound - allow all future versions for broader compatibility
-            // with both IntelliJ IDEA and Android Studio
+            sinceBuild = providers.gradleProperty("pluginSinceBuild")
             untilBuild = provider { null }
         }
     }
@@ -100,4 +87,22 @@ tasks {
     test {
         useJUnitPlatform()
     }
+
+    runIde {
+        // Clear inherited JVM args from Gradle / IDE
+        jvmArgs = listOf(
+            "-Dkotlinx.coroutines.debug=off",
+            "-Didea.is.internal=false",
+            "-Xshare:off",
+        )
+    }
+}
+
+// Exclude transitive dependencies that conflict with IDE bundled libraries
+private fun ModuleDependency.excludeBundledDependencies() {
+    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
 }
