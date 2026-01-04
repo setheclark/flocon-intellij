@@ -42,6 +42,8 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.platform.launcher)
+    // JUnit 4 is required by IntelliJ Platform test framework
+    testRuntimeOnly("junit:junit:4.13.2")
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.kotest.assertions)
