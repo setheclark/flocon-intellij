@@ -40,8 +40,8 @@ class OverviewPanel : JPanel(BorderLayout()) {
             add(createGeneralSection())
             add(Box.createVerticalStrut(16))
             add(createTimingSection())
-            add(Box.createVerticalStrut(16))
-            add(createActionsSection())
+//            add(Box.createVerticalStrut(16))
+//            add(createActionsSection())
             add(Box.createVerticalGlue())
         }
 
