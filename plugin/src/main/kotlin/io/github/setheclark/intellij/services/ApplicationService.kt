@@ -4,7 +4,6 @@ import co.touchlab.kermit.Logger
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import dev.zacsweers.metro.createGraphFactory
-import io.github.openflocon.domain.Constant
 import io.github.setheclark.intellij.di.AppGraph
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
@@ -29,5 +28,6 @@ class ApplicationService(scope: CoroutineScope) : Disposable {
 
     override fun dispose() {
         log.i { "FloconApplicationService disposing" }
+        appGraph.applicationServiceDelegate.shutdown()
     }
 }

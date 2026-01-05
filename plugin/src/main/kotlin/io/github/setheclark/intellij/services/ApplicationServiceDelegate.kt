@@ -50,4 +50,9 @@ class ApplicationServiceDelegate(
             ensureSelectedDeviceAndPackageUseCase()
         }
     }
+
+    fun shutdown() {
+        log.i { "Shutting down application service" }
+        messageServerDelegate.shutdown()
+    }
 }
