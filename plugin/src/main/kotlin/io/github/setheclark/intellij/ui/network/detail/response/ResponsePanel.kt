@@ -7,6 +7,7 @@ import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.ui.network.detail.common.BodyContentPanel
 import io.github.setheclark.intellij.ui.network.detail.common.HeadersTablePanel
+import io.github.setheclark.intellij.ui.network.detail.common.ScratchFileContext
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
@@ -35,16 +36,28 @@ class ResponsePanel(
         showEmpty()
     }
 
-    fun showResponse(response: NetworkResponse?) {
+    fun showResponse(response: NetworkResponse?, callName: String, timestamp: Long) {
         when (response) {
             is NetworkResponse.Success -> {
                 headersPanel.showHeaders(response.headers)
-                bodyPanel.showBody(response.body, response.contentType)
+
+                val context = response.body?.let {
+                    ScratchFileContext(
+                        queryName = callName,
+                        bodyType = ScratchFileContext.BodyType.RESPONSE,
+                        statusCode = response.statusCode,
+                        timestamp = timestamp,
+                        body = it,
+                        contentType = response.contentType
+                    )
+                }
+
+                bodyPanel.showBody(response.body, response.contentType, context)
                 showContent()
             }
             is NetworkResponse.Failure -> {
                 headersPanel.showHeaders(emptyMap())
-                bodyPanel.showBody("Error: ${response.issue}", null)
+                bodyPanel.showBody("Error: ${response.issue}", null, null)
                 showContent()
             }
             null -> showEmpty()

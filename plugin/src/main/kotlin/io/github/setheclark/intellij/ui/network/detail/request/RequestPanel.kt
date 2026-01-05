@@ -5,6 +5,7 @@ import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.ui.network.detail.common.BodyContentPanel
 import io.github.setheclark.intellij.ui.network.detail.common.HeadersTablePanel
+import io.github.setheclark.intellij.ui.network.detail.common.ScratchFileContext
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
@@ -27,13 +28,24 @@ class RequestPanel(
         add(tabbedPane, BorderLayout.CENTER)
     }
 
-    fun showRequest(request: NetworkRequest) {
+    fun showRequest(request: NetworkRequest, callName: String, timestamp: Long) {
         headersPanel.showHeaders(request.headers)
 
         val contentType = request.headers.entries
             .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }
             ?.value
 
-        bodyPanel.showBody(request.body, contentType)
+        val context = request.body?.let {
+            ScratchFileContext(
+                queryName = callName,
+                bodyType = ScratchFileContext.BodyType.REQUEST,
+                statusCode = null,
+                timestamp = timestamp,
+                body = it,
+                contentType = contentType
+            )
+        }
+
+        bodyPanel.showBody(request.body, contentType, context)
     }
 }

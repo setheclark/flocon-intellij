@@ -74,7 +74,7 @@ class DetailPanel(
 
     private fun updateDetails(call: NetworkCallEntity) {
         overviewPanel.showOverview(call)
-        requestPanel.showRequest(call.request)
-        responsePanel.showResponse(call.response)
+        requestPanel.showRequest(call.request, call.name, call.startTime)
+        responsePanel.showResponse(call.response, call.name, call.startTime)
     }
 }
