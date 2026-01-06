@@ -51,7 +51,8 @@ class AdbRepositoryImpl(
         command: String
     ): Either<Throwable, String> {
         return if (deviceSerial == null) {
-            executeAdbCommand(adbPath, command)
+            // When no specific device is targeted, send to all connected devices
+            executeAdbAskSerialToAllDevices(adbPath, command, "")
         } else {
             executeAdbCommand("$adbPath -s $deviceSerial", command)
         }
@@ -62,11 +63,27 @@ class AdbRepositoryImpl(
         command: String,
         serialVariableName: String
     ): Either<Throwable, String> {
-        listConnectedDevices(adbPath).map { serial ->
-            executeAdbCommand("$adbPath -s $serial", command = command.replace(serialVariableName, serial))
+        val devices = listConnectedDevices(adbPath)
+
+        if (devices.isEmpty()) {
+            return executeAdbCommand(adbPath, command)
+        }
+
+        devices.map { serial ->
+            executeAdbCommand(
+                adbPath = "$adbPath -s $serial",
+                command = if (serialVariableName.isNotEmpty()) {
+                    command.replace(serialVariableName, serial)
+                } else {
+                    command
+                }
+            )
         }.let { results ->
             results.forEach {
-                if (it is Failure) return it
+                if (it is Failure) {
+                    log.e { "ADB command failed: ${it.value}" }
+                    return it
+                }
             }
 
             return results.firstOrNull() ?: Success("")
@@ -79,15 +96,15 @@ class AdbRepositoryImpl(
             val result = processExecutor.execute("adb", "version")
 
             result.mapSuccess {
-                Logger.d("'adb' found in system PATH.")
+                log.d("'adb' found in system PATH.")
                 return "adb" // It's in the PATH, so we can just use "adb"
             }
         } catch (e: IOException) {
-            Logger.e(e) { " 'adb' not found in system PATH directly: ${e.message}" }
+            log.e(e) { " 'adb' not found in system PATH directly: ${e.message}" }
             // Fall through to search in SDK
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
-            Logger.e(e) { "Process interrupted while checking 'adb' in system PATH." }
+            log.e(e) { "Process interrupted while checking 'adb' in system PATH." }
         }
 
         // 2. Check for common environment variable
@@ -125,6 +142,7 @@ class AdbRepositoryImpl(
         adbPath: String,
         command: String,
     ): Either<Throwable, String> {
+        log.v { "execute command: $adbPath $command" }
         return processExecutor.execute("$adbPath $command")
     }
 
