@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.awt.FlowLayout
+import java.awt.event.ActionEvent
 import javax.swing.JComboBox
 import javax.swing.JPanel
 import javax.swing.event.DocumentEvent
@@ -27,6 +28,7 @@ class NetworkFilterPanel(
     }
 
     private val deviceComboBox = JComboBox<DeviceFilterItem>()
+    private val deviceSelectionListener = { _: ActionEvent -> dispatchDeviceUpdate() }
 
     init {
         // Setup filter listeners
@@ -56,7 +58,7 @@ class NetworkFilterPanel(
             }
         })
 
-        deviceComboBox.addActionListener { dispatchDeviceUpdate() }
+        deviceComboBox.addActionListener(deviceSelectionListener)
     }
 
     private fun dispatchFilterUpdate() {
@@ -76,10 +78,13 @@ class NetworkFilterPanel(
     }
 
     private fun updateDeviceComboBox(renderModel: DevicesRenderModel) {
-        deviceComboBox.apply {
-            removeAll()
-            renderModel.devices.forEach { addItem(it) }
+        deviceComboBox.removeActionListener(deviceSelectionListener)
+        try {
+            deviceComboBox.removeAllItems()
+            renderModel.devices.forEach { deviceComboBox.addItem(it) }
+            deviceComboBox.selectedIndex = renderModel.selectedIndex
+        } finally {
+            deviceComboBox.addActionListener(deviceSelectionListener)
         }
-        deviceComboBox.selectedIndex = renderModel.selectedIndex
     }
 }

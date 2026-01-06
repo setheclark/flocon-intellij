@@ -41,14 +41,16 @@ class InMemoryLocalDevicesDataSource : LocalDevicesDataSource {
     }
 
     override suspend fun insertDevice(device: DeviceDomainModel): InsertResult {
-        log.v { "insertDevice $device" }
+        log.d { "insertDevice: deviceId=${device.deviceId}, deviceName=${device.deviceName}" }
         val exists = devicesState.value.containsKey(device.deviceId)
+        log.d { "insertDevice: exists=$exists, currentDevices=${devicesState.value.keys}" }
         return if (exists) {
             InsertResult.Exists
         } else {
             devicesState.update { current ->
                 current + (device.deviceId to device)
             }
+            log.d { "insertDevice: added new device, total devices=${devicesState.value.size}" }
             InsertResult.New
         }
     }

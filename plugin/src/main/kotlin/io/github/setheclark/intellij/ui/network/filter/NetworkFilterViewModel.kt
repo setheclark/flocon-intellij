@@ -29,15 +29,18 @@ class NetworkFilterViewModel(
         observeDevicesAndAppsUseCase(),
         observeCurrentDeviceIdAndPackageNameUseCase().filterNotNull()
     ) { devices, current ->
+        // Deduplicate by deviceId + packageName
+        val uniqueDevices = devices.distinctBy { it.deviceId to it.packageName }
+
         var selectedIndex = -1
-        val items = devices.mapIndexed { index, device ->
+        val items = uniqueDevices.mapIndexed { index, device ->
             if (current.deviceId == device.deviceId && device.packageName == current.packageName) {
                 selectedIndex = index
             }
 
             DeviceFilterItem(
                 displayName = device.deviceName.takeUnless { it.isEmpty() } ?: device.deviceId.take(12),
-                packageName = current.packageName,
+                packageName = device.packageName,
                 deviceId = device.deviceId,
             )
         }

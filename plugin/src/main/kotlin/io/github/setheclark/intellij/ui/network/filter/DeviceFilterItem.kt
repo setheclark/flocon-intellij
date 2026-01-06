@@ -8,5 +8,8 @@ data class DeviceFilterItem(
     val packageName: String,
     val deviceId: String,
 ) {
-    override fun toString(): String = displayName
+    override fun toString(): String {
+        val appName = packageName.substringAfterLast('.')
+        return "$displayName ($appName)"
+    }
 }
