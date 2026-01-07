@@ -13,6 +13,7 @@ import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.fileTypes.PlainTextFileType
 import com.intellij.openapi.project.Project
 import com.intellij.ui.EditorTextField
+import com.intellij.ui.LanguageTextField
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
@@ -24,7 +25,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import java.awt.BorderLayout
 import java.awt.Cursor
-import java.awt.Font
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.colors.EditorFontType
+import com.intellij.openapi.fileTypes.LanguageFileType
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.time.Instant
@@ -136,9 +139,12 @@ class BodyContentPanel(
         }
 
         try {
-            val editorTextField = object : EditorTextField(formattedBody, project, fileType) {
+            val language = if (fileType is LanguageFileType) fileType.language else Language.ANY
+
+            val editorTextField = object : LanguageTextField(language, project, formattedBody) {
                 override fun createEditor(): EditorEx {
                     val editor = super.createEditor()
+                    editor.colorsScheme = EditorColorsManager.getInstance().globalScheme
                     editor.settings.apply {
                         isLineNumbersShown = true
                         isWhitespacesShown = false
@@ -152,12 +158,12 @@ class BodyContentPanel(
                     }
                     editor.setVerticalScrollbarVisible(true)
                     editor.setHorizontalScrollbarVisible(true)
+                    editor.isViewer = true
                     return editor
                 }
             }.apply {
                 @Suppress("UsePropertyAccessSyntax")
                 setOneLineMode(false)
-                isViewer = true
             }
 
             currentEditorTextField = editorTextField
@@ -183,7 +189,7 @@ class BodyContentPanel(
         contentPanel.removeAll()
         val textArea = JBTextArea(text).apply {
             isEditable = false
-            font = Font(Font.MONOSPACED, Font.PLAIN, 12)
+            font = EditorColorsManager.getInstance().globalScheme.getFont(EditorFontType.PLAIN)
             border = JBUI.Borders.empty(4)
         }
         contentPanel.add(JBScrollPane(textArea), BorderLayout.CENTER)
