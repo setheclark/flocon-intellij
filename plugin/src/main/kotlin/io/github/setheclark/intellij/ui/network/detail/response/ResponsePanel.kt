@@ -1,8 +1,10 @@
 package io.github.setheclark.intellij.ui.network.detail.response
 
+import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBTabbedPane
+import com.intellij.ui.tabs.JBTabsFactory
+import com.intellij.ui.tabs.TabInfo
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.ui.network.detail.common.BodyContentPanel
@@ -17,10 +19,11 @@ import javax.swing.JPanel
  */
 @Inject
 class ResponsePanel(
+    private val project: Project,
     private val bodyPanel: BodyContentPanel,
 ) : JPanel(BorderLayout()) {
 
-    private val tabbedPane = JBTabbedPane()
+    private val tabs = JBTabsFactory.createTabs(project)
     private val headersPanel = HeadersTablePanel()
 
     private val emptyLabel = JBLabel("No response").apply {
@@ -29,10 +32,8 @@ class ResponsePanel(
     }
 
     init {
-        tabbedPane.apply {
-            addTab("Headers", headersPanel)
-            addTab("Body", bodyPanel)
-        }
+        tabs.addTab(TabInfo(headersPanel).setText("Headers"))
+        tabs.addTab(TabInfo(bodyPanel).setText("Body"))
         showEmpty()
     }
 
@@ -73,7 +74,7 @@ class ResponsePanel(
 
     private fun showContent() {
         removeAll()
-        add(tabbedPane, BorderLayout.CENTER)
+        add(tabs.component, BorderLayout.CENTER)
         revalidate()
         repaint()
     }

@@ -1,6 +1,8 @@
 package io.github.setheclark.intellij.ui.network.detail.request
 
-import com.intellij.ui.components.JBTabbedPane
+import com.intellij.openapi.project.Project
+import com.intellij.ui.tabs.JBTabsFactory
+import com.intellij.ui.tabs.TabInfo
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.ui.network.detail.common.BodyContentPanel
@@ -14,18 +16,17 @@ import javax.swing.JPanel
  */
 @Inject
 class RequestPanel(
+    private val project: Project,
     private val bodyPanel: BodyContentPanel,
 ) : JPanel(BorderLayout()) {
 
-    private val tabbedPane = JBTabbedPane()
+    private val tabs = JBTabsFactory.createTabs(project)
     private val headersPanel = HeadersTablePanel()
 
     init {
-        tabbedPane.apply {
-            addTab("Headers", headersPanel)
-            addTab("Body", bodyPanel)
-        }
-        add(tabbedPane, BorderLayout.CENTER)
+        tabs.addTab(TabInfo(headersPanel).setText("Headers"))
+        tabs.addTab(TabInfo(bodyPanel).setText("Body"))
+        add(tabs.component, BorderLayout.CENTER)
     }
 
     fun showRequest(request: NetworkRequest, callName: String, timestamp: Long) {

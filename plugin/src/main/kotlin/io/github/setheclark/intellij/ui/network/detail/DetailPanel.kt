@@ -1,8 +1,10 @@
 package io.github.setheclark.intellij.ui.network.detail
 
+import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBTabbedPane
+import com.intellij.ui.tabs.JBTabsFactory
+import com.intellij.ui.tabs.TabInfo
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.di.UiCoroutineScope
@@ -18,6 +20,7 @@ import javax.swing.JPanel
 
 @Inject
 class DetailPanel(
+    private val project: Project,
     @param:UiCoroutineScope private val scope: CoroutineScope,
     private val viewModel: DetailPanelViewModel,
     private val overviewPanel: OverviewPanel,
@@ -25,7 +28,7 @@ class DetailPanel(
     private val responsePanel: ResponsePanel,
 ) : JPanel(BorderLayout()) {
 
-    private val tabbedPane = JBTabbedPane()
+    private val tabs = JBTabsFactory.createTabs(project)
 
     private val emptyLabel = JBLabel("Select a request to view details").apply {
         horizontalAlignment = JBLabel.CENTER
@@ -35,11 +38,9 @@ class DetailPanel(
     init {
         border = JBUI.Borders.customLineLeft(JBColor.border())
 
-        tabbedPane.apply {
-            addTab("Overview", overviewPanel)
-            addTab("Response", responsePanel)
-            addTab("Request", requestPanel)
-        }
+        tabs.addTab(TabInfo(overviewPanel).setText("Overview"))
+        tabs.addTab(TabInfo(responsePanel).setText("Response"))
+        tabs.addTab(TabInfo(requestPanel).setText("Request"))
 
         showEmpty()
         observeSelectedCall()
@@ -54,7 +55,7 @@ class DetailPanel(
 
     private fun showDetails() {
         removeAll()
-        add(tabbedPane, BorderLayout.CENTER)
+        add(tabs.component, BorderLayout.CENTER)
         revalidate()
         repaint()
     }
