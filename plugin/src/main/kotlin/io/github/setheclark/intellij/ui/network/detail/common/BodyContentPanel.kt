@@ -6,6 +6,7 @@ import com.intellij.ide.scratch.ScratchFileService
 import com.intellij.ide.scratch.ScratchRootType
 import com.intellij.lang.Language
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.FileType
@@ -159,6 +160,8 @@ class BodyContentPanel(
                     editor.setVerticalScrollbarVisible(true)
                     editor.setHorizontalScrollbarVisible(true)
                     editor.isViewer = true
+                    editor.caretModel.moveToOffset(0)
+                    editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
                     return editor
                 }
             }.apply {
