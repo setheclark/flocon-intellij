@@ -12,15 +12,19 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
+import java.awt.Component
+import java.awt.Font
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import javax.swing.AbstractAction
 import javax.swing.JPanel
+import javax.swing.JTable
 import javax.swing.KeyStroke
 import javax.swing.ListSelectionModel
 import javax.swing.table.AbstractTableModel
+import javax.swing.table.DefaultTableCellRenderer
 
 /**
  * Reusable panel displaying HTTP headers in a borderless, headerless two-column table.
@@ -39,6 +43,10 @@ class HeadersTablePanel : JPanel(BorderLayout()) {
         intercellSpacing = JBUI.emptySize()
         rowHeight = JBUI.scale(24)
         selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
+        isStriped = true
+
+        // Custom renderer for key column (bold, gray)
+        columnModel.getColumn(0).cellRenderer = KeyColumnRenderer()
     }
 
     private val emptyLabel = JBLabel("No headers").apply {
@@ -56,8 +64,26 @@ class HeadersTablePanel : JPanel(BorderLayout()) {
             showEmpty()
         } else {
             tableModel.updateHeaders(headers)
+            autoFitKeyColumn()
             showTable()
         }
+    }
+
+    private fun autoFitKeyColumn() {
+        val keyColumn = table.columnModel.getColumn(0)
+        var maxWidth = 0
+
+        for (row in 0 until table.rowCount) {
+            val renderer = table.getCellRenderer(row, 0)
+            val comp = table.prepareRenderer(renderer, row, 0)
+            maxWidth = maxOf(maxWidth, comp.preferredSize.width)
+        }
+
+        // Add padding
+        maxWidth += JBUI.scale(16)
+
+        keyColumn.preferredWidth = maxWidth
+        keyColumn.maxWidth = maxWidth
     }
 
     private fun setupCopySupport() {
@@ -148,6 +174,25 @@ class HeadersTablePanel : JPanel(BorderLayout()) {
         }
 
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
+    }
+}
+
+private class KeyColumnRenderer : DefaultTableCellRenderer() {
+    override fun getTableCellRendererComponent(
+        table: JTable,
+        value: Any?,
+        isSelected: Boolean,
+        hasFocus: Boolean,
+        row: Int,
+        column: Int
+    ): Component {
+        val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+        font = font.deriveFont(Font.BOLD)
+        if (!isSelected) {
+            foreground = JBColor.GRAY
+        }
+        border = JBUI.Borders.empty(0, 4)
+        return component
     }
 }
 

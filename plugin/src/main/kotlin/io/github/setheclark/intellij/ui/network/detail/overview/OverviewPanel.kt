@@ -11,6 +11,8 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.Font
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.JPanel
@@ -22,6 +24,9 @@ import javax.swing.JPanel
 @Inject
 class OverviewPanel : JPanel(BorderLayout()) {
 
+    private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+        .withZone(ZoneId.systemDefault())
+
     private val methodLabel = createValueLabel()
     private val nameLabel = createValueLabel()
     private val statusLabel = createValueLabel()
@@ -29,8 +34,6 @@ class OverviewPanel : JPanel(BorderLayout()) {
 
     private val durationLabel = createValueLabel()
     private val startTimeLabel = createValueLabel()
-    private val deviceIdLabel = createValueLabel()
-    private val packageLabel = createValueLabel()
 
     init {
         val content = JPanel().apply {
@@ -68,9 +71,7 @@ class OverviewPanel : JPanel(BorderLayout()) {
         }
 
         durationLabel.text = response?.durationMs?.let { "${it}ms" } ?: "N/A"
-        startTimeLabel.text = Instant.ofEpochMilli(call.startTime).toString()
-        deviceIdLabel.text = call.deviceId
-        packageLabel.text = call.packageName
+        startTimeLabel.text = timeFormatter.format(Instant.ofEpochMilli(call.startTime))
     }
 
     private fun createGeneralSection(): JPanel {
@@ -86,8 +87,6 @@ class OverviewPanel : JPanel(BorderLayout()) {
         return createSection("Timing") {
             add(createRow("Duration", durationLabel))
             add(createRow("Start Time", startTimeLabel))
-            add(createRow("Device ID", deviceIdLabel))
-            add(createRow("Package", packageLabel))
         }
     }
 
