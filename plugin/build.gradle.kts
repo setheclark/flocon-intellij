@@ -24,7 +24,7 @@ repositories {
 dependencies {
     // IntelliJ Platform
     intellijPlatform {
-        intellijIdeaCommunity(providers.gradleProperty("platformVersion").get())
+        intellijIdea(providers.gradleProperty("platformVersion"))
         bundledPlugin("com.intellij.java")
         pluginVerifier()
         zipSigner()
