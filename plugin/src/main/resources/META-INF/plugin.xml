@@ -1,4 +1,4 @@
-<idea-plugin>
+<idea-plugin require-restart="true">
     <id>io.github.setheclark.flocon_plugin</id>
     <name>Network Inspector</name>
     <vendor email="todo@example.com" url="https://example.com">TODO</vendor>
