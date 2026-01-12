@@ -47,6 +47,7 @@ kotest-assertions = { module = "io.kotest:kotest-assertions-core", version.ref =
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 intellij-platform = { id = "org.jetbrains.intellij.platform", version.ref = "intellij-platform" }
 metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 

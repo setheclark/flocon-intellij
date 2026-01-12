@@ -1,6 +1,10 @@
+import org.jetbrains.intellij.platform.gradle.extensions.excludeCoroutines
+import org.jetbrains.intellij.platform.gradle.extensions.excludeKotlinStdlib
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.intellij.platform)
     alias(libs.plugins.metro)
 }
@@ -14,6 +18,7 @@ kotlin {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
     google()
 
     intellijPlatform {
@@ -25,9 +30,8 @@ dependencies {
     // IntelliJ Platform
     intellijPlatform {
         intellijIdea(providers.gradleProperty("platformVersion"))
-        bundledPlugin("com.intellij.java")
-        pluginVerifier()
-        zipSigner()
+        @Suppress("UnstableApiUsage")
+        composeUI()
     }
 
     // Flocon Desktop modules (source inclusion with DI.kt exclusions)
@@ -102,9 +106,6 @@ tasks {
 
 // Exclude transitive dependencies that conflict with IDE bundled libraries
 private fun ModuleDependency.excludeBundledDependencies() {
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+    excludeKotlinStdlib()
+    excludeCoroutines()
 }
