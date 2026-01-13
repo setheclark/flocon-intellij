@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.flocon.adb
 
 import co.touchlab.kermit.Logger
+import com.intellij.util.EnvironmentUtil
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -16,7 +17,9 @@ import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.Paths
 
 @Inject
 @SingleIn(AppScope::class)
@@ -50,8 +53,8 @@ class AdbRepositoryImpl(
         deviceSerial: String?,
         command: String
     ): Either<Throwable, String> {
+        log.d { "Executing ADB command: $command ${deviceSerial?.let { "on device: $it" } ?: "on all devices"}" }
         return if (deviceSerial == null) {
-            // When no specific device is targeted, send to all connected devices
             executeAdbAskSerialToAllDevices(adbPath, command, "")
         } else {
             executeAdbCommand("$adbPath -s $deviceSerial", command)
@@ -66,8 +69,11 @@ class AdbRepositoryImpl(
         val devices = listConnectedDevices(adbPath)
 
         if (devices.isEmpty()) {
+            log.d { "No devices connected, executing command without device serial" }
             return executeAdbCommand(adbPath, command)
         }
+
+        log.d { "Executing command on ${devices.size} device(s)" }
 
         devices.map { serial ->
             executeAdbCommand(
@@ -81,7 +87,7 @@ class AdbRepositoryImpl(
         }.let { results ->
             results.forEach {
                 if (it is Failure) {
-                    log.e { "ADB command failed: ${it.value}" }
+                    log.e { "ADB command failed: ${it.value.message}" }
                     return it
                 }
             }
@@ -91,33 +97,36 @@ class AdbRepositoryImpl(
     }
 
     override fun findAdbPath(): String? {
-        // 1. Check if 'adb' is in system PATH
-        try {
-            val result = processExecutor.execute("adb", "version")
+        log.d { "Searching for ADB executable" }
 
-            result.mapSuccess {
-                log.d("'adb' found in system PATH.")
-                return "adb" // It's in the PATH, so we can just use "adb"
+        System.getProperty("android.adb.path")?.let { path ->
+            val adb = Paths.get(path)
+            if (Files.exists(adb, LinkOption.NOFOLLOW_LINKS)) {
+                log.d { "Found ADB from android.adb.path property: $path" }
+                return path
             }
-        } catch (e: IOException) {
-            log.e(e) { " 'adb' not found in system PATH directly: ${e.message}" }
-            // Fall through to search in SDK
-        } catch (e: InterruptedException) {
-            Thread.currentThread().interrupt()
-            log.e(e) { "Process interrupted while checking 'adb' in system PATH." }
         }
 
-        // 2. Check for common environment variable
-        val androidHome = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+        EnvironmentUtil.getValue("PATH")?.let { pathProperty ->
+            pathProperty.split(File.pathSeparatorChar).forEach { dir ->
+                val adb = Paths.get(dir, ADB)
+                if (Files.exists(adb, LinkOption.NOFOLLOW_LINKS)) {
+                    val adbPath = adb.toAbsolutePath().toString()
+                    log.d { "Found ADB in PATH: $adbPath" }
+                    return adbPath
+                }
+            }
+        }
+
+        val androidHome = EnvironmentUtil.getValue("ANDROID_HOME") ?: EnvironmentUtil.getValue("ANDROID_SDK_ROOT")
         if (androidHome != null) {
-            val adbFromEnv = File(androidHome, "platform-tools/adb")
+            val adbFromEnv = File(androidHome, "platform-tools/$ADB")
             if (adbFromEnv.exists() && adbFromEnv.canExecute()) {
-                log.d { "Found ADB via ANDROID_HOME: ${adbFromEnv.absolutePath}" }
+                log.d { "Found ADB via ANDROID_HOME/ANDROID_SDK_ROOT: ${adbFromEnv.absolutePath}" }
                 return adbFromEnv.absolutePath
             }
         }
 
-        // 3. Search common Android SDK locations
         val userHome = System.getProperty("user.home")
         val possibleSdkPaths = listOf(
             File(userHome, "Library/Android/sdk"),           // macOS default
@@ -127,14 +136,14 @@ class AdbRepositoryImpl(
         )
 
         for (sdkPath in possibleSdkPaths) {
-            val platformToolsPath = File(sdkPath, "platform-tools")
-            val adbExecutable = File(platformToolsPath, "adb")
+            val adbExecutable = File(sdkPath, "platform-tools/$ADB")
             if (adbExecutable.exists() && adbExecutable.canExecute()) {
-                log.d { "Found ADB at: ${adbExecutable.absolutePath}" }
+                log.d { "Found ADB at common SDK location: ${adbExecutable.absolutePath}" }
                 return adbExecutable.absolutePath
             }
         }
 
+        log.w { "ADB executable not found. Checked: android.adb.path property, PATH environment, ANDROID_HOME, ANDROID_SDK_ROOT, and common SDK locations" }
         return null
     }
 
@@ -142,7 +151,6 @@ class AdbRepositoryImpl(
         adbPath: String,
         command: String,
     ): Either<Throwable, String> {
-        log.v { "execute command: $adbPath $command" }
         return processExecutor.execute("$adbPath $command")
     }
 
@@ -150,16 +158,39 @@ class AdbRepositoryImpl(
         val result = processExecutor.execute("$adbPath devices")
 
         return result.map(
-            mapError = { emptyList() },
+            mapError = { error ->
+                log.w { "Failed to list connected devices: ${error.message}" }
+                emptyList()
+            },
             mapSuccess = { output ->
-                output.lines()
+                val devices = output.lines()
                     .filter { line ->
                         line.endsWith("device") && !line.startsWith("List of devices attached")
                     }
                     .mapNotNull { line ->
                         line.split("\t").firstOrNull()
                     }
+                log.d { "Found ${devices.size} connected device(s)" }
+                devices
             }
         )
+    }
+
+    companion object {
+        // TODO Find better place for this
+        fun currentPlatform() = when (System.getProperty("os.name").lowercase()) {
+            "mac os" -> 3
+            "windows" -> 2
+            "linux" -> 1
+            else -> 0
+        }
+
+        private val CurrentPlatform = currentPlatform()
+
+        fun ext(windowsExtension: String = ".exe", nonWindowsExtension: String = ""): String {
+            return if (CurrentPlatform == 2) windowsExtension else nonWindowsExtension
+        }
+
+        private val ADB = "adb${ext()}"
     }
 }
