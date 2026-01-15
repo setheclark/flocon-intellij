@@ -2,20 +2,24 @@ package io.github.setheclark.intellij.mcp
 
 import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.Inject
+import io.github.openflocon.domain.device.repository.DevicesRepository
 import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.mcp.tools.*
 import io.github.setheclark.intellij.util.withPluginTag
-import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.Netty
-import io.ktor.server.routing.*
-import io.ktor.server.sse.*
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 /**
@@ -34,9 +38,13 @@ class McpServerDelegate(
     @param:AppCoroutineScope private val coroutineScope: CoroutineScope,
     private val config: McpServerConfig,
     private val networkDataAdapter: McpNetworkDataAdapter,
+    private val networkRepository: io.github.setheclark.intellij.flocon.network.NetworkRepository,
+    private val devicesRepository: DevicesRepository,
 ) {
     private val log = Logger.withPluginTag("McpServerDelegate")
     private var ktorServer: EmbeddedServer<*, *>? = null
+    private var mcpServer: Server? = null
+    private val notificationJobs = mutableListOf<Job>()
 
     fun initialize() {
         if (!config.enabled) {
@@ -50,7 +58,11 @@ class McpServerDelegate(
 
                 ktorServer = embeddedServer(Netty, port = config.port, host = "localhost") {
                     mcp {
-                        createMcpServer()
+                        createMcpServer().also { server ->
+                            mcpServer = server
+                            // Start logging new network calls
+                            startNetworkCallLogging()
+                        }
                     }
                 }.start(wait = false)
 
@@ -64,8 +76,14 @@ class McpServerDelegate(
     fun shutdown() {
         try {
             log.i { "Shutting down MCP server" }
+
+            // Cancel all notification subscriptions
+            notificationJobs.forEach { it.cancel() }
+            notificationJobs.clear()
+
             ktorServer?.stop(gracePeriodMillis = 1000, timeoutMillis = 5000)
             ktorServer = null
+            mcpServer = null
             log.i { "MCP server shut down successfully" }
         } catch (e: Exception) {
             log.e(e) { "Error shutting down MCP server" }
@@ -111,5 +129,79 @@ class McpServerDelegate(
         }
 
         log.i { "Registered 3 MCP tools: list_network_calls, get_network_call, filter_network_calls" }
+    }
+
+    private fun startNetworkCallLogging() {
+        log.i { "Starting network call logging for MCP server" }
+
+        // Log new network calls as they arrive for the currently selected device/app
+        // Clients can query these via the MCP tools (poll-based access)
+        val job = coroutineScope.launch {
+            devicesRepository.observeCurrentDevice()
+                .flatMapLatest { device ->
+                    if (device == null) {
+                        flowOf(Pair(null, null))
+                    } else {
+                        // Observe the selected app for this device, keeping the device info
+                        devicesRepository.observeDeviceSelectedApp(device.deviceId)
+                            .map { app ->
+                                // Map to a pair of deviceId and app
+                                Pair(device.deviceId, app)
+                            }
+                    }
+                }
+                .catch { e -> log.e(e) { "Error observing current device/app" } }
+                .collect { (deviceId, app) ->
+                    if (deviceId != null && app != null) {
+                        // Cancel any previous subscription job before starting a new one
+                        notificationJobs.filterIsInstance<Job>().drop(1).forEach { it.cancel() }
+
+                        subscribeToDeviceNetworkCalls(deviceId, app.packageName)
+                    } else {
+                        log.d { "No device or app selected, skipping network call notifications" }
+                    }
+                }
+        }
+
+        notificationJobs.add(job)
+        log.i { "Network call logging started" }
+    }
+
+    private suspend fun subscribeToDeviceNetworkCalls(deviceId: String, packageName: String?) {
+        if (packageName == null) {
+            log.d { "No package selected for device $deviceId, skipping network call notifications" }
+            return
+        }
+
+        log.i { "Subscribing to network calls for device=$deviceId, package=$packageName" }
+
+        // Keep track of call IDs we've already notified about to avoid duplicates
+        val seenCallIds = mutableSetOf<String>()
+
+        networkRepository.observeCalls(deviceId, packageName)
+            .catch { e -> log.e(e) { "Error observing network calls for $deviceId/$packageName" } }
+            .onEach { calls ->
+                // Find new calls that we haven't seen before
+                val newCalls = calls.filter { it.callId !in seenCallIds }
+
+                newCalls.forEach { call ->
+                    seenCallIds.add(call.callId)
+                    logNetworkCall(call)
+                }
+            }
+            .collect { }
+    }
+
+    private fun logNetworkCall(call: io.github.setheclark.intellij.flocon.network.NetworkCallEntity) {
+        log.i {
+            "New network call: ${call.callId} - ${call.request.method} ${call.request.url}"
+        }
+
+        // Network calls are stored in NetworkDataSource and available via MCP tools:
+        // - list_network_calls: Get recent network calls (with optional filters)
+        // - get_network_call: Get specific call details by ID
+        // - filter_network_calls: Advanced filtering by type, time, status, etc.
+        //
+        // AI clients should poll these tools to discover new network calls.
     }
 }

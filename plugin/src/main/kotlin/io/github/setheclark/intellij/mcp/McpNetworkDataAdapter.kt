@@ -6,6 +6,8 @@ import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.network.NetworkDataSource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Adapter that bridges NetworkDataSource with MCP tools.
