@@ -38,6 +38,12 @@ dependencies {
 
     implementation(libs.kermit) { excludeBundledDependencies() }
 
+    // MCP (Model Context Protocol) SDK for AI agent integration
+    implementation("io.modelcontextprotocol:kotlin-sdk:0.8.1") { excludeBundledDependencies() }
+    implementation(libs.ktor.server.core) { excludeBundledDependencies() }
+    implementation(libs.ktor.server.netty) { excludeBundledDependencies() }
+    implementation(libs.ktor.server.sse) { excludeBundledDependencies() }
+
     // Test dependencies
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.params)
