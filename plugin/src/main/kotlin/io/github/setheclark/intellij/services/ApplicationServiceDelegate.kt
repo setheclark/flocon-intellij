@@ -9,6 +9,7 @@ import io.github.openflocon.domain.settings.usecase.StartAdbForwardUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.flocon.device.EnsureSelectedDeviceAndPackageUseCase
+import io.github.setheclark.intellij.mcp.McpServerDelegate
 import io.github.setheclark.intellij.server.MessageServerDelegate
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 class ApplicationServiceDelegate(
     @param:AppCoroutineScope private val coroutineScope: CoroutineScope,
     private val messageServerDelegate: MessageServerDelegate,
+    private val mcpServerDelegate: McpServerDelegate,
     private val adbStatusDataSource: AdbStatusDataSource,
     private val initAdbPathUseCase: InitAdbPathUseCase,
     private val startAdbForwardUseCase: StartAdbForwardUseCase,
@@ -39,6 +41,7 @@ class ApplicationServiceDelegate(
             }
 
             messageServerDelegate.initialize()
+            mcpServerDelegate.initialize()
 
             launch {
                 while (isActive) {
@@ -54,5 +57,6 @@ class ApplicationServiceDelegate(
     fun shutdown() {
         log.i { "Shutting down application service" }
         messageServerDelegate.shutdown()
+        mcpServerDelegate.shutdown()
     }
 }
