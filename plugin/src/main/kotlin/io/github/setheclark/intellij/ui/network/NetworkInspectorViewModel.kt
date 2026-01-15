@@ -1,13 +1,14 @@
 package io.github.setheclark.intellij.ui.network
 
 import co.touchlab.kermit.Logger
-import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
 import io.github.openflocon.domain.messages.usecase.StartServerUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.AppCoroutineScope
+import io.github.setheclark.intellij.di.ProjectScope
+import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ClearAllNetworkCallsUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveCurrentAppInstanceUseCase
@@ -25,9 +26,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @Inject
-@SingleIn(AppScope::class)
+@SingleIn(ProjectScope::class)
 class NetworkInspectorViewModel(
-    @param:AppCoroutineScope private val scope: CoroutineScope,
+    @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val adbStatusDataSource: AdbStatusDataSource,
     private val observeServerStatusUseCase: ObserveServerStatusUseCase,
     private val clearAllNetworkCallsUseCase: ClearAllNetworkCallsUseCase,

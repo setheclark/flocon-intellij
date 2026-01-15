@@ -4,7 +4,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.di.UiCoroutineScope
+import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -22,7 +22,7 @@ import javax.swing.table.TableRowSorter
 
 @Inject
 class NetworkCallListPanel(
-    @param:UiCoroutineScope private val scope: CoroutineScope,
+    @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val viewModel: NetworkCallListViewModel,
 ) : JPanel(BorderLayout()) {
 

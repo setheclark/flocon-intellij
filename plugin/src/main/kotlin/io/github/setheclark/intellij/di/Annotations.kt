@@ -6,6 +6,6 @@ import dev.zacsweers.metro.Qualifier
 annotation class AppCoroutineScope
 
 @Qualifier
-annotation class UiCoroutineScope
+annotation class ViewModelCoroutineScope
 
-annotation class UiScope
+annotation class ProjectScope

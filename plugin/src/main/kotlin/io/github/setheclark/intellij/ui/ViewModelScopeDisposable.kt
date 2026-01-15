@@ -2,7 +2,7 @@ package io.github.setheclark.intellij.ui
 
 import com.intellij.openapi.Disposable
 import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.di.UiCoroutineScope
+import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 
@@ -13,8 +13,8 @@ import kotlinx.coroutines.cancel
  * are cancelled when the tool window closes.
  */
 @Inject
-class UiScopeDisposable(
-    @param:UiCoroutineScope private val scope: CoroutineScope,
+class ViewModelScopeDisposable(
+    @param:ViewModelCoroutineScope private val scope: CoroutineScope,
 ) : Disposable {
 
     override fun dispose() {

@@ -25,7 +25,7 @@ class FloconToolWindowFactory : ToolWindowFactory, DumbAware {
         content.isCloseable = false
 
         // Register UiScopeDisposable - cancels all UI coroutines when tool window closes
-        content.setDisposer(uiGraph.uiScopeDisposable)
+        content.setDisposer(uiGraph.viewModelScopeDisposable)
 
         toolWindow.contentManager.addContent(content)
     }

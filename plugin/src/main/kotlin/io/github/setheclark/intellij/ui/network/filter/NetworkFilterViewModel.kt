@@ -2,7 +2,7 @@ package io.github.setheclark.intellij.ui.network.filter
 
 import dev.zacsweers.metro.Inject
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
-import io.github.setheclark.intellij.di.UiCoroutineScope
+import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.ui.network.NetworkInspectorIntent.UpdateFilter
 import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
 import io.github.setheclark.intellij.ui.network.usecase.ObserveDevicesAndAppsUseCase
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 @Inject
 class NetworkFilterViewModel(
-    @param:UiCoroutineScope private val scope: CoroutineScope,
+    @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val parentViewModel: NetworkInspectorViewModel,
     private val selectDeviceAndAppUseCase: SelectDeviceAndAppUseCase,
     private val observeDevicesAndAppsUseCase: ObserveDevicesAndAppsUseCase,

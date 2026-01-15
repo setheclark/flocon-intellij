@@ -22,7 +22,7 @@ import kotlinx.serialization.json.Json
         FloconBindingContainer::class,
     ]
 )
-interface AppGraph : UiGraph.Factory {
+interface AppGraph : ProjectGraph.Factory {
 
     val applicationServiceDelegate: ApplicationServiceDelegate
 

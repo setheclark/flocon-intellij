@@ -15,7 +15,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.adb.AdbStatus
-import io.github.setheclark.intellij.di.UiCoroutineScope
+import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.MessageServerState
 import io.github.setheclark.intellij.ui.WarningBanner
 import io.github.setheclark.intellij.ui.network.detail.DetailPanel
@@ -32,7 +32,7 @@ import javax.swing.JPanel
 
 @Inject
 class NetworkInspectorPanel(
-    @param:UiCoroutineScope private val scope: CoroutineScope,
+    @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val viewModel: NetworkInspectorViewModel,
     private val networkCallListPanel: NetworkCallListPanel,
     private val detailPanel: DetailPanel,
