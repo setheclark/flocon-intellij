@@ -23,6 +23,8 @@ class NetworkStorageSettingsConfigurable : Configurable {
     private var maxBodyCacheSizeMbSpinner: JSpinner? = null
     private var maxBodySizeKbSpinner: JSpinner? = null
     private var compressionEnabledCheckbox: JBCheckBox? = null
+    private var mcpServerEnabledCheckbox: JBCheckBox? = null
+    private var mcpServerPortSpinner: JSpinner? = null
 
     override fun getDisplayName(): String = "Network Inspector"
 
@@ -54,6 +56,18 @@ class NetworkStorageSettingsConfigurable : Configurable {
             "Enable GZIP compression for stored bodies",
             state.compressionEnabled
         )
+
+        mcpServerEnabledCheckbox = JBCheckBox(
+            "Enable MCP Server for AI Agent Access",
+            state.mcpServerEnabled
+        )
+
+        mcpServerPortSpinner = JSpinner(SpinnerNumberModel(
+            state.mcpServerPort,
+            NetworkStorageSettings.MIN_MCP_SERVER_PORT,
+            NetworkStorageSettings.MAX_MCP_SERVER_PORT,
+            1
+        ))
 
         panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(
@@ -94,6 +108,25 @@ class NetworkStorageSettingsConfigurable : Configurable {
                 createHintLabel("Typically reduces memory usage by 80-90% for JSON/XML"),
                 0
             )
+            .addVerticalGap(16)
+            .addSeparator(10)
+            .addVerticalGap(8)
+            .addComponent(mcpServerEnabledCheckbox!!, 0)
+            .addComponentToRightColumn(
+                createHintLabel("Exposes network debugging data to AI agents via Model Context Protocol"),
+                0
+            )
+            .addVerticalGap(8)
+            .addLabeledComponent(
+                JBLabel("MCP Server Port:"),
+                mcpServerPortSpinner!!,
+                1,
+                false
+            )
+            .addComponentToRightColumn(
+                createHintLabel("Server will listen on http://localhost:[port]/mcp (restart applied automatically)"),
+                0
+            )
             .addComponentFillVertically(JPanel(), 0)
             .panel
 
@@ -115,15 +148,30 @@ class NetworkStorageSettingsConfigurable : Configurable {
         return maxStoredCallsSpinner?.value != state.maxStoredCalls ||
                 (maxBodyCacheSizeMbSpinner?.value as? Int)?.times(1024L * 1024) != state.maxBodyCacheSizeBytes ||
                 (maxBodySizeKbSpinner?.value as? Int)?.times(1024) != state.maxBodySizeBytes ||
-                compressionEnabledCheckbox?.isSelected != state.compressionEnabled
+                compressionEnabledCheckbox?.isSelected != state.compressionEnabled ||
+                mcpServerEnabledCheckbox?.isSelected != state.mcpServerEnabled ||
+                mcpServerPortSpinner?.value != state.mcpServerPort
     }
 
     override fun apply() {
         val state = NetworkStorageSettingsState.getInstance()
+
+        // Check if MCP settings changed
+        val mcpSettingsChanged = mcpServerEnabledCheckbox?.isSelected != state.mcpServerEnabled ||
+                mcpServerPortSpinner?.value != state.mcpServerPort
+
+        // Apply all settings
         state.maxStoredCalls = maxStoredCallsSpinner?.value as? Int ?: NetworkStorageSettings.DEFAULT_MAX_STORED_CALLS
         state.maxBodyCacheSizeBytes = ((maxBodyCacheSizeMbSpinner?.value as? Int) ?: 50).toLong() * 1024 * 1024
         state.maxBodySizeBytes = ((maxBodySizeKbSpinner?.value as? Int) ?: 1024) * 1024
         state.compressionEnabled = compressionEnabledCheckbox?.isSelected ?: true
+        state.mcpServerEnabled = mcpServerEnabledCheckbox?.isSelected ?: NetworkStorageSettings.DEFAULT_MCP_SERVER_ENABLED
+        state.mcpServerPort = mcpServerPortSpinner?.value as? Int ?: NetworkStorageSettings.DEFAULT_MCP_SERVER_PORT
+
+        // Trigger MCP server restart if settings changed
+        if (mcpSettingsChanged) {
+            restartMcpServer()
+        }
     }
 
     override fun reset() {
@@ -132,6 +180,8 @@ class NetworkStorageSettingsConfigurable : Configurable {
         maxBodyCacheSizeMbSpinner?.value = (state.maxBodyCacheSizeBytes / (1024 * 1024)).toInt()
         maxBodySizeKbSpinner?.value = state.maxBodySizeBytes / 1024
         compressionEnabledCheckbox?.isSelected = state.compressionEnabled
+        mcpServerEnabledCheckbox?.isSelected = state.mcpServerEnabled
+        mcpServerPortSpinner?.value = state.mcpServerPort
     }
 
     override fun disposeUIResources() {
@@ -140,5 +190,16 @@ class NetworkStorageSettingsConfigurable : Configurable {
         maxBodyCacheSizeMbSpinner = null
         maxBodySizeKbSpinner = null
         compressionEnabledCheckbox = null
+        mcpServerEnabledCheckbox = null
+        mcpServerPortSpinner = null
+    }
+
+    private fun restartMcpServer() {
+        // Get the MCP server delegate from ApplicationServiceDelegate
+        val applicationServiceDelegate = com.intellij.openapi.application.ApplicationManager
+            .getApplication()
+            .getService(io.github.setheclark.intellij.services.ApplicationServiceDelegate::class.java)
+
+        applicationServiceDelegate?.restartMcpServer()
     }
 }

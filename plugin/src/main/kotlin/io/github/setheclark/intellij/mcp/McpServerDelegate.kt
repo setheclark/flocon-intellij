@@ -36,7 +36,6 @@ import kotlinx.coroutines.launch
 @Inject
 class McpServerDelegate(
     @param:AppCoroutineScope private val coroutineScope: CoroutineScope,
-    private val config: McpServerConfig,
     private val networkDataAdapter: McpNetworkDataAdapter,
     private val networkRepository: io.github.setheclark.intellij.flocon.network.NetworkRepository,
     private val devicesRepository: DevicesRepository,
@@ -46,17 +45,23 @@ class McpServerDelegate(
     private var mcpServer: Server? = null
     private val notificationJobs = mutableListOf<Job>()
 
+    private fun getConfig(): io.github.setheclark.intellij.settings.NetworkStorageSettings {
+        return io.github.setheclark.intellij.settings.NetworkStorageSettingsState.getInstance().toSettings()
+    }
+
     fun initialize() {
-        if (!config.enabled) {
+        val config = getConfig()
+        if (!config.mcpServerEnabled) {
             log.i { "MCP server is disabled in configuration" }
             return
         }
 
+        val port = config.mcpServerPort
         coroutineScope.launch {
             try {
-                log.i { "Starting MCP server on port ${config.port}" }
+                log.i { "Starting MCP server on port $port" }
 
-                ktorServer = embeddedServer(Netty, port = config.port, host = "localhost") {
+                ktorServer = embeddedServer(Netty, port = port, host = "localhost") {
                     mcp {
                         createMcpServer().also { server ->
                             mcpServer = server
@@ -66,7 +71,7 @@ class McpServerDelegate(
                     }
                 }.start(wait = false)
 
-                log.i { "MCP server started successfully on http://localhost:${config.port}/mcp" }
+                log.i { "MCP server started successfully on http://localhost:$port/mcp" }
             } catch (e: Exception) {
                 log.e(e) { "Failed to start MCP server" }
             }
@@ -88,6 +93,16 @@ class McpServerDelegate(
         } catch (e: Exception) {
             log.e(e) { "Error shutting down MCP server" }
         }
+    }
+
+    /**
+     * Restart the MCP server with current configuration.
+     * This allows dynamic configuration changes without restarting the plugin.
+     */
+    fun restart() {
+        log.i { "Restarting MCP server" }
+        shutdown()
+        initialize()
     }
 
     private fun createMcpServer(): Server {
