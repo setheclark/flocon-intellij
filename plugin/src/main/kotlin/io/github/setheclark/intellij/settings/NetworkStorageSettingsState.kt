@@ -22,6 +22,8 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
     var maxBodyCacheSizeBytes: Long = NetworkStorageSettings.DEFAULT_MAX_BODY_CACHE_SIZE_BYTES
     var maxBodySizeBytes: Int = NetworkStorageSettings.DEFAULT_MAX_BODY_SIZE_BYTES
     var compressionEnabled: Boolean = NetworkStorageSettings.DEFAULT_COMPRESSION_ENABLED
+    var mcpServerEnabled: Boolean = NetworkStorageSettings.DEFAULT_MCP_SERVER_ENABLED
+    var mcpServerPort: Int = NetworkStorageSettings.DEFAULT_MCP_SERVER_PORT
 
     override fun getState(): NetworkStorageSettingsState = this
 
@@ -34,6 +36,8 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
         maxBodyCacheSizeBytes = maxBodyCacheSizeBytes,
         maxBodySizeBytes = maxBodySizeBytes,
         compressionEnabled = compressionEnabled,
+        mcpServerEnabled = mcpServerEnabled,
+        mcpServerPort = mcpServerPort,
     )
 
     fun updateFrom(settings: NetworkStorageSettings) {
@@ -41,6 +45,8 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
         maxBodyCacheSizeBytes = settings.maxBodyCacheSizeBytes
         maxBodySizeBytes = settings.maxBodySizeBytes
         compressionEnabled = settings.compressionEnabled
+        mcpServerEnabled = settings.mcpServerEnabled
+        mcpServerPort = settings.mcpServerPort
     }
 
     companion object {
