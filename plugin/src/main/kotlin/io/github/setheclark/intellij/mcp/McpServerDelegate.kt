@@ -3,6 +3,7 @@ package io.github.setheclark.intellij.mcp
 import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.di.AppCoroutineScope
+import io.github.setheclark.intellij.mcp.tools.*
 import io.github.setheclark.intellij.util.withPluginTag
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 class McpServerDelegate(
     @param:AppCoroutineScope private val coroutineScope: CoroutineScope,
     private val config: McpServerConfig,
+    private val networkDataAdapter: McpNetworkDataAdapter,
 ) {
     private val log = Logger.withPluginTag("McpServerDelegate")
     private var ktorServer: EmbeddedServer<*, *>? = null
@@ -71,17 +73,43 @@ class McpServerDelegate(
     }
 
     private fun createMcpServer(): Server {
-        return Server(
+        log.i { "Creating MCP server with network debugging tools" }
+
+        val server = Server(
             serverInfo = Implementation(
                 name = "flocon-network-inspector",
                 version = "0.1.4"
             ),
             options = ServerOptions(
                 capabilities = ServerCapabilities(
-                    // Phase 2: Will add tools capability here
-                    // Phase 3: Will add resources capability here
+                    tools = ServerCapabilities.Tools(listChanged = null)
                 )
             )
         )
+
+        // Register network debugging tools
+        registerTools(server)
+
+        log.i { "MCP server created with ${server.tools.size} tool(s)" }
+        return server
+    }
+
+    private fun registerTools(server: Server) {
+        // Tool 1: list_network_calls
+        server.addTool(createListNetworkCallsTool(networkDataAdapter)) { request ->
+            handleListNetworkCallsTool(request, networkDataAdapter)
+        }
+
+        // Tool 2: get_network_call
+        server.addTool(createGetNetworkCallTool(networkDataAdapter)) { request ->
+            handleGetNetworkCallTool(request, networkDataAdapter)
+        }
+
+        // Tool 3: filter_network_calls
+        server.addTool(createFilterNetworkCallsTool(networkDataAdapter)) { request ->
+            handleFilterNetworkCallsTool(request, networkDataAdapter)
+        }
+
+        log.i { "Registered 3 MCP tools: list_network_calls, get_network_call, filter_network_calls" }
     }
 }
