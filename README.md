@@ -14,9 +14,7 @@ Flocon Network Inspector is an IntelliJ IDEA plugin that captures and visualizes
 - **Full Request/Response Details** - View headers, bodies, status codes, and timing
 - **Multiple Device Support** - Monitor several connected devices simultaneously
 - **Advanced Filtering** - Search by method, URL, status code, duration, and more
-- **Timeline Visualization** - See when requests occurred and how long they took
 - **MCP Server** - Expose network data to AI agents for intelligent debugging assistance
-- **Minimal Overhead** - Lightweight SDK adds only ~140KB to your app
 
 ## Why Use the IntelliJ Plugin?
 
@@ -155,10 +153,10 @@ List recent network calls with optional filters.
 
 #### 2. `get_network_call`
 
-Get complete details for a specific network call.
+Get complete details for a specific network call. Use this after `list_network_calls` to drill down into a specific request.
 
 **Parameters:**
-- `callId` (required) - The unique ID of the network call
+- `callId` (required) - The unique ID returned in the "Call ID" field from `list_network_calls`
 
 **Returns:**
 - Full request details (headers, body, method, URL)
@@ -171,6 +169,11 @@ Get complete details for a specific network call.
   "callId": "call-abc123"
 }
 ```
+
+**Typical workflow:**
+1. Call `list_network_calls` to see recent requests
+2. Note the "Call ID: xxx" from a request of interest
+3. Call `get_network_call` with that ID to see full details
 
 #### 3. `filter_network_calls`
 
