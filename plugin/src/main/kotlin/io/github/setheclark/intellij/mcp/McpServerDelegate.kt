@@ -4,23 +4,48 @@ import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.Inject
 import io.github.openflocon.domain.device.repository.DevicesRepository
 import io.github.setheclark.intellij.di.AppCoroutineScope
-import io.github.setheclark.intellij.mcp.tools.*
+import io.github.setheclark.intellij.mcp.tools.createFilterNetworkCallsTool
+import io.github.setheclark.intellij.mcp.tools.createGetNetworkCallTool
+import io.github.setheclark.intellij.mcp.tools.createListNetworkCallsTool
+import io.github.setheclark.intellij.mcp.tools.handleFilterNetworkCallsTool
+import io.github.setheclark.intellij.mcp.tools.handleGetNetworkCallTool
+import io.github.setheclark.intellij.mcp.tools.handleListNetworkCallsTool
 import io.github.setheclark.intellij.util.withPluginTag
+import io.ktor.http.*
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.ktor.server.application.*
+import io.ktor.server.cio.*
 import io.ktor.server.engine.*
-import io.ktor.server.netty.Netty
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.sse.*
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import io.ktor.http.HttpMethod
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.plugins.cors.routing.CORS
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
+import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.Role
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
 
 /**
  * Manages the lifecycle of the MCP (Model Context Protocol) server.
@@ -49,32 +74,120 @@ class McpServerDelegate(
         return io.github.setheclark.intellij.settings.NetworkStorageSettingsState.getInstance().toSettings()
     }
 
+    fun configureServer(): Server {
+        val server = Server(
+            Implementation(
+                name = "mcp-kotlin test server",
+                version = "0.1.0",
+            ),
+            ServerOptions(
+                capabilities = ServerCapabilities(
+//                    prompts = ServerCapabilities.Prompts(listChanged = true),
+//                    resources = ServerCapabilities.Resources(subscribe = true, listChanged = true),
+                    tools = ServerCapabilities.Tools(listChanged = true),
+                ),
+            ),
+        )
+
+        registerTools(server)
+
+//        server.addPrompt(
+//            name = "Kotlin Developer",
+//            description = "Develop small kotlin applications",
+//            arguments = listOf(
+//                PromptArgument(
+//                    name = "Project Name",
+//                    description = "Project name for the new project",
+//                    required = true,
+//                ),
+//            ),
+//        ) { request ->
+//            GetPromptResult(
+//                messages = listOf(
+//                    PromptMessage(
+//                        role = Role.User,
+//                        content = TextContent(
+//                            "Develop a kotlin project named <name>${request.arguments?.get("Project Name")}</name>",
+//                        ),
+//                    ),
+//                ),
+//                description = "Description for ${request.name}",
+//            )
+//        }
+
+//        // Add a tool
+//        server.addTool(
+//            name = "kotlin-sdk-tool",
+//            description = "A test tool",
+//        ) { _ ->
+//            CallToolResult(
+//                content = listOf(TextContent("Hello, Intellij!")),
+//            )
+//        }
+//
+//        // Add a resource
+//        server.addResource(
+//            uri = "https://search.com/",
+//            name = "Code Search",
+//            description = "Web search engine",
+//            mimeType = "text/html",
+//        ) { request ->
+//            ReadResourceResult(
+//                contents = listOf(
+//                    TextResourceContents("Placeholder content for ${request.uri}", request.uri, "text/html"),
+//                ),
+//            )
+//        }
+
+        return server
+    }
+
     fun initialize() {
-        val config = getConfig()
-        if (!config.mcpServerEnabled) {
-            log.i { "MCP server is disabled in configuration" }
-            return
-        }
-
-        val port = config.mcpServerPort
+//        val config = getConfig()
         coroutineScope.launch {
-            try {
-                log.i { "Starting MCP server on port $port" }
+            ktorServer = embeddedServer(CIO, host = "127.0.0.1", port = 3002) {
+                installCors()
+                mcp {
+                    return@mcp configureServer()
+                }
+            }.start(wait = true)
+        }
+//        val config = getConfig()
+//        if (!config.mcpServerEnabled) {
+//            log.i { "MCP server is disabled in configuration" }
+//            return
+//        }
+//
+//        val port = config.mcpServerPort
+//        coroutineScope.launch {
+//            try {
+//                log.i { "Starting MCP server on port $port" }
+//
+//                ktorServer = embeddedServer(Netty, port = port, host = "localhost") {
+//                    mcp {
+//                        createMcpServer().also { server ->
+//                            mcpServer = server
+//                            // Start logging new network calls
+//                            startNetworkCallLogging()
+//                        }
+//                    }
+//                }.start(wait = false)
+//
+//                log.i { "MCP server started successfully on http://localhost:$port/mcp" }
+//            } catch (e: Exception) {
+//                log.e(e) { "Failed to start MCP server" }
+//            }
+//        }
+    }
 
-                ktorServer = embeddedServer(Netty, port = port, host = "localhost") {
-                    mcp {
-                        createMcpServer().also { server ->
-                            mcpServer = server
-                            // Start logging new network calls
-                            startNetworkCallLogging()
-                        }
-                    }
-                }.start(wait = false)
-
-                log.i { "MCP server started successfully on http://localhost:$port/mcp" }
-            } catch (e: Exception) {
-                log.e(e) { "Failed to start MCP server" }
-            }
+    private fun Application.installCors() {
+        install(CORS) {
+            allowMethod(HttpMethod.Options)
+            allowMethod(HttpMethod.Get)
+            allowMethod(HttpMethod.Post)
+            allowMethod(HttpMethod.Delete)
+            allowNonSimpleContentTypes = true
+            anyHost()
         }
     }
 
@@ -110,12 +223,10 @@ class McpServerDelegate(
 
         val server = Server(
             serverInfo = Implementation(
-                name = "flocon-network-inspector",
-                version = "0.1.4"
-            ),
-            options = ServerOptions(
+                name = "flocon-network-inspector", version = "0.1.4"
+            ), options = ServerOptions(
                 capabilities = ServerCapabilities(
-                    tools = ServerCapabilities.Tools(listChanged = null)
+                    tools = ServerCapabilities.Tools(listChanged = true)
                 )
             )
         )
@@ -152,30 +263,26 @@ class McpServerDelegate(
         // Log new network calls as they arrive for the currently selected device/app
         // Clients can query these via the MCP tools (poll-based access)
         val job = coroutineScope.launch {
-            devicesRepository.observeCurrentDevice()
-                .flatMapLatest { device ->
-                    if (device == null) {
-                        flowOf(Pair(null, null))
-                    } else {
-                        // Observe the selected app for this device, keeping the device info
-                        devicesRepository.observeDeviceSelectedApp(device.deviceId)
-                            .map { app ->
-                                // Map to a pair of deviceId and app
-                                Pair(device.deviceId, app)
-                            }
+            devicesRepository.observeCurrentDevice().flatMapLatest { device ->
+                if (device == null) {
+                    flowOf(Pair(null, null))
+                } else {
+                    // Observe the selected app for this device, keeping the device info
+                    devicesRepository.observeDeviceSelectedApp(device.deviceId).map { app ->
+                        // Map to a pair of deviceId and app
+                        Pair(device.deviceId, app)
                     }
                 }
-                .catch { e -> log.e(e) { "Error observing current device/app" } }
-                .collect { (deviceId, app) ->
-                    if (deviceId != null && app != null) {
-                        // Cancel any previous subscription job before starting a new one
-                        notificationJobs.filterIsInstance<Job>().drop(1).forEach { it.cancel() }
+            }.catch { e -> log.e(e) { "Error observing current device/app" } }.collect { (deviceId, app) ->
+                if (deviceId != null && app != null) {
+                    // Cancel any previous subscription job before starting a new one
+                    notificationJobs.filterIsInstance<Job>().drop(1).forEach { it.cancel() }
 
-                        subscribeToDeviceNetworkCalls(deviceId, app.packageName)
-                    } else {
-                        log.d { "No device or app selected, skipping network call notifications" }
-                    }
+                    subscribeToDeviceNetworkCalls(deviceId, app.packageName)
+                } else {
+                    log.d { "No device or app selected, skipping network call notifications" }
                 }
+            }
         }
 
         notificationJobs.add(job)
@@ -194,8 +301,7 @@ class McpServerDelegate(
         val seenCallIds = mutableSetOf<String>()
 
         networkRepository.observeCalls(deviceId, packageName)
-            .catch { e -> log.e(e) { "Error observing network calls for $deviceId/$packageName" } }
-            .onEach { calls ->
+            .catch { e -> log.e(e) { "Error observing network calls for $deviceId/$packageName" } }.onEach { calls ->
                 // Find new calls that we haven't seen before
                 val newCalls = calls.filter { it.callId !in seenCallIds }
 
@@ -203,8 +309,7 @@ class McpServerDelegate(
                     seenCallIds.add(call.callId)
                     logNetworkCall(call)
                 }
-            }
-            .collect { }
+            }.collect { }
     }
 
     private fun logNetworkCall(call: io.github.setheclark.intellij.flocon.network.NetworkCallEntity) {

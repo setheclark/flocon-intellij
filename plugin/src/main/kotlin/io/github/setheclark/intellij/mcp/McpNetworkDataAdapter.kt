@@ -1,13 +1,12 @@
 package io.github.setheclark.intellij.mcp
 
 import dev.zacsweers.metro.Inject
+import io.github.openflocon.domain.device.repository.DevicesRepository
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.network.NetworkDataSource
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Adapter that bridges NetworkDataSource with MCP tools.
@@ -16,6 +15,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 @Inject
 class McpNetworkDataAdapter(
     private val networkDataSource: NetworkDataSource,
+    private val devicesRepository: DevicesRepository,
 ) {
     /**
      * Get a specific network call by its ID.
@@ -36,17 +36,8 @@ class McpNetworkDataAdapter(
         minDuration: Double? = null,
         limit: Int = 100,
     ): List<NetworkCallEntity> {
-        // Get base list from data source
-        val calls = if (deviceId != null && packageName != null) {
-            networkDataSource.getByDeviceAndPackage(deviceId, packageName)
-        } else {
-            // TODO: Phase 4 - Add method to get all calls across all devices/packages
-            // For now, return empty list if no device/package specified
-            emptyList()
-        }
-
         // Apply filters
-        return calls
+        return calls(deviceId, packageName)
             .asSequence()
             .filter { call ->
                 if (method != null && call.request.method != method) return@filter false
@@ -83,15 +74,8 @@ class McpNetworkDataAdapter(
         startTimeBefore: Long? = null,
         limit: Int = 100,
     ): List<NetworkCallEntity> {
-        // Get base list from data source
-        val calls = if (deviceId != null && packageName != null) {
-            networkDataSource.getByDeviceAndPackage(deviceId, packageName)
-        } else {
-            emptyList()
-        }
-
         // Apply filters
-        return calls
+        return calls(deviceId, packageName)
             .asSequence()
             .filter { call ->
                 // Type filtering with instanceof check
@@ -107,8 +91,7 @@ class McpNetworkDataAdapter(
                 // GraphQL-specific filters
                 if (graphQlOperationType != null || graphQlOperationName != null) {
                     // Only apply GraphQL filters if this is a GraphQL request
-                    val graphQlType = call.request.type as? NetworkRequest.Type.GraphQl
-                    if (graphQlType == null) return@filter false
+                    val graphQlType = call.request.type as? NetworkRequest.Type.GraphQl ?: return@filter false
 
                     if (graphQlOperationType != null && graphQlType.operationType != graphQlOperationType) {
                         return@filter false
@@ -138,5 +121,25 @@ class McpNetworkDataAdapter(
      */
     fun observeCalls(deviceId: String, packageName: String): Flow<List<NetworkCallEntity>> {
         return networkDataSource.observeByDeviceAndPackage(deviceId, packageName)
+    }
+
+    private suspend fun calls(
+        deviceId: String?,
+        packageName: String?,
+    ): List<NetworkCallEntity> {
+        // Get base list from data source
+        return when {
+            deviceId != null && packageName != null -> networkDataSource.getByDeviceAndPackage(deviceId, packageName)
+            deviceId != null -> devicesRepository.getDeviceSelectedApp(deviceId)?.let { app ->
+                networkDataSource.getByDeviceAndPackage(deviceId, app.packageName)
+            }
+
+            else -> devicesRepository.getCurrentDevice()?.let { device ->
+                val app = devicesRepository.getDeviceSelectedApp(device.deviceId)
+                if (app != null) {
+                    networkDataSource.getByDeviceAndPackage(device.deviceId, app.packageName)
+                } else emptyList()
+            }
+        } ?: emptyList()
     }
 }
