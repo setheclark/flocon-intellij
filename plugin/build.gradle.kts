@@ -43,7 +43,6 @@ dependencies {
     implementation(libs.ktor.server.core) { excludeBundledDependencies() }
     implementation(libs.ktor.server.netty) { excludeBundledDependencies() }
     implementation(libs.ktor.server.cors) { excludeBundledDependencies() }
-//    compileOnly(libs.ktor.server.sse) { excludeBundledDependencies() }
 
     // Test dependencies
     testImplementation(libs.junit.jupiter)
