@@ -112,10 +112,10 @@ Access settings via **Settings → Tools → Network Inspector**:
 
 #### MCP Server Settings
 
-- **Enable MCP Server** - Allow AI agents to query network data (default: enabled)
+- **Enable MCP Server** - Allow AI agents to query network data (default: disabled)
 - **MCP Server Port** - Port for the MCP server to listen on (default: 8086)
 
-Changes to MCP settings take effect immediately without restarting the IDE.
+All settings changes apply immediately without requiring an IDE restart. When you change the MCP server port or toggle it on/off, the server automatically restarts with the new configuration.
 
 ## MCP Server: AI-Powered Network Debugging
 
@@ -123,131 +123,163 @@ The MCP (Model Context Protocol) server exposes your network debugging data to A
 
 ### What is MCP?
 
-MCP is an open protocol that allows AI assistants (like Claude) to access tools and data sources. The Flocon MCP server provides three powerful tools for querying network traffic.
+MCP is an open protocol that allows AI assistants (like Claude) to access tools and data sources. The Flocon MCP server provides four powerful tools for querying, analyzing, and exporting network traffic.
 
 ### Available MCP Tools
 
-#### 1. `list_network_calls`
+The MCP server provides four tools for querying and analyzing network traffic:
 
-List recent network calls with optional filters.
+#### 1. `get_network_calls`
+
+Query network calls with comprehensive filtering. Returns results in Markdown table format optimized for LLM analysis.
 
 **Parameters:**
-- `deviceId` (optional) - Filter by device ID
-- `packageName` (optional) - Filter by Android package
-- `method` (optional) - Filter by HTTP method (GET, POST, etc.)
+- `deviceId` (optional) - Filter by device ID (uses current device if omitted)
+- `packageName` (optional) - Filter by Android package (uses current app if omitted)
+- `method` (optional) - Filter by HTTP method (GET, POST, PUT, DELETE, etc.)
 - `urlPattern` (optional) - Filter by URL regex pattern
 - `statusCode` (optional) - Filter by HTTP status code
 - `minDuration` (optional) - Filter by minimum duration in milliseconds
+- `maxDuration` (optional) - Filter by maximum duration in milliseconds
+- `hasFailure` (optional) - Filter by success/failure status (boolean)
+- `requestType` (optional) - Filter by type: "Http", "GraphQl", or "Grpc"
+- `graphQlOperationType` (optional) - For GraphQL: "query", "mutation", or "subscription"
+- `graphQlOperationName` (optional) - Filter by GraphQL operation name
+- `startTimeAfter` (optional) - Filter calls after timestamp (epoch milliseconds)
+- `startTimeBefore` (optional) - Filter calls before timestamp (epoch milliseconds)
 - `limit` (optional) - Maximum results (default: 100, max: 1000)
+- `format` (optional) - Output format: "summary" (default) or "detailed"
 
 **Example:**
 ```json
 {
-  "deviceId": "emulator-5554",
-  "packageName": "com.example.app",
   "method": "POST",
-  "statusCode": 500,
-  "limit": 50
+  "hasFailure": true,
+  "minDuration": 1000,
+  "limit": 50,
+  "format": "summary"
 }
 ```
 
-#### 2. `get_network_call`
+**Common workflows:**
+- Find failures: `hasFailure=true`
+- Find slow requests: `minDuration=1000`
+- Time-based analysis: `startTimeAfter/startTimeBefore` for clustering
+- GraphQL operations: `graphQlOperationType`, `graphQlOperationName`
+- Pattern detection: `urlPattern` (regex)
 
-Get complete details for a specific network call. Use this after `list_network_calls` to drill down into a specific request.
+#### 2. `get_network_call_details`
+
+Get complete details for specific network calls, including full request/response bodies and headers. Supports batch queries.
 
 **Parameters:**
-- `callId` (required) - The unique ID returned in the "Call ID" field from `list_network_calls`
+- `callIds` (required) - Array of call IDs to retrieve (obtain from `get_network_calls`)
+- `includeHeaders` (optional) - Include request/response headers (default: true)
+- `includeBodies` (optional) - Include request/response bodies (default: true)
 
 **Returns:**
 - Full request details (headers, body, method, URL)
 - Full response details (headers, body, status, duration)
-- Timestamps and metadata
+- Timestamps, GraphQL metadata, and error information
 
 **Example:**
 ```json
 {
-  "callId": "call-abc123"
+  "callIds": ["call-abc123", "call-def456"],
+  "includeHeaders": true,
+  "includeBodies": true
 }
 ```
 
 **Typical workflow:**
-1. Call `list_network_calls` to see recent requests
-2. Note the "Call ID: xxx" from a request of interest
-3. Call `get_network_call` with that ID to see full details
+1. Call `get_network_calls` to see recent requests
+2. Note the Call IDs from requests of interest
+3. Call `get_network_call_details` with those IDs to see full details
 
-#### 3. `filter_network_calls`
+#### 3. `compare_network_calls`
 
-Advanced filtering with support for GraphQL operations and time ranges.
+Compare two or more network calls side-by-side to identify differences in timing, headers, bodies, or responses.
 
 **Parameters:**
-- `deviceId` (optional) - Filter by device
-- `packageName` (optional) - Filter by package
-- `requestType` (optional) - Filter by type: "Http", "GraphQl", or "Grpc"
-- `graphQlOperationType` (optional) - For GraphQL: "query", "mutation", or "subscription"
-- `graphQlOperationName` (optional) - Filter by GraphQL operation name
-- `hasFailure` (optional) - Filter by success/failure status
-- `startTimeAfter` (optional) - Filter calls after timestamp (epoch milliseconds)
-- `startTimeBefore` (optional) - Filter calls before timestamp (epoch milliseconds)
-- `limit` (optional) - Maximum results (default: 100, max: 1000)
+- `callIds` (required) - Array of 2-10 call IDs to compare
+- `compareHeaders` (optional) - Compare request headers (default: true)
+- `compareBodies` (optional) - Compare request/response bodies (default: true)
+- `compareResponses` (optional) - Compare response details (default: true)
+
+**Returns:** Markdown comparison table showing differences between calls
 
 **Example:**
 ```json
 {
-  "requestType": "GraphQl",
-  "graphQlOperationType": "mutation",
-  "hasFailure": false,
-  "startTimeAfter": 1705334400000,
-  "limit": 100
+  "callIds": ["call-abc123", "call-def456"],
+  "compareHeaders": true,
+  "compareBodies": true
 }
 ```
 
-### Connecting AI Clients to MCP Server
+**Use cases:**
+- Compare successful vs failed requests to the same endpoint
+- Identify differences in retry attempts
+- Debug inconsistent API behavior
 
-The MCP server listens on `http://localhost:8086/mcp` by default (configurable in settings).
+#### 4. `export_network_calls`
 
-#### Claude Desktop
+Export network calls in various formats for external analysis or sharing.
 
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+**Parameters:**
+- `deviceId` (optional) - Filter by device (uses current device if omitted)
+- `packageName` (optional) - Filter by package (uses current app if omitted)
+- `callIds` (optional) - Specific call IDs to export (exports all matching calls if omitted)
+- `format` (required) - Export format: "har", "json", or "markdown"
+- `includeHeaders` (optional) - Include headers (default: true)
+- `includeBodies` (optional) - Include bodies (default: true)
 
+**Returns:** Network calls in the specified format
+
+**Example:**
 ```json
 {
-  "mcpServers": {
-    "flocon-network-inspector": {
-      "url": "http://localhost:8086/mcp"
-    }
-  }
+  "format": "har",
+  "includeHeaders": true,
+  "includeBodies": true
 }
 ```
 
-Restart Claude Desktop, and the Flocon tools will be available.
-
-#### Custom MCP Clients
-
-Connect any MCP-compatible client to the server URL. The server uses Server-Sent Events (SSE) transport and follows the MCP specification.
-
-**Discovery:**
-- The server advertises capabilities including three tools
-- No authentication required (localhost-only by default)
-- JSON-RPC 2.0 protocol over SSE
+**Supported formats:**
+- **HAR** (HTTP Archive) - Standard format compatible with Chrome DevTools, Charles Proxy, etc.
+- **JSON** - Raw JSON export of call data
+- **Markdown** - Human-readable formatted tables
 
 ### MCP Use Cases
 
 **Debugging Failed Requests:**
 ```
 "Show me all failed network calls in the last hour"
-→ AI queries filter_network_calls with hasFailure=true and time filter
+→ AI queries get_network_calls with hasFailure=true and time filter
 ```
 
 **Analyzing GraphQL Operations:**
 ```
 "Find all GraphQL mutations that took longer than 2 seconds"
-→ AI combines requestType, graphQlOperationType, and duration filters
+→ AI uses get_network_calls with requestType, graphQlOperationType, and duration filters
 ```
 
 **Investigating Specific APIs:**
 ```
 "Get full details for the call to /api/users/123 that returned 404"
-→ AI uses list_network_calls with URL filter, then get_network_call for details
+→ AI uses get_network_calls with URL filter, then get_network_call_details for bodies
+```
+
+**Comparing Requests:**
+```
+"Compare the failed request to /api/login with the successful one"
+→ AI uses compare_network_calls to identify differences in headers or bodies
+```
+
+**Exporting for Analysis:**
+```
+"Export all API calls from the last session as HAR"
+→ AI uses export_network_calls with format="har" for external tool analysis
 ```
 
 **Pattern Detection:**
@@ -261,18 +293,19 @@ Connect any MCP-compatible client to the server URL. The server uses Server-Sent
 **Enable/Disable:**
 - Settings → Tools → Network Inspector
 - Toggle "Enable MCP Server for AI Agent Access"
-- Server restarts automatically
+- Server starts/stops automatically within seconds
 
 **Change Port:**
 - Settings → Tools → Network Inspector
-- Modify "MCP Server Port" (1024-65535)
-- Server restarts automatically
+- Modify "MCP Server Port" (1024-9022)
+- Server restarts automatically on the new port
+- Update your MCP client configuration to use the new port
 
 **Security Note:**
-- Server binds to `localhost` only (no remote access)
+- Server binds to `127.0.0.1` (localhost) only - no remote access possible
 - No authentication (relies on localhost trust model)
-- Read-only access (cannot modify or delete data)
-- Network bodies may contain sensitive data (tokens, PII)
+- Read-only access (cannot modify or delete network data)
+- Network bodies may contain sensitive data (API tokens, PII, passwords)
 
 ## Building from Source
 
