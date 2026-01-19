@@ -39,13 +39,13 @@
                 serviceImplementation="io.github.setheclark.intellij.services.ApplicationService"/>
 
         <applicationService
-                serviceImplementation="io.github.setheclark.intellij.settings.NetworkStorageSettingsState"/>
+                serviceImplementation="io.github.setheclark.intellij.settings.PluginSettingsState"/>
 
         <applicationConfigurable
-                id="io.github.setheclark.intellij.settings.NetworkStorageSettingsConfigurable"
+                id="io.github.setheclark.intellij.settings.PluginSettingsConfigurable"
                 parentId="tools"
                 displayName="Network Inspector"
-                instance="io.github.setheclark.intellij.settings.NetworkStorageSettingsConfigurable"/>
+                instance="io.github.setheclark.intellij.settings.PluginSettingsConfigurable"/>
 
     </extensions>
 </idea-plugin>

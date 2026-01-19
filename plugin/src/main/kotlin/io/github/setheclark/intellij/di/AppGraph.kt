@@ -11,8 +11,7 @@ import io.github.setheclark.intellij.network.NetworkDataSource
 import io.github.setheclark.intellij.process.ProcessExecutor
 import io.github.setheclark.intellij.process.SystemProcessExecutor
 import io.github.setheclark.intellij.services.ApplicationServiceDelegate
-import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
-import io.github.setheclark.intellij.settings.NetworkStorageSettingsProviderImpl
+import io.github.setheclark.intellij.settings.PluginSettingsProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 
@@ -32,9 +31,6 @@ interface AppGraph : ProjectGraph.Factory {
     @Binds
     val InMemoryNetworkDataSource.bind: NetworkDataSource
 
-    @Binds
-    val NetworkStorageSettingsProviderImpl.bind: NetworkStorageSettingsProvider
-
     @Provides
     @SingleIn(AppScope::class)
     fun provideJson(): Json = Json {
@@ -46,6 +42,7 @@ interface AppGraph : ProjectGraph.Factory {
     fun interface Factory {
         fun create(
             @Provides @AppCoroutineScope scope: CoroutineScope,
+            @Provides @SingleIn(AppScope::class) settingsProvider: PluginSettingsProvider,
         ): AppGraph
     }
 }

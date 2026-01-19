@@ -1,7 +1,7 @@
 package io.github.setheclark.intellij.network
 
 import io.github.setheclark.intellij.fakes.FakeNetworkStorageSettingsProvider
-import io.github.setheclark.intellij.settings.NetworkStorageSettings
+import io.github.setheclark.intellij.settings.PluginSettings
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.nulls.shouldBeNull
@@ -26,7 +26,7 @@ class BodyStoreTest {
         maxBodyCacheSizeBytes: Long = 50L * 1024 * 1024,
         maxBodySizeBytes: Int = 1024 * 1024,
         compressionEnabled: Boolean = true,
-    ) = NetworkStorageSettings(
+    ) = PluginSettings(
         maxStoredCalls = maxStoredCalls,
         maxBodyCacheSizeBytes = maxBodyCacheSizeBytes,
         maxBodySizeBytes = maxBodySizeBytes,

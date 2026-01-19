@@ -3,7 +3,7 @@ package io.github.setheclark.intellij.settings
 /**
  * Configuration settings for network call storage and memory management.
  */
-data class NetworkStorageSettings(
+data class PluginSettings(
     /**
      * Maximum number of network calls to keep in memory.
      * Oldest calls are evicted when this limit is exceeded.
@@ -46,10 +46,10 @@ data class NetworkStorageSettings(
         const val DEFAULT_MAX_BODY_CACHE_SIZE_BYTES = 50L * 1024 * 1024 // 50 MB
         const val DEFAULT_MAX_BODY_SIZE_BYTES = 1024 * 1024 // 1 MB
         const val DEFAULT_COMPRESSION_ENABLED = true
-        const val DEFAULT_MCP_SERVER_ENABLED = true
+        const val DEFAULT_MCP_SERVER_ENABLED = false
         const val DEFAULT_MCP_SERVER_PORT = 8086
 
         const val MIN_MCP_SERVER_PORT = 1024
-        const val MAX_MCP_SERVER_PORT = 65535
+        const val MAX_MCP_SERVER_PORT = 9022
     }
 }

@@ -2,12 +2,11 @@ package io.github.setheclark.intellij.network
 
 import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
-import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
-import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
+import io.github.setheclark.intellij.settings.PluginSettingsProvider
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,14 +21,14 @@ import kotlinx.coroutines.sync.withLock
  *
  * - Network call metadata is stored in memory with bodies stored separately in [BodyStore]
  * - Bodies are compressed using GZIP to reduce memory footprint
- * - Oldest calls are evicted when [NetworkStorageSettings.maxStoredCalls] is exceeded
- * - Bodies are evicted (LRU) when [NetworkStorageSettings.maxBodyCacheSizeBytes] is exceeded
+ * - Oldest calls are evicted when [io.github.setheclark.intellij.settings.PluginSettings.maxStoredCalls] is exceeded
+ * - Bodies are evicted (LRU) when [io.github.setheclark.intellij.settings.PluginSettings.maxBodyCacheSizeBytes] is exceeded
  */
 @Inject
 @SingleIn(AppScope::class)
 class InMemoryNetworkDataSource(
     private val bodyStore: BodyStore,
-    private val settingsProvider: NetworkStorageSettingsProvider,
+    private val settingsProvider: PluginSettingsProvider,
 ) : NetworkDataSource {
 
     private val log = Logger.withPluginTag("InMemoryNetworkDataSource")
@@ -94,8 +93,6 @@ class InMemoryNetworkDataSource(
     }
 
     override suspend fun update(entity: NetworkCallEntity) {
-        val settings = settingsProvider.getSettings()
-
         mutex.withLock {
             val current = calls.value[entity.callId] ?: return
 

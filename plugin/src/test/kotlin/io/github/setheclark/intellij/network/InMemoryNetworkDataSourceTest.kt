@@ -5,7 +5,7 @@ import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.fakes.FakeNetworkStorageSettingsProvider
-import io.github.setheclark.intellij.settings.NetworkStorageSettings
+import io.github.setheclark.intellij.settings.PluginSettings
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
@@ -32,7 +32,7 @@ class InMemoryNetworkDataSourceTest {
         maxBodyCacheSizeBytes: Long = 50L * 1024 * 1024,
         maxBodySizeBytes: Int = 1024 * 1024,
         compressionEnabled: Boolean = false, // Disable for simpler testing
-    ) = NetworkStorageSettings(
+    ) = PluginSettings(
         maxStoredCalls = maxStoredCalls,
         maxBodyCacheSizeBytes = maxBodyCacheSizeBytes,
         maxBodySizeBytes = maxBodySizeBytes,
