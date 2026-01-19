@@ -5,6 +5,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import dev.zacsweers.metro.createGraphFactory
 import io.github.setheclark.intellij.di.AppGraph
+import io.github.setheclark.intellij.settings.PluginSettingsState
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
 
@@ -21,7 +22,10 @@ class ApplicationService(scope: CoroutineScope) : Disposable {
 
     init {
         log.i { "initialized" }
-        appGraph = createGraphFactory<AppGraph.Factory>().create(scope)
+        appGraph = createGraphFactory<AppGraph.Factory>().create(
+            scope = scope,
+            settingsProvider = PluginSettingsState.getInstance(),
+        )
 
         appGraph.applicationServiceDelegate.initialize()
     }

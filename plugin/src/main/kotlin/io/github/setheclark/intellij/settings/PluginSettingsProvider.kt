@@ -6,29 +6,29 @@ import kotlinx.coroutines.flow.StateFlow
  * Provider for network storage settings.
  * Provides reactive access to settings configuration.
  */
-interface NetworkStorageSettingsProvider {
+interface PluginSettingsProvider {
 
     /**
      * Current settings as a reactive flow.
      */
-    val settings: StateFlow<NetworkStorageSettings>
+    val settings: StateFlow<PluginSettings>
 
     /**
      * Get current settings snapshot.
      */
-    fun getSettings(): NetworkStorageSettings
+    fun getSettings(): PluginSettings
 
     /**
      * Update settings.
      */
-    fun updateSettings(settings: NetworkStorageSettings)
+    fun updateSettings(settings: PluginSettings)
 }
 
 /**
  * Update settings using a transform function.
  */
-inline fun NetworkStorageSettingsProvider.updateSettings(
-    transform: (NetworkStorageSettings) -> NetworkStorageSettings
+inline fun PluginSettingsProvider.updateSettings(
+    transform: (PluginSettings) -> PluginSettings
 ) {
     updateSettings(transform(getSettings()))
 }

@@ -59,13 +59,4 @@ class ApplicationServiceDelegate(
         messageServerDelegate.shutdown()
         mcpServerDelegate.shutdown()
     }
-
-    /**
-     * Restart the MCP server with current configuration settings.
-     * Called when settings are changed via the settings UI.
-     */
-    fun restartMcpServer() {
-        log.i { "Restarting MCP server due to configuration change" }
-        mcpServerDelegate.restart()
-    }
 }

@@ -4,7 +4,7 @@ import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
-import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
+import io.github.setheclark.intellij.settings.PluginSettingsProvider
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -22,7 +22,7 @@ import java.util.zip.GZIPOutputStream
 @Inject
 @SingleIn(AppScope::class)
 class BodyStore(
-    private val settingsProvider: NetworkStorageSettingsProvider,
+    private val settingsProvider: PluginSettingsProvider,
 ) {
     private val log = Logger.withPluginTag("BodyStore")
 
