@@ -63,6 +63,10 @@ object IntelliJTheme {
             @Composable
             get() = JBColor.GREEN.toComposeColor()
 
+        val selection: Color
+            @Composable
+            get() = JBColor.namedColor("Table.selectionBackground", JBColor(0x3875D6, 0x2F65CA)).toComposeColor()
+
         val selectedBackground: Color
             @Composable
             get() = JBColor.background().toComposeColor()

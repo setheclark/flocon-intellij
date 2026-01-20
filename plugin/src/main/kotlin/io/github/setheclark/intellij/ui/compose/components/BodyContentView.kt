@@ -16,6 +16,10 @@ import io.github.setheclark.intellij.ui.network.detail.common.ScratchFileContext
  * Will be wrapped more cleanly in Phase 4.1 (BodyContentPanel must remain Swing
  * due to EditorTextField having no Compose equivalent).
  *
+ * Note: There is a brief white flash when switching tabs while content loads.
+ * This is due to Swing-Compose interop limitations with EditorTextField initialization.
+ * Will be addressed in a future phase if possible.
+ *
  * @param project IntelliJ project for editor integration
  * @param body Body content to display
  * @param contentType MIME type for syntax highlighting
