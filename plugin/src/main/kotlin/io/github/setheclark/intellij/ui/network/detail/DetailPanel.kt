@@ -24,8 +24,6 @@ class DetailPanel(
     private val project: Project,
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val viewModel: DetailPanelViewModel,
-    private val requestPanel: RequestPanel,
-    private val responsePanel: ResponsePanel,
 ) : JPanel(BorderLayout()) {
 
     private val tabs = JBTabsFactory.createTabs(project)
@@ -35,16 +33,22 @@ class DetailPanel(
         foreground = JBColor.GRAY
     }
 
-    // Compose overview panel wrapper
+    // Compose panel wrappers
     private val overviewPanelWrapper = JPanel(BorderLayout())
     private var currentOverviewPanel: javax.swing.JComponent? = null
+
+    private val requestPanelWrapper = JPanel(BorderLayout())
+    private var currentRequestPanel: javax.swing.JComponent? = null
+
+    private val responsePanelWrapper = JPanel(BorderLayout())
+    private var currentResponsePanel: javax.swing.JComponent? = null
 
     init {
         border = JBUI.Borders.customLineLeft(JBColor.border())
 
         tabs.addTab(TabInfo(overviewPanelWrapper).setText("Overview"))
-        tabs.addTab(TabInfo(responsePanel).setText("Response"))
-        tabs.addTab(TabInfo(requestPanel).setText("Request"))
+        tabs.addTab(TabInfo(responsePanelWrapper).setText("Response"))
+        tabs.addTab(TabInfo(requestPanelWrapper).setText("Request"))
 
         showEmpty()
         observeSelectedCall()
@@ -79,8 +83,8 @@ class DetailPanel(
 
     private fun updateDetails(call: NetworkCallEntity) {
         updateOverviewPanel(call)
-        requestPanel.showRequest(call.request, call.name, call.startTime)
-        responsePanel.showResponse(call.response, call.name, call.startTime)
+        updateRequestPanel(call)
+        updateResponsePanel(call)
     }
 
     /**
@@ -94,17 +98,82 @@ class DetailPanel(
         currentOverviewPanel?.let { overviewPanelWrapper.remove(it) }
 
         // Create new Compose panel with the call data
-        val newPanel = JewelComposePanel(content = {
-            io.github.setheclark.intellij.ui.compose.components.NetworkOverview(
-                call = call,
-                modifier = Modifier
-            )
-        })
+        val newPanel = JewelComposePanel(
+            focusOnClickInside = false,
+            content = {
+                io.github.setheclark.intellij.ui.compose.components.NetworkOverview(
+                    call = call,
+                    modifier = Modifier
+                )
+            }
+        )
 
         overviewPanelWrapper.add(newPanel, BorderLayout.CENTER)
         currentOverviewPanel = newPanel
 
         overviewPanelWrapper.revalidate()
         overviewPanelWrapper.repaint()
+    }
+
+    /**
+     * Updates the request panel by recreating the Compose panel with new data.
+     *
+     * This approach is necessary due to Compose-Swing interop limitations.
+     * Will be simplified in Phase 4.2 when migrating to pure Compose.
+     */
+    private fun updateRequestPanel(call: NetworkCallEntity) {
+        // Remove old panel if exists
+        currentRequestPanel?.let { requestPanelWrapper.remove(it) }
+
+        // Create new Compose panel with the request data
+        val newPanel = JewelComposePanel(
+            focusOnClickInside = true,
+            content = {
+                io.github.setheclark.intellij.ui.compose.components.RequestView(
+                    project = project,
+                    request = call.request,
+                    callName = call.name,
+                    timestamp = call.startTime,
+                    modifier = Modifier
+                )
+            }
+        )
+
+        requestPanelWrapper.add(newPanel, BorderLayout.CENTER)
+        currentRequestPanel = newPanel
+
+        requestPanelWrapper.revalidate()
+        requestPanelWrapper.repaint()
+    }
+
+    /**
+     * Updates the response panel by recreating the Compose panel with new data.
+     *
+     * This approach is necessary due to Compose-Swing interop limitations.
+     * Will be simplified in Phase 4.2 when migrating to pure Compose.
+     */
+    private fun updateResponsePanel(call: NetworkCallEntity) {
+        // Remove old panel if exists
+        currentResponsePanel?.let { responsePanelWrapper.remove(it) }
+
+        // Create new Compose panel with the response data
+        val newPanel = JewelComposePanel(
+            focusOnClickInside = true,
+            content = {
+                io.github.setheclark.intellij.ui.compose.components.ResponseView(
+                    project = project,
+                    response = call.response,
+                    callName = call.name,
+                    timestamp = call.startTime,
+                    modifier = Modifier
+                )
+            }
+        )
+
+        responsePanelWrapper.add(newPanel, BorderLayout.CENTER)
+        currentResponsePanel = newPanel
+
+        responsePanelWrapper.revalidate()
+        responsePanelWrapper.repaint()
     }
 }
