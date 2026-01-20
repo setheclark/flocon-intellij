@@ -1,5 +1,11 @@
 package io.github.setheclark.intellij.ui.network
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import co.touchlab.kermit.Logger
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
@@ -17,7 +23,6 @@ import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.adb.AdbStatus
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.MessageServerState
-import io.github.setheclark.intellij.ui.WarningBanner
 import io.github.setheclark.intellij.ui.network.detail.DetailPanel
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterPanel
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListPanel
@@ -27,6 +32,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.jetbrains.jewel.bridge.JewelComposePanel
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
@@ -42,14 +48,44 @@ class NetworkInspectorPanel(
     private val log = Logger.withPluginTag("NetworkInspectorPanel")
 
     private val statusLabel = JBLabel()
-    private val warningBanner = WarningBanner()
     private lateinit var actionToolbar: ActionToolbar
     private val mainSplitter: JBSplitter
+
+    // Use a wrapper that can be dynamically updated
+    private val warningBannerWrapper = JPanel(BorderLayout())
+    private var currentWarningPanel: javax.swing.JComponent? = null
 
     init {
         // Create combined toolbar with actions and filters
         val toolbarPanel = createToolbarPanel()
         toolbar = toolbarPanel
+
+        // Observe state and update warning banner
+        // Note: Using Swing update pattern due to Compose-Swing interop limitations
+        // This will be simplified in Phase 5 when migrating to pure Compose
+        scope.launch {
+            viewModel.state.collect { state ->
+                val warningText = when {
+                    state.adbStatus == AdbStatus.NotFound -> {
+                        "ADB not found. USB device connections won't work. " +
+                                "Add 'adb' to PATH or set ANDROID_HOME environment variable."
+                    }
+                    state.serverState is MessageServerState.Error -> {
+                        val message = (state.serverState as MessageServerState.Error).message
+                        "ERROR: '$message' - You may have the Flocon desktop app running. " +
+                                "If so, close the app and click the server retry action above."
+                    }
+                    else -> ""
+                }
+
+                val isWarningVisible = state.adbStatus == AdbStatus.NotFound || state.serverState is MessageServerState.Error
+
+                // Update UI on EDT
+                javax.swing.SwingUtilities.invokeLater {
+                    updateWarningBanner(warningText, isWarningVisible)
+                }
+            }
+        }
 
         // Create main content with split pane (horizontal: list on left, details on right)
         mainSplitter = JBSplitter(false, 0.35f).apply {
@@ -60,7 +96,7 @@ class NetworkInspectorPanel(
 
         // Add status bar at bottom
         val contentPanel = JPanel(BorderLayout()).apply {
-            add(warningBanner, BorderLayout.NORTH)
+            add(warningBannerWrapper, BorderLayout.NORTH)
             add(mainSplitter, BorderLayout.CENTER)
             add(createStatusBar(), BorderLayout.SOUTH)
         }
@@ -100,10 +136,7 @@ class NetworkInspectorPanel(
             updateStatusLabel(serverState)
         }
 
-        // Observe ADB status for warning banner
-        viewModel.latestUpdate({ it.serverState to it.adbStatus }) { (serverState, adbState) ->
-            updateWarningBanner(adbState, serverState)
-        }
+        // Warning banner is now handled by Compose state collection
 
         // Observe selected call to show/hide detail panel
         viewModel.latestUpdate(NetworkInspectorState::isDetailVisible) { isVisible ->
@@ -128,41 +161,42 @@ class NetworkInspectorPanel(
         }
     }
 
+    /**
+     * Updates the warning banner by recreating the Compose panel.
+     *
+     * This approach is necessary due to Compose-Swing interop limitations where
+     * state changes inside JewelComposePanel don't trigger recomposition properly.
+     * Will be simplified in Phase 5 when migrating to pure Compose.
+     */
+    private fun updateWarningBanner(text: String, isVisible: Boolean) {
+        // Remove old panel if exists
+        currentWarningPanel?.let { warningBannerWrapper.remove(it) }
+
+        if (isVisible && text.isNotEmpty()) {
+            // Create new Compose panel with the warning
+            val newPanel = JewelComposePanel(content = {
+                io.github.setheclark.intellij.ui.compose.components.WarningBanner(
+                    text = text,
+                    isVisible = true,
+                    modifier = Modifier
+                )
+            })
+
+            warningBannerWrapper.add(newPanel, BorderLayout.CENTER)
+            currentWarningPanel = newPanel
+        } else {
+            currentWarningPanel = null
+        }
+
+        warningBannerWrapper.revalidate()
+        warningBannerWrapper.repaint()
+    }
+
     private fun createStatusBar(): JPanel {
         return JPanel(BorderLayout()).apply {
             border = JBUI.Borders.empty(2, 8)
             add(statusLabel, BorderLayout.WEST)
         }
-    }
-
-    private fun updateWarningBanner(
-        adbStatus: AdbStatus,
-        serverStatus: MessageServerState
-    ) {
-        when {
-            adbStatus == AdbStatus.NotFound -> {
-                warningBanner.setText(
-                    "<html><b>ADB not found.</b> USB device connections won't work. " +
-                            "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>"
-                )
-                warningBanner.isVisible = true
-            }
-
-            serverStatus is MessageServerState.Error -> {
-                val message = serverStatus.message
-                warningBanner.setText(
-                    "<html><b>ERROR: '$message'</b> You may have the Flocon desktop app running.  " +
-                            "If so, close the app and click the server retry action above.</html>"
-                )
-                warningBanner.isVisible = true
-            }
-
-            else -> {
-                warningBanner.isVisible = false
-            }
-        }
-        warningBanner.revalidate()
-        warningBanner.repaint()
     }
 
     private fun updateStatusLabel(state: MessageServerState) {

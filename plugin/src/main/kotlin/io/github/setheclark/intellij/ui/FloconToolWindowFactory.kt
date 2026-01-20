@@ -19,16 +19,12 @@ class FloconToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val uiGraph = project.appGraph.create(project)
 
-        toolWindow.addComposeTab("Network") {
-//            val backgroundColor by remember(JewelTheme.isDark) { mutableStateOf(JBColor.PanelBackground.toComposeColor()) }
-//            Box(
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .background(backgroundColor)
-//            ) {
-//                Text("Testing...")
-//            }
-
+        toolWindow.addComposeTab(
+            tabDisplayName = "Network",
+            isLockable = true,
+            isCloseable = false,
+            focusOnClickInside = true
+        ) {
             SwingPanel(
                 modifier = Modifier.fillMaxSize(),
                 factory = {
@@ -36,21 +32,10 @@ class FloconToolWindowFactory : ToolWindowFactory, DumbAware {
                 }
             )
         }
-        // Register UiScopeDisposable - cancels all UI coroutines when tool window closes
-        content.setDisposer(uiGraph.viewModelScopeDisposable)
 
-//        val contentFactory = ContentFactory.getInstance()
-//        val content = contentFactory.createContent(
-//            uiGraph.networkInspectorPanel,
-//            "Network",
-//            false
-//        )
-//        content.isCloseable = false
-//
-//        // Register UiScopeDisposable - cancels all UI coroutines when tool window closes
-//        content.setDisposer(uiGraph.uiScopeDisposable)
-//
-//        toolWindow.contentManager.addContent(content)
+        // Register UiScopeDisposable - cancels all UI coroutines when tool window closes
+        // Note: With addComposeTab, disposal is handled automatically by the tool window lifecycle
+        com.intellij.openapi.util.Disposer.register(toolWindow.disposable, uiGraph.viewModelScopeDisposable)
     }
 
     override fun shouldBeAvailable(project: Project): Boolean {
