@@ -1,10 +1,5 @@
 package io.github.setheclark.intellij.ui.network
 
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import co.touchlab.kermit.Logger
 import com.intellij.icons.AllIcons
@@ -24,7 +19,7 @@ import io.github.setheclark.intellij.adb.AdbStatus
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.MessageServerState
 import io.github.setheclark.intellij.ui.network.detail.DetailPanel
-import io.github.setheclark.intellij.ui.network.filter.NetworkFilterPanel
+import io.github.setheclark.intellij.ui.network.filter.NetworkFilterViewModel
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListPanel
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
@@ -40,9 +35,9 @@ import javax.swing.JPanel
 class NetworkInspectorPanel(
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val viewModel: NetworkInspectorViewModel,
+    private val filterViewModel: NetworkFilterViewModel,
     private val networkCallListPanel: NetworkCallListPanel,
     private val detailPanel: DetailPanel,
-    private val filterPanel: NetworkFilterPanel,
 ) : SimpleToolWindowPanel(true, true) {
 
     private val log = Logger.withPluginTag("NetworkInspectorPanel")
@@ -51,9 +46,12 @@ class NetworkInspectorPanel(
     private lateinit var actionToolbar: ActionToolbar
     private val mainSplitter: JBSplitter
 
-    // Use a wrapper that can be dynamically updated
+    // Warning banner wrapper
     private val warningBannerWrapper = JPanel(BorderLayout())
     private var currentWarningPanel: javax.swing.JComponent? = null
+
+    // Filter bar wrapper (created once, handles its own state reactivity)
+    private val filterBarWrapper = JPanel(BorderLayout())
 
     init {
         // Create combined toolbar with actions and filters
@@ -86,6 +84,18 @@ class NetworkInspectorPanel(
                 }
             }
         }
+
+        // Create filter bar once - it handles its own state reactivity via NetworkFilterBarContainer
+        val filterPanel = JewelComposePanel(
+            focusOnClickInside = true,
+            content = {
+                io.github.setheclark.intellij.ui.compose.components.NetworkFilterBarContainer(
+                    viewModel = filterViewModel,
+                    modifier = Modifier
+                )
+            }
+        )
+        filterBarWrapper.add(filterPanel, BorderLayout.CENTER)
 
         // Create main content with split pane (horizontal: list on left, details on right)
         mainSplitter = JBSplitter(false, 0.35f).apply {
@@ -125,7 +135,7 @@ class NetworkInspectorPanel(
         // Combine action toolbar and filter panel
         return JPanel(BorderLayout()).apply {
             add(actionToolbar.component, BorderLayout.WEST)
-            add(filterPanel, BorderLayout.CENTER)
+            add(filterBarWrapper, BorderLayout.CENTER)
         }
     }
 
@@ -174,13 +184,16 @@ class NetworkInspectorPanel(
 
         if (isVisible && text.isNotEmpty()) {
             // Create new Compose panel with the warning
-            val newPanel = JewelComposePanel(content = {
-                io.github.setheclark.intellij.ui.compose.components.WarningBanner(
-                    text = text,
-                    isVisible = true,
-                    modifier = Modifier
-                )
-            })
+            val newPanel = JewelComposePanel(
+                focusOnClickInside = false,
+                content = {
+                    io.github.setheclark.intellij.ui.compose.components.WarningBanner(
+                        text = text,
+                        isVisible = true,
+                        modifier = Modifier
+                    )
+                }
+            )
 
             warningBannerWrapper.add(newPanel, BorderLayout.CENTER)
             currentWarningPanel = newPanel
@@ -191,6 +204,7 @@ class NetworkInspectorPanel(
         warningBannerWrapper.revalidate()
         warningBannerWrapper.repaint()
     }
+
 
     private fun createStatusBar(): JPanel {
         return JPanel(BorderLayout()).apply {
