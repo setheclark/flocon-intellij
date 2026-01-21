@@ -2,6 +2,7 @@ package io.github.setheclark.intellij.ui.compose.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,12 +31,14 @@ import org.jetbrains.jewel.ui.component.Text
  *
  * @param project IntelliJ project for editor integration
  * @param call Network call to display (null shows empty state)
+ * @param onClose Optional callback when close button is clicked
  * @param modifier Optional modifier
  */
 @Composable
 fun NetworkDetailView(
     project: Project,
     call: NetworkCallEntity?,
+    onClose: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     if (call == null) {
@@ -55,6 +58,7 @@ fun NetworkDetailView(
         NetworkDetailContent(
             project = project,
             call = call,
+            onClose = onClose,
             modifier = modifier
         )
     }
@@ -67,32 +71,55 @@ fun NetworkDetailView(
 private fun NetworkDetailContent(
     project: Project,
     call: NetworkCallEntity,
+    onClose: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(0) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Tab headers
+        // Tab headers with close button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(IntelliJTheme.colors.background)
+                .background(IntelliJTheme.colors.background),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            DetailTabHeader(
-                text = "Overview",
-                isSelected = selectedTab == 0,
-                onClick = { selectedTab = 0 }
-            )
-            DetailTabHeader(
-                text = "Response",
-                isSelected = selectedTab == 1,
-                onClick = { selectedTab = 1 }
-            )
-            DetailTabHeader(
-                text = "Request",
-                isSelected = selectedTab == 2,
-                onClick = { selectedTab = 2 }
-            )
+            // Tab buttons
+            Row {
+                DetailTabHeader(
+                    text = "Overview",
+                    isSelected = selectedTab == 0,
+                    onClick = { selectedTab = 0 }
+                )
+                DetailTabHeader(
+                    text = "Response",
+                    isSelected = selectedTab == 1,
+                    onClick = { selectedTab = 1 }
+                )
+                DetailTabHeader(
+                    text = "Request",
+                    isSelected = selectedTab == 2,
+                    onClick = { selectedTab = 2 }
+                )
+            }
+
+            // Close button (if callback provided)
+            if (onClose != null) {
+                Box(
+                    modifier = Modifier
+                        .clickable(onClick = onClose)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "✕",
+                        style = IntelliJTheme.typography.body.copy(
+                            fontSize = IntelliJTheme.typography.body.fontSize * 1.2f,
+                            color = IntelliJTheme.colors.foreground.copy(alpha = 0.7f)
+                        )
+                    )
+                }
+            }
         }
 
         // Tab content

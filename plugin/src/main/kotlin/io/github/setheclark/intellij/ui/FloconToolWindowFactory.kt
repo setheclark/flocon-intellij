@@ -2,17 +2,19 @@ package io.github.setheclark.intellij.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.awt.SwingPanel
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import io.github.setheclark.intellij.di.appGraph
+import io.github.setheclark.intellij.ui.compose.screen.NetworkInspectorScreen
 import org.jetbrains.jewel.bridge.addComposeTab
 
 /**
  * Factory for creating the Flocon tool window.
  * Registered in plugin.xml as a tool window factory.
+ *
+ * Migrated to pure Compose in Phase 5.
  */
 class FloconToolWindowFactory : ToolWindowFactory, DumbAware {
 
@@ -25,11 +27,13 @@ class FloconToolWindowFactory : ToolWindowFactory, DumbAware {
             isCloseable = false,
             focusOnClickInside = true
         ) {
-            SwingPanel(
-                modifier = Modifier.fillMaxSize(),
-                factory = {
-                    uiGraph.networkInspectorPanel
-                }
+            NetworkInspectorScreen(
+                project = project,
+                viewModel = uiGraph.networkInspectorViewModel,
+                filterViewModel = uiGraph.networkFilterViewModel,
+                listViewModel = uiGraph.networkCallListViewModel,
+                detailViewModel = uiGraph.detailPanelViewModel,
+                modifier = Modifier.fillMaxSize()
             )
         }
 

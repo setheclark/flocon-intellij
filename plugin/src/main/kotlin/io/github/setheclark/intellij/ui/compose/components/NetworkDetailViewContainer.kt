@@ -16,12 +16,14 @@ import io.github.setheclark.intellij.ui.network.detail.DetailPanelViewModel
  *
  * @param project IntelliJ project for editor integration
  * @param viewModel The view model providing selected call state
+ * @param onClose Optional callback when close button is clicked
  * @param modifier Optional modifier
  */
 @Composable
 fun NetworkDetailViewContainer(
     project: Project,
     viewModel: DetailPanelViewModel,
+    onClose: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val selectedCall by viewModel.selectedCall.collectAsState(initial = null)
@@ -29,6 +31,7 @@ fun NetworkDetailViewContainer(
     NetworkDetailView(
         project = project,
         call = selectedCall,
+        onClose = onClose,
         modifier = modifier
     )
 }

@@ -88,23 +88,33 @@ fun NetworkCallTable(
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     var userHasScrolled by remember { mutableStateOf(false) }
+    var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     // Request focus initially so keyboard shortcuts work
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 
-    // Auto-scroll to newest entries when enabled
-    LaunchedEffect(sortedCalls.size, autoScrollEnabled, sortColumn, sortAscending) {
-        if (autoScrollEnabled && sortColumn == SortColumn.TIME && sortedCalls.isNotEmpty() && !userHasScrolled) {
-            val targetIndex = if (sortAscending) sortedCalls.size - 1 else 0
-            listState.animateScrollToItem(targetIndex)
+    // Reset userHasScrolled flag when autoscroll is enabled
+    LaunchedEffect(autoScrollEnabled) {
+        if (autoScrollEnabled) {
+            userHasScrolled = false
         }
     }
 
-    // Detect manual scrolling
+    // Auto-scroll to newest entries when enabled
+    LaunchedEffect(sortedCalls.size, autoScrollEnabled, sortColumn, sortAscending) {
+        if (autoScrollEnabled && sortColumn == SortColumn.TIME && sortedCalls.isNotEmpty() && !userHasScrolled) {
+            isProgrammaticScroll = true
+            val targetIndex = if (sortAscending) sortedCalls.size - 1 else 0
+            listState.animateScrollToItem(targetIndex)
+            isProgrammaticScroll = false
+        }
+    }
+
+    // Detect manual scrolling (but ignore programmatic scrolling from autoscroll)
     LaunchedEffect(listState.isScrollInProgress) {
-        if (listState.isScrollInProgress) {
+        if (listState.isScrollInProgress && !isProgrammaticScroll) {
             userHasScrolled = true
             onDisableAutoScroll()
         }

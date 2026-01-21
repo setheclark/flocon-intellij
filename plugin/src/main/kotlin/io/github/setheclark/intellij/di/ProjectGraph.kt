@@ -17,6 +17,12 @@ interface ProjectGraph {
 
     val networkInspectorPanel: NetworkInspectorPanel
 
+    // ViewModels for pure Compose UI (Phase 5)
+    val networkInspectorViewModel: io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
+    val networkFilterViewModel: io.github.setheclark.intellij.ui.network.filter.NetworkFilterViewModel
+    val networkCallListViewModel: io.github.setheclark.intellij.ui.network.list.NetworkCallListViewModel
+    val detailPanelViewModel: io.github.setheclark.intellij.ui.network.detail.DetailPanelViewModel
+
     /**
      * Disposable that cancels the UI scope.
      * Register this with the tool window content for proper cleanup.
