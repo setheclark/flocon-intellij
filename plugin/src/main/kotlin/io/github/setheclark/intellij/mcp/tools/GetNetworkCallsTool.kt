@@ -216,7 +216,7 @@ private fun formatSummaryTable(calls: List<NetworkCallEntity>): String {
             }
             val duration = call.response?.durationMs?.let { "${it.toInt()}ms" } ?: "-"
 
-            appendLine("| ${call.callId.take(8)} | $time | $method | $url | $type | $status | $duration |")
+            appendLine("| ${call.callId} | $time | $method | $url | $type | $status | $duration |")
         }
 
         appendLine("\nUse get_network_call_details with specific Call IDs to see full request/response bodies and headers.")
