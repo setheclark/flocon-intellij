@@ -109,7 +109,7 @@ class McpServerDelegate(
     private fun configureServer(): Server {
         val server = Server(
             Implementation(
-                name = "flocon-network-inspector", version = "0.2.0"
+                name = "flocon-network-inspector", version = "0.2.1"
             ),
             ServerOptions(
                 capabilities = ServerCapabilities(
