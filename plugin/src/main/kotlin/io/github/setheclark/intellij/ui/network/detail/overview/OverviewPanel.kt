@@ -130,6 +130,8 @@ class OverviewPanel : JPanel(BorderLayout()) {
     }
 
     private fun createValueLabel(): JBLabel {
-        return JBLabel()
+        return JBLabel().apply {
+            setCopyable(true)
+        }
     }
 }
