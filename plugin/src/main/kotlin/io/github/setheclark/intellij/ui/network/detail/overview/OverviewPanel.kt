@@ -7,6 +7,8 @@ import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
+import io.github.setheclark.intellij.ui.network.detail.common.HeadersTablePanel
+import io.github.setheclark.intellij.util.parseQueryParameters
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.Font
@@ -35,20 +37,22 @@ class OverviewPanel : JPanel(BorderLayout()) {
     private val durationLabel = createValueLabel()
     private val startTimeLabel = createValueLabel()
 
+    private val queryParametersPanel = HeadersTablePanel()
+    private val queryParametersSection = lazy { createQueryParametersSection() }
+    private val contentPanel: JPanel
+
     init {
-        val content = JPanel().apply {
+        contentPanel = JPanel().apply {
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
             border = JBUI.Borders.empty(12)
 
             add(createGeneralSection())
             add(Box.createVerticalStrut(16))
             add(createTimingSection())
-//            add(Box.createVerticalStrut(16))
-//            add(createActionsSection())
             add(Box.createVerticalGlue())
         }
 
-        add(JBScrollPane(content), BorderLayout.CENTER)
+        add(JBScrollPane(contentPanel), BorderLayout.CENTER)
     }
 
     fun showOverview(call: NetworkCallEntity) {
@@ -72,6 +76,44 @@ class OverviewPanel : JPanel(BorderLayout()) {
 
         durationLabel.text = response?.durationMs?.let { "${it}ms" } ?: "N/A"
         startTimeLabel.text = timeFormatter.format(Instant.ofEpochMilli(call.startTime))
+
+        // Parse and display query parameters
+        val queryParams = parseQueryParameters(call.request.url)
+        queryParametersPanel.showHeaders(queryParams)
+
+        // Conditionally show/hide Query Parameters section
+        val section = queryParametersSection.value
+        if (queryParams.isNotEmpty()) {
+            // Add section if not already present
+            if (section.parent == null) {
+                val components = contentPanel.components
+                val generalSectionIndex = components.indexOfFirst { it is JPanel }
+                if (generalSectionIndex >= 0) {
+                    // Insert after General section and its strut
+                    val insertIndex = generalSectionIndex + 2
+                    contentPanel.add(section, insertIndex)
+                    contentPanel.add(Box.createVerticalStrut(16), insertIndex + 1)
+                }
+            }
+        } else {
+            // Remove section if present
+            if (section.parent != null) {
+                val index = contentPanel.components.indexOf(section)
+                if (index >= 0) {
+                    contentPanel.remove(section)
+                    // Remove the strut after the section if it exists
+                    if (index < contentPanel.componentCount) {
+                        val nextComponent = contentPanel.getComponent(index)
+                        if (nextComponent is Box.Filler) {
+                            contentPanel.remove(nextComponent)
+                        }
+                    }
+                }
+            }
+        }
+
+        contentPanel.revalidate()
+        contentPanel.repaint()
     }
 
     private fun createGeneralSection(): JPanel {
@@ -90,11 +132,10 @@ class OverviewPanel : JPanel(BorderLayout()) {
         }
     }
 
-    private fun createActionsSection(): JPanel {
-        return createSection("Actions") {
-            add(JBLabel("Coming soon...").apply {
-                foreground = JBColor.GRAY
-                border = JBUI.Borders.empty(4, 0)
+    private fun createQueryParametersSection(): JPanel {
+        return createSection("Query Parameters") {
+            add(queryParametersPanel.apply {
+                alignmentX = LEFT_ALIGNMENT
             })
         }
     }
