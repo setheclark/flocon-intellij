@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -28,6 +30,7 @@ dependencies {
         bundledPlugin("com.intellij.java")
         pluginVerifier()
         zipSigner()
+        testFramework(TestFrameworkType.Platform)
     }
 
     // Flocon Desktop modules (source inclusion with DI.kt exclusions)
@@ -39,11 +42,7 @@ dependencies {
     implementation(libs.kermit) { excludeBundledDependencies() }
 
     // Test dependencies
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.junit.jupiter.params)
-    testRuntimeOnly(libs.junit.platform.launcher)
-    // JUnit 4 is required by IntelliJ Platform test framework
-    testRuntimeOnly("junit:junit:4.13.2")
+    testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.kotest.assertions)
@@ -83,11 +82,6 @@ tasks {
         compilerOptions {
             freeCompilerArgs.add("-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
         }
-    }
-
-    // Configure JUnit 5 for tests
-    test {
-        useJUnitPlatform()
     }
 
     runIde {

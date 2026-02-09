@@ -7,7 +7,7 @@ data class NetworkCallListState(
 )
 
 sealed interface NetworkCallListIntent {
-    object DisableAutoScroll : NetworkCallListIntent
-    object ClearCallSelection : NetworkCallListIntent
+    data object DisableAutoScroll : NetworkCallListIntent
+    data object ClearCallSelection : NetworkCallListIntent
     data class SelectCall(val callId: String) : NetworkCallListIntent
 }

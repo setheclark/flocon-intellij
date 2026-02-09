@@ -15,12 +15,9 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
+import org.junit.Before
+import org.junit.Test
 
-@DisplayName("InMemoryNetworkDataSource")
 class InMemoryNetworkDataSourceTest {
 
     private lateinit var settingsProvider: FakeNetworkStorageSettingsProvider
@@ -74,16 +71,14 @@ class InMemoryNetworkDataSourceTest {
         ) else null,
     )
 
-    @BeforeEach
+    @Before
     fun setup() {
         settingsProvider = FakeNetworkStorageSettingsProvider(createSettings())
         bodyStore = BodyStore(settingsProvider)
         dataSource = InMemoryNetworkDataSource(bodyStore, settingsProvider)
     }
 
-    @Nested
-    @DisplayName("insert()")
-    inner class Insert {
+
 
         @Test
         fun `inserts entity and stores bodies separately`() = runTest {
@@ -142,11 +137,6 @@ class InMemoryNetworkDataSourceTest {
             retrieved.request.body.shouldBeNull()
             retrieved.response.shouldBeNull()
         }
-    }
-
-    @Nested
-    @DisplayName("session change detection")
-    inner class SessionChangeDetection {
 
         @Test
         fun `clears previous session calls when app instance changes`() = runTest {
@@ -177,7 +167,7 @@ class InMemoryNetworkDataSourceTest {
         }
 
         @Test
-        fun `tracks sessions independently per device-package`() = runTest {
+        fun `tracks sessions independently per device package`() = runTest {
             // Device 1, App A - Session 1
             dataSource.insert(createEntity(
                 callId = "d1-a-call-1",
@@ -233,11 +223,6 @@ class InMemoryNetworkDataSourceTest {
             val statsAfter = bodyStore.getStats()
             statsAfter.entryCount shouldBe 1
         }
-    }
-
-    @Nested
-    @DisplayName("FIFO eviction")
-    inner class FifoEviction {
 
         @Test
         fun `evicts oldest calls when max limit exceeded`() = runTest {
@@ -290,11 +275,6 @@ class InMemoryNetworkDataSourceTest {
             val statsAfter = bodyStore.getStats()
             statsAfter.entryCount shouldBe 2
         }
-    }
-
-    @Nested
-    @DisplayName("update()")
-    inner class Update {
 
         @Test
         fun `updates existing entity`() = runTest {
@@ -344,11 +324,6 @@ class InMemoryNetworkDataSourceTest {
 
             dataSource.getByCallId("non-existent").shouldBeNull()
         }
-    }
-
-    @Nested
-    @DisplayName("getByCallId()")
-    inner class GetByCallId {
 
         @Test
         fun `returns null for non-existent call`() = runTest {
@@ -371,11 +346,6 @@ class InMemoryNetworkDataSourceTest {
             retrieved.request.body shouldBe "request body"
             (retrieved.response as NetworkResponse.Success).body shouldBe "response body"
         }
-    }
-
-    @Nested
-    @DisplayName("observeByCallId()")
-    inner class ObserveByCallId {
 
         @Test
         fun `emits null for non-existent call`() = runTest {
@@ -425,11 +395,6 @@ class InMemoryNetworkDataSourceTest {
                 awaitItem().shouldBeNull()
             }
         }
-    }
-
-    @Nested
-    @DisplayName("getByDeviceAndPackage()")
-    inner class GetByDeviceAndPackage {
 
         @Test
         fun `returns empty list when no calls exist`() = runTest {
@@ -462,11 +427,6 @@ class InMemoryNetworkDataSourceTest {
             result shouldHaveSize 1
             result[0].request.body shouldBe "request body"
         }
-    }
-
-    @Nested
-    @DisplayName("observeByDeviceAndPackage()")
-    inner class ObserveByDeviceAndPackage {
 
         @Test
         fun `emits empty list initially`() = runTest {
@@ -508,11 +468,6 @@ class InMemoryNetworkDataSourceTest {
                 awaitItem() shouldHaveSize 2
             }
         }
-    }
-
-    @Nested
-    @DisplayName("observeCurrentAppInstance()")
-    inner class ObserveCurrentAppInstance {
 
         @Test
         fun `emits null initially`() = runTest {
@@ -583,11 +538,6 @@ class InMemoryNetworkDataSourceTest {
                 awaitItem() shouldBe "our-session"
             }
         }
-    }
-
-    @Nested
-    @DisplayName("deleteByCallId()")
-    inner class DeleteByCallId {
 
         @Test
         fun `removes call from data source`() = runTest {
@@ -633,11 +583,6 @@ class InMemoryNetworkDataSourceTest {
             // Should not throw
             dataSource.deleteByCallId("non-existent")
         }
-    }
-
-    @Nested
-    @DisplayName("deleteByDeviceAndPackage()")
-    inner class DeleteByDeviceAndPackage {
 
         @Test
         fun `removes all calls for device-package`() = runTest {
@@ -664,7 +609,7 @@ class InMemoryNetworkDataSourceTest {
         }
 
         @Test
-        fun `removes bodies from BodyStore`() = runTest {
+        fun `removes bodies from BodyStore `() = runTest {
             dataSource.insert(createEntity(callId = "call-1", requestBody = "body 1"))
             dataSource.insert(createEntity(callId = "call-2", requestBody = "body 2"))
 
@@ -676,11 +621,6 @@ class InMemoryNetworkDataSourceTest {
             val statsAfter = bodyStore.getStats()
             statsAfter.entryCount shouldBe 0
         }
-    }
-
-    @Nested
-    @DisplayName("deleteAll()")
-    inner class DeleteAll {
 
         @Test
         fun `removes all calls`() = runTest {
@@ -717,11 +657,6 @@ class InMemoryNetworkDataSourceTest {
             dataSource.insert(createEntity(callId = "call-2"))
             dataSource.getByCallId("call-2").shouldNotBeNull()
         }
-    }
-
-    @Nested
-    @DisplayName("body hydration")
-    inner class BodyHydration {
 
         @Test
         fun `hydrates request body on retrieval`() = runTest {
@@ -781,11 +716,6 @@ class InMemoryNetworkDataSourceTest {
             retrieved.shouldNotBeNull()
             // Body might be null if evicted
         }
-    }
-
-    @Nested
-    @DisplayName("concurrency")
-    inner class Concurrency {
 
         @Test
         fun `handles concurrent inserts safely`() = runTest {
@@ -826,5 +756,4 @@ class InMemoryNetworkDataSourceTest {
 
             // Should complete without errors
         }
-    }
 }
