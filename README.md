@@ -239,4 +239,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **GitHub Repository**: [https://github.com/setheclark/flocon-intellij](https://github.com/setheclark/flocon-intellij)
 - **Issue Tracker**: [https://github.com/setheclark/flocon-intellij/issues](https://github.com/setheclark/flocon-intellij/issues)
 - **Flocon SDK**: [https://github.com/openflocon/Flocon](https://github.com/openflocon/Flocon)
-- **Documentation**: [docs/](docs/)
