@@ -11,7 +11,7 @@ import io.github.setheclark.intellij.di.appGraph
  * Factory for creating the Flocon tool window.
  * Registered in plugin.xml as a tool window factory.
  */
-class FloconToolWindowFactory : ToolWindowFactory, DumbAware {
+class PluginToolWindowFactory : ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val uiGraph = project.appGraph.create(project)

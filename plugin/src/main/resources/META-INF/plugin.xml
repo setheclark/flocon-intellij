@@ -1,29 +1,27 @@
 <idea-plugin>
     <id>io.github.setheclark.flocon_plugin</id>
     <name>Network Inspector</name>
-    <vendor email="todo@example.com" url="https://example.com">TODO</vendor>
+    <vendor url="https://github.com/setheclark">Seth Clark</vendor>
 
     <description><![CDATA[
-        Network traffic inspector for Android apps using the Flocon SDK.
+Network traffic inspector for Android apps using the Flocon SDK.
 
-        <h3>Features</h3>
-        <ul>
-            <li>Real-time network traffic inspection from connected Android devices</li>
-            <li>View HTTP request/response details including headers and body</li>
-            <li>Timeline visualization of network activity</li>
-            <li>Support for multiple connected devices simultaneously</li>
-            <li>Filter and search network requests</li>
-        </ul>
+<h3>Features</h3>
+<ul>
+    <li>Real-time network traffic inspection from connected Android devices</li>
+    <li>View HTTP request/response details including headers and body</li>
+    <li>Timeline visualization of network activity</li>
+    <li>Support for multiple connected devices simultaneously</li>
+    <li>Filter and search network requests</li>
+</ul>
 
-        <h3>Usage</h3>
-        <ol>
-            <li>Integrate the Flocon SDK into your Android app</li>
-            <li>Connect your device via USB or WiFi</li>
-            <li>Open the Flocon tool window (View → Tool Windows → Flocon)</li>
-            <li>Run your app and watch network traffic appear in real-time</li>
-        </ol>
-
-        <p>For more information, visit <a href="https://github.com/openflocon/Flocon">Flocon on GitHub</a></p>
+<h3>Usage</h3>
+<ol>
+    <li>Integrate the Flocon SDK into your Android app</li>
+    <li>Connect your device via USB or WiFi</li>
+    <li>Open the Flocon tool window (View → Tool Windows → Flocon)</li>
+    <li>Run your app and watch network traffic appear in real-time</li>
+</ol>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -33,7 +31,7 @@
                 id="Network Inspector"
                 anchor="bottom"
                 icon="/icons/icon.svg"
-                factoryClass="io.github.setheclark.intellij.ui.FloconToolWindowFactory"/>
+                factoryClass="io.github.setheclark.intellij.ui.PluginToolWindowFactory"/>
 
         <applicationService
                 serviceImplementation="io.github.setheclark.intellij.services.ApplicationService"/>
