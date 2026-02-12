@@ -1,5 +1,10 @@
 # Flocon IntelliJ Plugin
 
+<div align="center">
+    <img alt="Icon" src="plugin/src/main/resources/META-INF/pluginIcon.svg" width="150" />
+</div>
+
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![IntelliJ Platform](https://img.shields.io/badge/IntelliJ-2025.2%2B-blue.svg)](https://plugins.jetbrains.com/docs/intellij)
 
@@ -15,15 +20,20 @@ IntelliJ IDEA plugin for real-time network inspection of Android applications us
 - **Detailed Request/Response View**: Inspect headers, query parameters, request/response bodies
 - **Multi-Device Support**: Monitor multiple connected Android devices simultaneously
 - **Search and Filter**: Quickly find specific network calls by URL, method, or content
-- **Timeline View**: Visualize network activity over time
-- **Body Compression**: Efficiently handles large payloads with automatic compression
-- **Auto-scroll**: Automatically scrolls to new requests (toggleable)
 
 ---
 
 ## Screenshots
 
-*TODO: Add screenshots of the plugin in action*
+### Network Timeline
+View all network calls in real-time with comprehensive details including method, URL, status, duration, and size.
+
+![Network Timeline](docs/screenshots/network_timeline.png)
+
+### Call Details
+Inspect detailed request and response information including headers, query parameters, and formatted body content.
+
+![Call Details](docs/screenshots/call_details.png)
 
 ---
 
@@ -34,7 +44,6 @@ IntelliJ IDEA plugin for real-time network inspection of Android applications us
 - **JDK**: 21 or later
 
 ### Android App Requirements
-- **Android SDK**: API 21+ (Android 5.0 Lollipop)
 - **Flocon SDK**: Integrated in your Android app ([see installation](https://github.com/openflocon/Flocon))
 - **ADB**: For device communication (usually installed with Android SDK)
 
