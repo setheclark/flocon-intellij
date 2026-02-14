@@ -31,6 +31,7 @@ Network traffic inspector for Android apps using the Flocon SDK.
                 id="Network Inspector"
                 anchor="bottom"
                 icon="/icons/icon.svg"
+                canCloseContents="true"
                 factoryClass="io.github.setheclark.intellij.ui.PluginToolWindowFactory"/>
 
         <applicationService

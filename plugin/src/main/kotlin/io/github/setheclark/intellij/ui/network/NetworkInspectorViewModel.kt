@@ -15,8 +15,11 @@ import io.github.setheclark.intellij.ui.network.usecase.ObserveCurrentAppInstanc
 import io.github.setheclark.intellij.ui.network.usecase.ObserveServerStatusUseCase
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
@@ -41,6 +44,9 @@ class NetworkInspectorViewModel(
 
     private val _state = MutableStateFlow(NetworkInspectorState())
     val state: StateFlow<NetworkInspectorState> = _state.asStateFlow()
+
+    private val _openCallInTabEvent = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)
+    val openCallInTabEvent: SharedFlow<Pair<String, String>> = _openCallInTabEvent.asSharedFlow()
 
     init {
         observeDataSources()
@@ -81,6 +87,10 @@ class NetworkInspectorViewModel(
 
             is NetworkInspectorIntent.StopServer -> {
                 scope.launch { stopServerUseCase() }
+            }
+
+            is NetworkInspectorIntent.OpenCallInTab -> {
+                scope.launch { _openCallInTabEvent.emit(intent.callId to intent.callName) }
             }
         }
     }

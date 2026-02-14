@@ -9,33 +9,39 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.ui.JBSplitter
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.content.ContentFactory
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.adb.AdbStatus
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.MessageServerState
 import io.github.setheclark.intellij.ui.WarningBanner
-import io.github.setheclark.intellij.ui.network.detail.DetailPanel
+import io.github.setheclark.intellij.ui.network.detail.DetailPanelFactory
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterPanel
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListPanel
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import com.intellij.openapi.Disposable
+import com.intellij.ui.content.Content
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
 @Inject
 class NetworkInspectorPanel(
+    private val project: Project,
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val viewModel: NetworkInspectorViewModel,
     private val networkCallListPanel: NetworkCallListPanel,
-    private val detailPanel: DetailPanel,
+    private val detailPanelFactory: DetailPanelFactory,
     private val filterPanel: NetworkFilterPanel,
 ) : SimpleToolWindowPanel(true, true) {
 
@@ -44,24 +50,17 @@ class NetworkInspectorPanel(
     private val statusLabel = JBLabel()
     private val warningBanner = WarningBanner()
     private lateinit var actionToolbar: ActionToolbar
-    private val mainSplitter: JBSplitter
+    private val openTabs: MutableMap<String, Content> = mutableMapOf()
 
     init {
         // Create combined toolbar with actions and filters
         val toolbarPanel = createToolbarPanel()
         toolbar = toolbarPanel
 
-        // Create main content with split pane (horizontal: list on left, details on right)
-        mainSplitter = JBSplitter(false, 0.35f).apply {
-            firstComponent = networkCallListPanel
-            secondComponent = null  // Hidden initially until a request is selected
-            setHonorComponentsMinimumSize(false)
-        }
-
-        // Add status bar at bottom
+        // Network call list fills the full content area
         val contentPanel = JPanel(BorderLayout()).apply {
             add(warningBanner, BorderLayout.NORTH)
-            add(mainSplitter, BorderLayout.CENTER)
+            add(networkCallListPanel, BorderLayout.CENTER)
             add(createStatusBar(), BorderLayout.SOUTH)
         }
 
@@ -105,16 +104,43 @@ class NetworkInspectorPanel(
             updateWarningBanner(adbState, serverState)
         }
 
-        // Observe selected call to show/hide detail panel
-        viewModel.latestUpdate(NetworkInspectorState::isDetailVisible) { isVisible ->
-            log.v { "isDetailVisible: $isVisible" }
-            mainSplitter.secondComponent = if (isVisible) detailPanel else null
-        }
-
         // Observe action state to update toolbar toggle button
         viewModel.latestUpdate({ it.autoScrollEnabled to it.serverState }) {
             actionToolbar.updateActionsAsync()
         }
+
+        // Observe tab-open events
+        scope.launch {
+            viewModel.openCallInTabEvent.collect { (callId, callName) ->
+                openCallInTab(callId, callName)
+            }
+        }
+    }
+
+    private fun openCallInTab(callId: String, callName: String) {
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Network Inspector") ?: return
+        val contentManager = toolWindow.contentManager
+
+        // If tab already open, activate it
+        val existing = openTabs[callId]
+        if (existing != null) {
+            contentManager.setSelectedContent(existing)
+            return
+        }
+
+        val tabTitle = if (callName.length > 30) callName.take(30) + "…" else callName
+        val (panel, tabScope) = detailPanelFactory.create(callId)
+
+        val content = ContentFactory.getInstance().createContent(panel, tabTitle, true)
+        content.isCloseable = true
+        content.setDisposer(Disposable {
+            tabScope.cancel()
+            openTabs.remove(callId)
+        })
+
+        openTabs[callId] = content
+        contentManager.addContent(content)
+        contentManager.setSelectedContent(content)
     }
 
     private fun <T> NetworkInspectorViewModel.latestUpdate(

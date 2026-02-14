@@ -82,15 +82,17 @@ class NetworkCallListPanel(
                 }
             }
 
-            // Mouse listener - double-click to deselect
+            // Mouse listener - double-click to open call in tab
             addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
                     if (e.clickCount == 2) {
                         val clickedRow = rowAtPoint(e.point)
-                        if (clickedRow >= 0 && clickedRow == selectedRow) {
-                            // Double-clicked the selected row - deselect
-                            clearSelection()
-                            clearCallSelection()
+                        if (clickedRow >= 0) {
+                            val modelRow = convertRowIndexToModel(clickedRow)
+                            val call = tableModel.calls.getOrNull(modelRow)
+                            if (call != null) {
+                                viewModel.dispatch(NetworkCallListIntent.OpenCallInTab(call.callId, call.name))
+                            }
                         }
                     }
                 }

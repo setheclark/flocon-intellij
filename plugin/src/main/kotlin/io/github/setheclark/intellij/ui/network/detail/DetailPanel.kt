@@ -6,8 +6,6 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.tabs.JBTabsFactory
 import com.intellij.ui.tabs.TabInfo
 import com.intellij.util.ui.JBUI
-import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.ui.network.detail.overview.OverviewPanel
 import io.github.setheclark.intellij.ui.network.detail.request.RequestPanel
@@ -18,10 +16,9 @@ import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
-@Inject
 class DetailPanel(
     private val project: Project,
-    @param:ViewModelCoroutineScope private val scope: CoroutineScope,
+    private val scope: CoroutineScope,
     private val viewModel: DetailPanelViewModel,
     private val overviewPanel: OverviewPanel,
     private val requestPanel: RequestPanel,

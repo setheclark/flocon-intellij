@@ -30,4 +30,7 @@ sealed interface NetworkInspectorIntent {
     // Server control
     data object StartServer : NetworkInspectorIntent
     data object StopServer : NetworkInspectorIntent
+
+    // Tab management
+    data class OpenCallInTab(val callId: String, val callName: String) : NetworkInspectorIntent
 }

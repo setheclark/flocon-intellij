@@ -61,6 +61,10 @@ class NetworkCallListViewModel(
             NetworkCallListIntent.DisableAutoScroll -> {
                 parentViewModel.dispatch(NetworkInspectorIntent.DisableAutoScroll)
             }
+
+            is NetworkCallListIntent.OpenCallInTab -> {
+                parentViewModel.dispatch(NetworkInspectorIntent.OpenCallInTab(intent.callId, intent.callName))
+            }
         }
     }
 
