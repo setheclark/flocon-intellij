@@ -18,6 +18,8 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 )
 class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSettingsState> {
 
+    var callDetailOpenMode: CallDetailOpenMode = CallDetailOpenMode.TOOL_WINDOW_TAB
+
     var maxStoredCalls: Int = NetworkStorageSettings.DEFAULT_MAX_STORED_CALLS
     var maxBodyCacheSizeBytes: Long = NetworkStorageSettings.DEFAULT_MAX_BODY_CACHE_SIZE_BYTES
     var maxBodySizeBytes: Int = NetworkStorageSettings.DEFAULT_MAX_BODY_SIZE_BYTES

@@ -1,12 +1,13 @@
 package io.github.setheclark.intellij.settings
 
 import com.intellij.openapi.options.Configurable
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
+import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JSpinner
@@ -19,6 +20,7 @@ import javax.swing.SpinnerNumberModel
 class NetworkStorageSettingsConfigurable : Configurable {
 
     private var panel: JPanel? = null
+    private var openModeComboBox: JComboBox<CallDetailOpenMode>? = null
     private var maxStoredCallsSpinner: JSpinner? = null
     private var maxBodyCacheSizeMbSpinner: JSpinner? = null
     private var maxBodySizeKbSpinner: JSpinner? = null
@@ -28,6 +30,13 @@ class NetworkStorageSettingsConfigurable : Configurable {
 
     override fun createComponent(): JComponent {
         val state = NetworkStorageSettingsState.getInstance()
+
+        openModeComboBox = JComboBox(CallDetailOpenMode.entries.toTypedArray()).apply {
+            renderer = SimpleListCellRenderer.create { label, value, _ ->
+                label.text = value?.displayName ?: ""
+            }
+            selectedItem = state.callDetailOpenMode
+        }
 
         maxStoredCallsSpinner = JSpinner(SpinnerNumberModel(
             state.maxStoredCalls,
@@ -56,6 +65,13 @@ class NetworkStorageSettingsConfigurable : Configurable {
         )
 
         panel = FormBuilder.createFormBuilder()
+            .addLabeledComponent(
+                JBLabel("Open call details in:"),
+                openModeComboBox!!,
+                1,
+                false
+            )
+            .addVerticalGap(8)
             .addLabeledComponent(
                 JBLabel("Maximum stored calls:"),
                 maxStoredCallsSpinner!!,
@@ -112,7 +128,8 @@ class NetworkStorageSettingsConfigurable : Configurable {
 
     override fun isModified(): Boolean {
         val state = NetworkStorageSettingsState.getInstance()
-        return maxStoredCallsSpinner?.value != state.maxStoredCalls ||
+        return openModeComboBox?.selectedItem != state.callDetailOpenMode ||
+                maxStoredCallsSpinner?.value != state.maxStoredCalls ||
                 (maxBodyCacheSizeMbSpinner?.value as? Int)?.times(1024L * 1024) != state.maxBodyCacheSizeBytes ||
                 (maxBodySizeKbSpinner?.value as? Int)?.times(1024) != state.maxBodySizeBytes ||
                 compressionEnabledCheckbox?.isSelected != state.compressionEnabled
@@ -120,6 +137,9 @@ class NetworkStorageSettingsConfigurable : Configurable {
 
     override fun apply() {
         val state = NetworkStorageSettingsState.getInstance()
+        (openModeComboBox?.selectedItem as? CallDetailOpenMode)?.let {
+            state.callDetailOpenMode = it
+        }
         state.maxStoredCalls = maxStoredCallsSpinner?.value as? Int ?: NetworkStorageSettings.DEFAULT_MAX_STORED_CALLS
         state.maxBodyCacheSizeBytes = ((maxBodyCacheSizeMbSpinner?.value as? Int) ?: 50).toLong() * 1024 * 1024
         state.maxBodySizeBytes = ((maxBodySizeKbSpinner?.value as? Int) ?: 1024) * 1024
@@ -128,6 +148,7 @@ class NetworkStorageSettingsConfigurable : Configurable {
 
     override fun reset() {
         val state = NetworkStorageSettingsState.getInstance()
+        openModeComboBox?.selectedItem = state.callDetailOpenMode
         maxStoredCallsSpinner?.value = state.maxStoredCalls
         maxBodyCacheSizeMbSpinner?.value = (state.maxBodyCacheSizeBytes / (1024 * 1024)).toInt()
         maxBodySizeKbSpinner?.value = state.maxBodySizeBytes / 1024
@@ -136,6 +157,7 @@ class NetworkStorageSettingsConfigurable : Configurable {
 
     override fun disposeUIResources() {
         panel = null
+        openModeComboBox = null
         maxStoredCallsSpinner = null
         maxBodyCacheSizeMbSpinner = null
         maxBodySizeKbSpinner = null
