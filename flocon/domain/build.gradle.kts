@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -16,16 +15,14 @@ kotlin {
 sourceSets {
     main {
         kotlin {
-            srcDir("${rootProject.projectDir}/flocon-upstream/FloconDesktop/data/core/src/commonMain/kotlin")
+            srcDir("${rootProject.projectDir}/flocon/upstream/FloconDesktop/domain/src/commonMain/kotlin")
             exclude("**/DI.kt")
         }
     }
 }
 
 dependencies {
-    api(project(":flocon-sources:domain"))
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kermit)
+    api(libs.kotlinx.coroutines.core)
+    api(libs.kotlinx.datetime)
     compileOnly(libs.paging.common)
 }

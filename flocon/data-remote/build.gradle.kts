@@ -17,12 +17,12 @@ kotlin {
 
     sourceSets {
         commonMain {
-            kotlin.srcDir("${rootProject.projectDir}/flocon-upstream/FloconDesktop/data/remote/src/commonMain/kotlin")
+            kotlin.srcDir("${rootProject.projectDir}/flocon/upstream/FloconDesktop/data/remote/src/commonMain/kotlin")
             kotlin.exclude("**/DI.kt")
 
             dependencies {
-                api(project(":flocon-sources:domain"))
-                api(project(":flocon-sources:data-core"))
+                api(project(":flocon:domain"))
+                api(project(":flocon:data-core"))
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kermit)
@@ -30,7 +30,7 @@ kotlin {
         }
 
         val desktopMain by getting {
-            kotlin.srcDir("${rootProject.projectDir}/flocon-upstream/FloconDesktop/data/remote/src/desktopMain/kotlin")
+            kotlin.srcDir("${rootProject.projectDir}/flocon/upstream/FloconDesktop/data/remote/src/desktopMain/kotlin")
             kotlin.exclude("**/DI.kt")
 
             dependencies {

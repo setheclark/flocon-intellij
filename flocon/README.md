@@ -1,6 +1,6 @@
 # Flocon Source Modules
 
-This directory contains Gradle modules that include source code from the `flocon-upstream/FloconDesktop` submodule with specific exclusions.
+This directory contains Gradle modules that include source code from the `upstream` submodule with specific exclusions.
 
 ## Why Not Use Composite Build?
 
@@ -28,7 +28,7 @@ Instead of composite build, these modules include FloconDesktop sources directly
 sourceSets {
     main {
         kotlin {
-            srcDir("${rootProject.projectDir}/flocon-upstream/FloconDesktop/domain/src/commonMain/kotlin")
+            srcDir("${rootProject.projectDir}/flocon/upstream/FloconDesktop/domain/src/commonMain/kotlin")
             exclude("**/DI.kt")
         }
     }
@@ -52,7 +52,7 @@ This approach:
 
 ## Updating FloconDesktop
 
-When updating the `flocon-upstream` submodule, check for:
+When updating the `upstream` submodule, check for:
 1. New dependencies added to FloconDesktop modules that may need to be added here
 2. New source directories that may need to be included
 3. Changes to the expect/actual structure in data-remote

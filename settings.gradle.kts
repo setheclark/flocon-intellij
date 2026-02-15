@@ -22,6 +22,6 @@ dependencyResolutionManagement {
 include(":plugin")
 
 // Flocon source modules - include sources directly with exclusions
-include(":flocon-sources:domain")
-include(":flocon-sources:data-core")
-include(":flocon-sources:data-remote")
+include(":flocon:domain")
+include(":flocon:data-core")
+include(":flocon:data-remote")

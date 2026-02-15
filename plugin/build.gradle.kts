@@ -1,4 +1,5 @@
 import org.jetbrains.changelog.Changelog
+import org.jetbrains.changelog.ChangelogPluginExtension
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
@@ -37,9 +38,9 @@ dependencies {
 
     // Flocon Desktop modules (source inclusion with DI.kt exclusions)
     // These provide the WebSocket server, protocol handling, and domain logic
-    implementation(project(":flocon-sources:domain")) { excludeBundledDependencies() }
-    implementation(project(":flocon-sources:data-core")) { excludeBundledDependencies() }
-    implementation(project(":flocon-sources:data-remote")) { excludeBundledDependencies() }
+    implementation(project(":flocon:domain")) { excludeBundledDependencies() }
+    implementation(project(":flocon:data-core")) { excludeBundledDependencies() }
+    implementation(project(":flocon:data-remote")) { excludeBundledDependencies() }
 
     implementation(libs.kermit) { excludeBundledDependencies() }
 
