@@ -7,4 +7,14 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.metro) apply false
     alias(libs.plugins.changelog) apply false
+    alias(libs.plugins.qodana) apply false
+    alias(libs.plugins.kover) apply false
+}
+
+version = providers.gradleProperty("pluginVersion").get()
+
+tasks {
+    wrapper {
+        gradleVersion = providers.gradleProperty("gradleVersion").get()
+    }
 }

@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.intellij.platform)
     alias(libs.plugins.metro)
     alias(libs.plugins.changelog)
+    alias(libs.plugins.qodana)
+    alias(libs.plugins.kover)
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -29,10 +31,17 @@ repositories {
 dependencies {
     // IntelliJ Platform
     intellijPlatform {
-        intellijIdeaCommunity(providers.gradleProperty("platformVersion").get())
-        bundledPlugin("com.intellij.java")
-        pluginVerifier()
-        zipSigner()
+        intellijIdea(providers.gradleProperty("platformVersion").get())
+
+        // Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
+        bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
+
+        // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
+        plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
+
+        // Module Dependencies. Uses `platformBundledModules` property from the gradle.properties file for bundled IntelliJ Platform modules.
+        bundledModules(providers.gradleProperty("platformBundledModules").map { it.split(',') })
+
         testFramework(TestFrameworkType.Platform)
     }
 
@@ -62,7 +71,6 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
-            untilBuild = provider { null }
         }
 
         val changelog = project.changelog
@@ -96,9 +104,27 @@ intellijPlatform {
     }
 }
 
+// Configure Gradle Changelog Plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
 changelog {
     groups.empty()
     repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
+}
+
+// Configure Gradle Kover Plugin - read more: https://kotlin.github.io/kotlinx-kover/gradle-plugin/#configuration-details
+kover {
+    reports {
+        total {
+            xml {
+                onCheck = true
+            }
+        }
+    }
+}
+
+tasks {
+    publishPlugin {
+        dependsOn(patchChangelog)
+    }
 }
 
 tasks {
@@ -116,6 +142,27 @@ tasks {
             "-Didea.is.internal=false",
             "-Xshare:off",
         )
+    }
+}
+
+intellijPlatformTesting {
+    runIde {
+        register("runIdeForUiTests") {
+            task {
+                jvmArgumentProviders += CommandLineArgumentProvider {
+                    listOf(
+                        "-Drobot-server.port=8082",
+                        "-Dide.mac.message.dialogs.as.sheets=false",
+                        "-Djb.privacy.policy.text=<!--999.999-->",
+                        "-Djb.consents.confirmation.enabled=false",
+                    )
+                }
+            }
+
+            plugins {
+                robotServerPlugin()
+            }
+        }
     }
 }
 
