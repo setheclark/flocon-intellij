@@ -6,7 +6,6 @@ import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
 import io.github.openflocon.domain.messages.usecase.StartServerUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
-import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
@@ -42,7 +41,9 @@ class NetworkInspectorViewModel(
 ) {
     private val log = Logger.withPluginTag("NetworkInspectorViewModel")
 
-    private val _state = MutableStateFlow(NetworkInspectorState())
+    private val _state = MutableStateFlow(
+        NetworkInspectorState(serverState = observeServerStatusUseCase().value)
+    )
     val state: StateFlow<NetworkInspectorState> = _state.asStateFlow()
 
     private val _openCallInTabEvent = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)

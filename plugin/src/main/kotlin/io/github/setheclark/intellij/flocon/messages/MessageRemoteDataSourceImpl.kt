@@ -1,7 +1,9 @@
 package io.github.setheclark.intellij.flocon.messages
 
 import com.flocon.data.remote.server.Server
+import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.data.core.messages.datasource.MessageRemoteDataSource
 import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainModel
 import io.github.openflocon.domain.messages.models.FloconReceivedFileDomainModel
@@ -12,13 +14,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Inject
+@SingleIn(AppScope::class)
 class MessageRemoteDataSourceImpl(
     private val server: Server,
     private val messageServerStatusDataSource: MessageServerStatusDataSource,
 ) : MessageRemoteDataSource, PluginMessageRemoteDataSource {
 
     override fun startServer() {
-        messageServerStatusDataSource.updateStatus(MessageServerState.Starting)
+        synchronized(messageServerStatusDataSource) {
+            val current = messageServerStatusDataSource.status.value
+            if (current is MessageServerState.Running || current is MessageServerState.Starting) return
+            messageServerStatusDataSource.updateStatus(MessageServerState.Starting)
+        }
         try {
             server.startWebsocket()
             server.starHttp()

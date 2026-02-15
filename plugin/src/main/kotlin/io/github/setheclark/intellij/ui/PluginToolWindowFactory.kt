@@ -14,7 +14,7 @@ import io.github.setheclark.intellij.di.appGraph
 class PluginToolWindowFactory : ToolWindowFactory, DumbAware {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val uiGraph = project.appGraph.create(project)
+        val uiGraph = appGraph.create(project)
 
         val contentFactory = ContentFactory.getInstance()
         val content = contentFactory.createContent(

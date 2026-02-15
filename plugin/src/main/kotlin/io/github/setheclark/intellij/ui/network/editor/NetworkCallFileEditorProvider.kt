@@ -13,7 +13,7 @@ class NetworkCallFileEditorProvider : FileEditorProvider, DumbAware {
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
         file as NetworkCallVirtualFile
-        val factory = project.appGraph.create(project).detailPanelFactory
+        val factory = appGraph.create(project).detailPanelFactory
         val (panel, scope) = factory.create(file.callId)
         return NetworkCallFileEditor(file, panel, scope)
     }
