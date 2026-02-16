@@ -1,46 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-        width="32"
-        height="32"
-        viewBox="0 0 11.388606 8.9668503"
-        fill="none"
-        stroke="#6C707E"
-        stroke-width="0.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        version="1.1"
-        id="svg3"
-        xmlns="http://www.w3.org/2000/svg">
-    <defs
-            id="defs3"/>
-    <g
-            id="g3"
-            transform="translate(-2.4544089,-3.6159578)">
-        <line
-                x1="3.8912892"
-                y1="10.164137"
-                x2="3.8912892"
-                y2="4.2648416"
-                id="line1"
-                style="stroke-width:0.8"/>
-        <polyline
-                points="3.2,6.5 4,5.5 4.8,6.5"
-                id="polyline1"
-                transform="matrix(1.0643557,0,0,1.179859,-0.36613363,-2.2243833)"/>
-        <line
-                x1="12.406136"
-                y1="6.0346298"
-                x2="12.406136"
-                y2="11.933926"
-                id="line2"
-                style="stroke-width:0.8"/>
-        <polyline
-                points="11.2,11 12,12 12.8,11"
-                id="polyline2"
-                transform="matrix(1.0643557,0,0,1.179859,-0.36613363,-2.2243833)"/>
-        <polyline
-                points="5.6,8.3                     7,8.3                     8,7.2                     9,9.5                     10.1,8.3                     10.6,8.3"
-                id="polyline3"
-                transform="matrix(1.0643557,0,0,1.179859,-0.44527506,-1.7947216)"/>
+<svg width="32"
+     height="32"
+     viewBox="0 0 11.388606 8.9668503"
+     fill="none"
+     stroke-width="0.8"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     version="1.1"
+     id="svg3"
+     xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#6C707E"
+       id="g3"
+       transform="translate(-2.4544089,-3.6159578)">
+        <path id="polyline3"
+              transform="matrix(1.0643557,0,0,1.179859,-0.44527506,-1.7947216)"
+              d="M 5.6,8.3 H 7 L 8,7.2 9,9.5 10.1,8.3 h 0.5 m 0.674356,2.335836 0.8,1 0.8,-1 M 12.074357,6.6358365 v 5.0000015 m -8.8000008,-5.5000016 0.8,-1 0.8,1 m -0.8,4.0000006 V 5.1358367"/>
     </g>
 </svg>

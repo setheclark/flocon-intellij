@@ -7,6 +7,7 @@
 ### Fixed
 
 - Message service is no longer recreated with each project.
+- Fix icon coloring
 
 ### Changed
 
