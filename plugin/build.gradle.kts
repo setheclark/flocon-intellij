@@ -45,12 +45,7 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
     }
 
-    // Flocon Desktop modules (source inclusion with DI.kt exclusions)
-    // These provide the WebSocket server, protocol handling, and domain logic
-    implementation(project(":flocon:domain")) { excludeBundledDependencies() }
-    implementation(project(":flocon:data-core")) { excludeBundledDependencies() }
-    implementation(project(":flocon:data-remote")) { excludeBundledDependencies() }
-
+    implementation(project(":core")) { excludeBundledDependencies() }
     implementation(libs.kermit) { excludeBundledDependencies() }
 
     // Test dependencies
