@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
+import javax.swing.JComponent
 import javax.swing.JPanel
 
 @Inject
@@ -50,7 +51,7 @@ class NetworkInspectorPanel(
     private val networkCallListPanel: NetworkCallListPanel,
     private val detailPanelFactory: DetailPanelFactory,
     private val filterPanel: NetworkFilterPanel,
-) : SimpleToolWindowPanel(true, true) {
+) : SimpleToolWindowPanel(false, true) {
 
     private val log = Logger.withPluginTag("NetworkInspectorPanel")
 
@@ -61,14 +62,21 @@ class NetworkInspectorPanel(
     private val openFiles: MutableMap<String, NetworkCallVirtualFile> = mutableMapOf()
 
     init {
-        // Create combined toolbar with actions and filters
-        val toolbarPanel = createToolbarPanel()
-        toolbar = toolbarPanel
+        // Filter row + warning banner span the full width at the top
+        val filterAndWarningPanel = JPanel(BorderLayout()).apply {
+            add(filterPanel, BorderLayout.NORTH)
+            add(warningBanner, BorderLayout.SOUTH)
+        }
 
-        // Network call list fills the full content area
-        val contentPanel = JPanel(BorderLayout()).apply {
-            add(warningBanner, BorderLayout.NORTH)
+        // Vertical icons sit to the left of the list, below the filter row
+        val listWithToolbar = JPanel(BorderLayout()).apply {
+            add(createToolbarPanel(), BorderLayout.WEST)
             add(networkCallListPanel, BorderLayout.CENTER)
+        }
+
+        val contentPanel = JPanel(BorderLayout()).apply {
+            add(filterAndWarningPanel, BorderLayout.NORTH)
+            add(listWithToolbar, BorderLayout.CENTER)
             add(createStatusBar(), BorderLayout.SOUTH)
         }
 
@@ -78,7 +86,7 @@ class NetworkInspectorPanel(
         observeState()
     }
 
-    private fun createToolbarPanel(): JPanel {
+    private fun createToolbarPanel(): JComponent {
         val actionGroup = DefaultActionGroup().apply {
             add(ClearAction())
             addSeparator()
@@ -88,16 +96,12 @@ class NetworkInspectorPanel(
         }
 
         actionToolbar = ActionManager.getInstance()
-            .createActionToolbar("NetworkToolbar", actionGroup, true)
+            .createActionToolbar("NetworkToolbar", actionGroup, false)
             .apply {
                 targetComponent = this@NetworkInspectorPanel
             }
 
-        // Combine action toolbar and filter panel
-        return JPanel(BorderLayout()).apply {
-            add(actionToolbar.component, BorderLayout.WEST)
-            add(filterPanel, BorderLayout.CENTER)
-        }
+        return actionToolbar.component
     }
 
 

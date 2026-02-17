@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.awt.FlowLayout
+import java.awt.BorderLayout
 import java.awt.event.ActionEvent
 import javax.swing.JComboBox
 import javax.swing.JPanel
@@ -24,7 +24,6 @@ class NetworkFilterPanel(
 
     private val searchField = SearchTextField().apply {
         textEditor.emptyText.text = "Filter requests..."
-        preferredSize = JBUI.size(200, 32)
     }
 
     private val deviceComboBox = JComboBox<DeviceFilterItem>()
@@ -34,11 +33,10 @@ class NetworkFilterPanel(
         // Setup filter listeners
         setupFilterListeners()
 
-        layout = FlowLayout(FlowLayout.LEADING, 8, 4).apply {
-            border = JBUI.Borders.empty()
-            add(searchField)
-            add(deviceComboBox)
-        }
+        layout = BorderLayout(8, 0)
+        border = JBUI.Borders.empty(4, 8)
+        add(deviceComboBox, BorderLayout.WEST)
+        add(searchField, BorderLayout.CENTER)
 
         observeState()
     }
