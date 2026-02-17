@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-02-17
+
 ### Fixed
 
 - Message service is no longer recreated with each project.
@@ -19,4 +21,7 @@
 
 - Columns in the network list are now togglable.
 - Ability to open network details as an editor window (configurable in settings)
-- A changelog :) 
+- A changelog :)
+
+[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/setheclark/flocon-intellij/commits/v0.1.7
