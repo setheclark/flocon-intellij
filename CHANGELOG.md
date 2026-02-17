@@ -13,7 +13,7 @@
 
 - Network details panel now opens as a new tab in the network tool window.
 - Move icons to left side of network list window.
-- Removed storages settings.
+- Removed storage settings.
 
 ### Added
 
