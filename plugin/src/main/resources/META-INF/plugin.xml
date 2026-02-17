@@ -40,12 +40,6 @@ Network traffic inspector for Android apps using the Flocon SDK.
         <applicationService
                 serviceImplementation="io.github.setheclark.intellij.settings.NetworkStorageSettingsState"/>
 
-        <applicationConfigurable
-                id="io.github.setheclark.intellij.settings.NetworkStorageSettingsConfigurable"
-                parentId="tools"
-                displayName="Network Inspector"
-                instance="io.github.setheclark.intellij.settings.NetworkStorageSettingsConfigurable"/>
-
         <fileEditorProvider
                 implementation="io.github.setheclark.intellij.ui.network.editor.NetworkCallFileEditorProvider"/>
 
