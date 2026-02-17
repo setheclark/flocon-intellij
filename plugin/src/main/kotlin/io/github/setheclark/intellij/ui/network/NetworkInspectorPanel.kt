@@ -16,10 +16,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.ui.components.JBLabel
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
-import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.adb.AdbStatus
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
@@ -56,9 +54,9 @@ class NetworkInspectorPanel(
 
     private val log = Logger.withPluginTag("NetworkInspectorPanel")
 
-    private val statusLabel = JBLabel()
     private val warningBanner = WarningBanner()
     private lateinit var actionToolbar: ActionToolbar
+    private lateinit var serverToolbar: ActionToolbar
     private val openTabs: MutableMap<String, Content> = mutableMapOf()
     private val openFiles: MutableMap<String, NetworkCallVirtualFile> = mutableMapOf()
 
@@ -78,7 +76,6 @@ class NetworkInspectorPanel(
         val contentPanel = JPanel(BorderLayout()).apply {
             add(filterAndWarningPanel, BorderLayout.NORTH)
             add(listWithToolbar, BorderLayout.CENTER)
-            add(createStatusBar(), BorderLayout.SOUTH)
         }
 
         setContent(contentPanel)
@@ -88,32 +85,38 @@ class NetworkInspectorPanel(
     }
 
     private fun createToolbarPanel(): JComponent {
-        val actionGroup = DefaultActionGroup().apply {
+        val mainGroup = DefaultActionGroup().apply {
             add(ClearAction())
             addSeparator()
             add(AutoScrollAction())
             addSeparator()
             add(ConfigureColumnsAction())
-            addSeparator()
-            add(StartStopServerAction())
         }
 
         actionToolbar = ActionManager.getInstance()
-            .createActionToolbar("NetworkToolbar", actionGroup, false)
+            .createActionToolbar("NetworkToolbar", mainGroup, false)
             .apply {
                 targetComponent = this@NetworkInspectorPanel
             }
 
-        return actionToolbar.component
+        val serverGroup = DefaultActionGroup().apply {
+            add(StartStopServerAction())
+        }
+
+        serverToolbar = ActionManager.getInstance()
+            .createActionToolbar("NetworkServerToolbar", serverGroup, false)
+            .apply {
+                targetComponent = this@NetworkInspectorPanel
+            }
+
+        return JPanel(BorderLayout()).apply {
+            add(actionToolbar.component, BorderLayout.NORTH)
+            add(serverToolbar.component, BorderLayout.SOUTH)
+        }
     }
 
 
     private fun observeState() {
-        // Observe server state for status bar
-        viewModel.latestUpdate(NetworkInspectorState::serverState) { serverState ->
-            updateStatusLabel(serverState)
-        }
-
         // Observe ADB status for warning banner
         viewModel.latestUpdate({ it.serverState to it.adbStatus }) { (serverState, adbState) ->
             updateWarningBanner(adbState, serverState)
@@ -122,6 +125,7 @@ class NetworkInspectorPanel(
         // Observe action state to update toolbar toggle button
         viewModel.latestUpdate({ it.autoScrollEnabled to it.serverState }) {
             actionToolbar.updateActionsAsync()
+            serverToolbar.updateActionsAsync()
         }
 
         // Observe call-open events
@@ -199,13 +203,6 @@ class NetworkInspectorPanel(
         }
     }
 
-    private fun createStatusBar(): JPanel {
-        return JPanel(BorderLayout()).apply {
-            border = JBUI.Borders.empty(2, 8)
-            add(statusLabel, BorderLayout.WEST)
-        }
-    }
-
     private fun updateWarningBanner(
         adbStatus: AdbStatus,
         serverStatus: MessageServerState
@@ -234,16 +231,6 @@ class NetworkInspectorPanel(
         }
         warningBanner.revalidate()
         warningBanner.repaint()
-    }
-
-    private fun updateStatusLabel(state: MessageServerState) {
-        statusLabel.text = when (state) {
-            MessageServerState.Stopped -> "Message server stopped"
-            MessageServerState.Running -> "Message server running"
-            is MessageServerState.Error -> "Error: ${state.message}"
-            MessageServerState.Starting -> "Message server starting"
-            MessageServerState.Stopping -> "Message server stopping"
-        }
     }
 
     // Action implementations - dispatch intents to ViewModel
