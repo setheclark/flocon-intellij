@@ -5,6 +5,7 @@ import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
+import io.github.setheclark.intellij.settings.NetworkStorageSettingsState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -38,29 +39,10 @@ class NetworkCallListPanel(
     }
 
     private fun setupTable() {
-        // Set up row sorter for column sorting
-        val sorter = TableRowSorter(tableModel).apply {
-            // Set comparators from Column enum
-            NetworkCallListColumn.entries.forEachIndexed { index, column ->
-                column.comparator?.let { setComparator(index, it) }
-            }
-            // Default sort by time ascending
-            sortKeys = listOf(RowSorter.SortKey(NetworkCallListColumn.TIME.ordinal, SortOrder.ASCENDING))
-        }
-
         table.apply {
             setShowGrid(false)
             rowHeight = JBUI.scale(24)
             selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
-            rowSorter = sorter
-
-            // Configure columns from Column enum
-            NetworkCallListColumn.entries.forEach { column ->
-                columnModel.getColumn(column.ordinal).apply {
-                    preferredWidth = column.preferredWidth
-                    cellRenderer = column.renderer
-                }
-            }
 
             // Selection listener - convert view row to model row for proper selection
             selectionModel.addListSelectionListener { e ->
@@ -124,6 +106,33 @@ class NetworkCallListPanel(
         }
 
         add(scrollPane, BorderLayout.CENTER)
+
+        // Apply initial column visibility from settings
+        refreshColumns()
+    }
+
+    fun refreshColumns() {
+        val settings = NetworkStorageSettingsState.getInstance()
+        val visible = NetworkCallListColumn.entries.filter { col ->
+            col == NetworkCallListColumn.TIME || col.name !in settings.hiddenColumns
+        }
+        if (visible == tableModel.visibleColumns) return
+        tableModel.updateVisibleColumns(visible)
+        // Re-apply renderers and widths (fireTableStructureChanged rebuilds the column model)
+        visible.forEachIndexed { index, col ->
+            table.columnModel.getColumn(index).apply {
+                preferredWidth = col.preferredWidth
+                cellRenderer = col.renderer
+            }
+        }
+        // Re-create row sorter with updated column indices
+        val sorter = TableRowSorter(tableModel).apply {
+            visible.forEachIndexed { index, col ->
+                col.comparator?.let { setComparator(index, it) }
+            }
+            sortKeys = listOf(RowSorter.SortKey(0, SortOrder.ASCENDING)) // TIME always at index 0
+        }
+        table.rowSorter = sorter
     }
 
     private fun clearCallSelection() {
@@ -169,7 +178,8 @@ class NetworkCallListPanel(
     private fun isSortedByTime(): Boolean {
         val sortKeys = table.rowSorter?.sortKeys ?: return false
         if (sortKeys.isEmpty()) return false
-        return sortKeys[0].column == NetworkCallListColumn.TIME.ordinal
+        val timeIndex = tableModel.visibleColumns.indexOf(NetworkCallListColumn.TIME)
+        return sortKeys[0].column == timeIndex
     }
 
     /**
@@ -219,11 +229,15 @@ class NetworkCallListPanel(
 
 /**
  * Table model for the network call list.
- * Uses [Column] enum to define structure; returns raw values for proper sorting.
+ * Uses [NetworkCallListColumn] enum to define structure; returns raw values for proper sorting.
+ * Only [visibleColumns] are exposed to the table; call [updateVisibleColumns] to change visibility.
  */
 class NetworkCallTableModel : AbstractTableModel() {
 
     var calls: List<NetworkCallListItem> = emptyList()
+        private set
+
+    var visibleColumns: List<NetworkCallListColumn> = emptyList()
         private set
 
     fun updateCalls(newCalls: List<NetworkCallListItem>) {
@@ -231,13 +245,18 @@ class NetworkCallTableModel : AbstractTableModel() {
         fireTableDataChanged()
     }
 
+    fun updateVisibleColumns(columns: List<NetworkCallListColumn>) {
+        visibleColumns = columns
+        fireTableStructureChanged()
+    }
+
     override fun getRowCount(): Int = calls.size
-    override fun getColumnCount(): Int = NetworkCallListColumn.entries.size
-    override fun getColumnName(column: Int): String = NetworkCallListColumn.entries[column].displayName
-    override fun getColumnClass(columnIndex: Int): Class<*> = NetworkCallListColumn.entries[columnIndex].valueClass
+    override fun getColumnCount(): Int = visibleColumns.size
+    override fun getColumnName(column: Int): String = visibleColumns[column].displayName
+    override fun getColumnClass(columnIndex: Int): Class<*> = visibleColumns[columnIndex].valueClass
 
     override fun getValueAt(rowIndex: Int, columnIndex: Int): Any? {
         val call = calls.getOrNull(rowIndex) ?: return null
-        return NetworkCallListColumn.entries[columnIndex].getValue(call)
+        return visibleColumns[columnIndex].getValue(call)
     }
 }
