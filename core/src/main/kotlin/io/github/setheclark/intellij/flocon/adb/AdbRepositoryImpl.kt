@@ -1,7 +1,6 @@
 package io.github.setheclark.intellij.flocon.adb
 
 import co.touchlab.kermit.Logger
-import com.intellij.util.EnvironmentUtil
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -107,7 +106,7 @@ class AdbRepositoryImpl(
             }
         }
 
-        EnvironmentUtil.getValue("PATH")?.let { pathProperty ->
+        System.getenv("PATH")?.let { pathProperty ->
             pathProperty.split(File.pathSeparatorChar).forEach { dir ->
                 val adb = Paths.get(dir, ADB)
                 if (Files.exists(adb, LinkOption.NOFOLLOW_LINKS)) {
@@ -118,7 +117,7 @@ class AdbRepositoryImpl(
             }
         }
 
-        val androidHome = EnvironmentUtil.getValue("ANDROID_HOME") ?: EnvironmentUtil.getValue("ANDROID_SDK_ROOT")
+        val androidHome = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
         if (androidHome != null) {
             val adbFromEnv = File(androidHome, "platform-tools/$ADB")
             if (adbFromEnv.exists() && adbFromEnv.canExecute()) {
