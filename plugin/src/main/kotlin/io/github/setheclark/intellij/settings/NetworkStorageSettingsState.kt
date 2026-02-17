@@ -20,6 +20,8 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
 
     var callDetailOpenMode: CallDetailOpenMode = CallDetailOpenMode.TOOL_WINDOW_TAB
 
+    var hiddenColumns: MutableSet<String> = mutableSetOf()
+
     var maxStoredCalls: Int = NetworkStorageSettings.DEFAULT_MAX_STORED_CALLS
     var maxBodyCacheSizeBytes: Long = NetworkStorageSettings.DEFAULT_MAX_BODY_CACHE_SIZE_BYTES
     var maxBodySizeBytes: Int = NetworkStorageSettings.DEFAULT_MAX_BODY_SIZE_BYTES

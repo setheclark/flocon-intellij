@@ -30,6 +30,7 @@ import io.github.setheclark.intellij.ui.WarningBanner
 import io.github.setheclark.intellij.ui.network.detail.DetailPanelFactory
 import io.github.setheclark.intellij.ui.network.editor.NetworkCallVirtualFile
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterPanel
+import io.github.setheclark.intellij.ui.network.list.ColumnConfigDialog
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListPanel
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
@@ -91,6 +92,8 @@ class NetworkInspectorPanel(
             add(ClearAction())
             addSeparator()
             add(AutoScrollAction())
+            addSeparator()
+            add(ConfigureColumnsAction())
             addSeparator()
             add(StartStopServerAction())
         }
@@ -275,6 +278,21 @@ class NetworkInspectorPanel(
         }
 
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
+    }
+
+    private inner class ConfigureColumnsAction : AnAction(
+        "Configure Columns",
+        "Choose which columns are visible",
+        AllIcons.General.Settings
+    ) {
+        override fun actionPerformed(e: AnActionEvent) {
+            val dialog = ColumnConfigDialog(project)
+            if (dialog.showAndGet()) {
+                networkCallListPanel.refreshColumns()
+            }
+        }
+
+        override fun getActionUpdateThread() = ActionUpdateThread.BGT
     }
 
     private inner class StartStopServerAction : AnAction() {

@@ -16,5 +16,6 @@
 
 ### Added
 
+- Columns in the network list are now togglable.
 - Ability to open network details as an editor window (configurable in settings)
 - A changelog :) 
