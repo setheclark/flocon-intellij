@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix environment variable logic
+
 ## [0.1.7] - 2026-02-17
 
 ### Fixed

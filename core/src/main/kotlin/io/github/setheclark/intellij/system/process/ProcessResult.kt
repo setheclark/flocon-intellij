@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.process
+package io.github.setheclark.intellij.system.process
 
 import io.github.openflocon.domain.common.Either
 
