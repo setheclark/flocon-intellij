@@ -7,6 +7,7 @@
 ### Fixed
 
 - Fix environment variable logic
+- Workaround for GraphQl mutation operationName resolution
 
 ## [0.1.7] - 2026-02-17
 
