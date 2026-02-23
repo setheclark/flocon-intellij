@@ -12,6 +12,7 @@ import io.github.openflocon.domain.common.Either
 import io.github.openflocon.domain.common.Failure
 import io.github.openflocon.domain.common.Success
 import io.github.setheclark.intellij.process.ProcessExecutor
+import io.github.setheclark.intellij.system.Environment
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -26,6 +27,7 @@ class AdbRepositoryImpl(
     private val adbLocalDataSource: AdbLocalDataSource,
     private val dispatcherProvider: DispatcherProvider,
     private val processExecutor: ProcessExecutor,
+    private val environment: Environment,
 ) : AdbRepository {
 
     private val log = Logger.withPluginTag("AdbRepository")
@@ -106,7 +108,7 @@ class AdbRepositoryImpl(
             }
         }
 
-        System.getenv("PATH")?.let { pathProperty ->
+        environment.getEnvironmentVariable("PATH")?.let { pathProperty ->
             pathProperty.split(File.pathSeparatorChar).forEach { dir ->
                 val adb = Paths.get(dir, ADB)
                 if (Files.exists(adb, LinkOption.NOFOLLOW_LINKS)) {
@@ -117,7 +119,8 @@ class AdbRepositoryImpl(
             }
         }
 
-        val androidHome = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+        val androidHome =
+            environment.getEnvironmentVariable("ANDROID_HOME") ?: environment.getEnvironmentVariable("ANDROID_SDK_ROOT")
         if (androidHome != null) {
             val adbFromEnv = File(androidHome, "platform-tools/$ADB")
             if (adbFromEnv.exists() && adbFromEnv.canExecute()) {

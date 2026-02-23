@@ -13,6 +13,8 @@ import io.github.setheclark.intellij.process.SystemProcessExecutor
 import io.github.setheclark.intellij.services.ApplicationServiceDelegate
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsProviderImpl
+import io.github.setheclark.intellij.system.Environment
+import io.github.setheclark.intellij.system.IntellijEnvironment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 
@@ -34,6 +36,9 @@ interface AppGraph : ProjectGraph.Factory {
 
     @Binds
     val NetworkStorageSettingsProviderImpl.bind: NetworkStorageSettingsProvider
+
+    @Binds
+    val IntellijEnvironment.bind: Environment
 
     @Provides
     @SingleIn(AppScope::class)
