@@ -23,7 +23,7 @@ data class NetworkRequest(
         data object Http : Type
         data class GraphQl(
             val persisted: Boolean,
-            val query: String,
+            val query: String?,
             val operationName: String?,
             val operationType: String,
         ) : Type
