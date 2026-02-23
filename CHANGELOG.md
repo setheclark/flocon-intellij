@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-02-23
+
 ### Fixed
 
 - Fix environment variable logic
@@ -28,5 +30,6 @@
 - Ability to open network details as an editor window (configurable in settings)
 - A changelog :)
 
-[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/setheclark/flocon-intellij/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/setheclark/flocon-intellij/commits/v0.1.7
