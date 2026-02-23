@@ -11,7 +11,7 @@ import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.common.Either
 import io.github.openflocon.domain.common.Failure
 import io.github.openflocon.domain.common.Success
-import io.github.setheclark.intellij.process.ProcessExecutor
+import io.github.setheclark.intellij.system.process.ProcessExecutor
 import io.github.setheclark.intellij.system.Environment
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.flow.flowOn
