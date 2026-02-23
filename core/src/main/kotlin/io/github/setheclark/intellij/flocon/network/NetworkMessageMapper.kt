@@ -7,7 +7,11 @@ import dev.zacsweers.metro.Inject
 import io.github.openflocon.data.core.network.graphql.model.GraphQlExtracted
 import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainModel
 import io.github.setheclark.intellij.util.safeDecode
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import java.net.URI
 
 @Inject
@@ -21,6 +25,7 @@ class NetworkMessageMapper(
         message: FloconIncomingMessageDomainModel,
     ): NetworkCallEntity? = json.safeDecode<FloconNetworkRequestDataModel>(message.body)?.let { decoded ->
         val graphQl = extractGraphQl(decoded)
+        val patchedGraphQl = if (graphQl == null) patchedExtractGraphQl(decoded) else null
 
         // Bad assumption made here.  If there are call timeline issues, this is likely why.
         val startTime = decoded.startTime ?: System.currentTimeMillis()
@@ -45,6 +50,8 @@ class NetworkMessageMapper(
                     )
                 }
             }
+
+            patchedGraphQl != null -> patchedGraphQl
 
             decoded.floconNetworkType == "grpc" -> NetworkRequest.Type.Grpc
             else -> NetworkRequest.Type.Http
@@ -115,4 +122,41 @@ class NetworkMessageMapper(
         val path = extractUrlPath(url)
         return path.substringAfterLast('/')
     }
+
+    // region
+
+    private val graphQlParser = Json {
+        ignoreUnknownKeys = true
+    }
+
+    private fun patchedExtractGraphQl(decoded: FloconNetworkRequestDataModel): NetworkRequest.Type.GraphQl? {
+        return decoded.requestBody?.let {
+            try {
+                val requestBody = graphQlParser.decodeFromString<GraphQlBody>(it)
+
+                return NetworkRequest.Type.GraphQl(
+                    persisted = requestBody.extensions.jsonObject()?.containsKey("persistedQuery") == true,
+                    query = null,
+                    operationName = requestBody.operationName,
+                    operationType = "mutation",
+                )
+            } catch (t: Throwable) {
+                null
+            }
+        }
+    }
+
+    private fun JsonElement?.jsonObject(): JsonObject? = try {
+        this?.jsonObject
+    } catch (_: Exception) {
+        null
+    }
+
+    @Serializable
+    data class GraphQlBody(
+        val operationName: String,
+        val extensions: JsonElement? = null,
+    )
+
+    //endregion
 }
