@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.ui.network.detail.common
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
+import io.github.setheclark.intellij.PluginBundle
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -49,7 +50,7 @@ class HeadersTablePanel : JPanel(BorderLayout()) {
         columnModel.getColumn(0).cellRenderer = KeyColumnRenderer()
     }
 
-    private val emptyLabel = JBLabel("No headers").apply {
+    private val emptyLabel = JBLabel(PluginBundle.message("label.noHeaders")).apply {
         horizontalAlignment = JBLabel.CENTER
         foreground = JBColor.GRAY
     }
@@ -140,7 +141,7 @@ class HeadersTablePanel : JPanel(BorderLayout()) {
         repaint()
     }
 
-    private inner class CopyValueAction : AnAction("Copy Value") {
+    private inner class CopyValueAction : AnAction(PluginBundle.message("action.copyValue.text")) {
         override fun actionPerformed(e: AnActionEvent) {
             val (_, value) = getSelectedHeader() ?: return
             copyToClipboard(value)
@@ -153,7 +154,7 @@ class HeadersTablePanel : JPanel(BorderLayout()) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
     }
 
-    private inner class CopyNameAction : AnAction("Copy Name") {
+    private inner class CopyNameAction : AnAction(PluginBundle.message("action.copyName.text")) {
         override fun actionPerformed(e: AnActionEvent) {
             val (name, _) = getSelectedHeader() ?: return
             copyToClipboard(name)
@@ -166,7 +167,7 @@ class HeadersTablePanel : JPanel(BorderLayout()) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
     }
 
-    private inner class CopyNameValueAction : AnAction("Copy Name: Value") {
+    private inner class CopyNameValueAction : AnAction(PluginBundle.message("action.copyNameValue.text")) {
         override fun actionPerformed(e: AnActionEvent) {
             val (name, value) = getSelectedHeader() ?: return
             copyToClipboard("$name: $value")

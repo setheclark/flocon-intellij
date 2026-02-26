@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.ui.network.filter
 
 import com.intellij.ui.DocumentAdapter
+import io.github.setheclark.intellij.PluginBundle
 import com.intellij.ui.SearchTextField
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
@@ -23,7 +24,7 @@ class NetworkFilterPanel(
 ) : JPanel() {
 
     private val searchField = SearchTextField().apply {
-        textEditor.emptyText.text = "Filter requests..."
+        textEditor.emptyText.text = PluginBundle.message("label.filter.placeholder")
     }
 
     private val deviceComboBox = JComboBox<DeviceFilterItem>()

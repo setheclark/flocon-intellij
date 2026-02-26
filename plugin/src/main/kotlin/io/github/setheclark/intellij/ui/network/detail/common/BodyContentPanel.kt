@@ -24,6 +24,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -53,7 +54,7 @@ class BodyContentPanel(
     private val log = Logger.withPluginTag("BodyContentPanel")
 
     private val json = Json { prettyPrint = true }
-    private val emptyLabel = JBLabel("Not available").apply {
+    private val emptyLabel = JBLabel(PluginBundle.message("label.bodyNotAvailable")).apply {
         horizontalAlignment = JBLabel.CENTER
         foreground = JBColor.GRAY
     }
@@ -64,7 +65,7 @@ class BodyContentPanel(
     private val contentPanel = JPanel(BorderLayout())
 
     private val scratchButton = JButton(AllIcons.Actions.MenuSaveall).apply {
-        toolTipText = "Open in Scratch File"
+        toolTipText = PluginBundle.message("tooltip.openInScratchFile")
         isBorderPainted = false
         isContentAreaFilled = false
         isFocusPainted = false

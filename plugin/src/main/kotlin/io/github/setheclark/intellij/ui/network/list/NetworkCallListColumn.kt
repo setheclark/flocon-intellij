@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.ui.network.list
 
 import com.intellij.ui.JBColor
+import io.github.setheclark.intellij.PluginBundle
 import java.awt.Component
 import java.time.Instant
 import java.time.ZoneId
@@ -10,54 +11,48 @@ import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableCellRenderer
 
 enum class NetworkCallListColumn(
-    val displayName: String,
     val preferredWidth: Int,
     val valueClass: Class<*>,
     val getValue: (NetworkCallListItem) -> Any?,
 ) {
     TIME(
-        displayName = "Time",
         preferredWidth = 75,
         valueClass = Long::class.java,
         getValue = { it.startTime },
     ),
     NAME(
-        displayName = "Name",
         preferredWidth = 150,
         valueClass = String::class.java,
         getValue = { it.name },
     ),
     STATUS(
-        displayName = "Status",
         preferredWidth = 50,
         valueClass = Int::class.javaObjectType,
         getValue = { it.status },
     ),
     METHOD(
-        displayName = "Method",
         preferredWidth = 50,
         valueClass = String::class.java,
         getValue = { it.method },
     ),
     URL(
-        displayName = "URL",
         preferredWidth = 400,
         valueClass = String::class.java,
         getValue = { it.url },
     ),
     DURATION(
-        displayName = "Duration",
         preferredWidth = 50,
         valueClass = Double::class.javaObjectType,
         getValue = { it.duration },
     ),
     SIZE(
-        displayName = "Size",
         preferredWidth = 50,
         valueClass = Long::class.java,
         getValue = { it.size ?: 0L },
     ),
     ;
+
+    val displayName: String get() = PluginBundle.message("column.${name.lowercase()}")
 
     val renderer: TableCellRenderer by lazy {
         when (this) {
