@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Pre-commit hook: auto-format with ktlint, then verify clean.
+#
+# Activate once per clone:
+#   git config core.hooksPath .githooks
+
+set -euo pipefail
+
+echo "Running ktlintFormat..."
+./gradlew :core:ktlintFormat :plugin:ktlintFormat --quiet
+
+# Re-stage any files ktlintFormat modified
+git add -u
+
+echo "Running ktlintCheck..."
+./gradlew :core:ktlintCheck :plugin:ktlintCheck --quiet
+
+echo "ktlint OK"
