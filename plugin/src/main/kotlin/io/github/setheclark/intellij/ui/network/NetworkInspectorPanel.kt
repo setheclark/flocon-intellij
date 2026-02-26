@@ -115,7 +115,6 @@ class NetworkInspectorPanel(
         }
     }
 
-
     private fun observeState() {
         // Observe ADB status for warning banner
         viewModel.latestUpdate({ it.serverState to it.adbStatus }) { (serverState, adbState) ->
@@ -145,10 +144,14 @@ class NetworkInspectorPanel(
                         openFiles.remove(file.callId)
                     }
                 }
-            }
+            },
         )
         scope.launch {
-            try { awaitCancellation() } finally { busConnection.disconnect() }
+            try {
+                awaitCancellation()
+            } finally {
+                busConnection.disconnect()
+            }
         }
     }
 
@@ -174,10 +177,12 @@ class NetworkInspectorPanel(
 
         val content = ContentFactory.getInstance().createContent(panel, tabTitle, true)
         content.isCloseable = true
-        content.setDisposer(Disposable {
-            tabScope.cancel()
-            openTabs.remove(callId)
-        })
+        content.setDisposer(
+            Disposable {
+                tabScope.cancel()
+                openTabs.remove(callId)
+            },
+        )
 
         openTabs[callId] = content
         contentManager.addContent(content)
@@ -205,13 +210,13 @@ class NetworkInspectorPanel(
 
     private fun updateWarningBanner(
         adbStatus: AdbStatus,
-        serverStatus: MessageServerState
+        serverStatus: MessageServerState,
     ) {
         when {
             adbStatus == AdbStatus.NotFound -> {
                 warningBanner.setText(
                     "<html><b>ADB not found.</b> USB device connections won't work. " +
-                            "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>"
+                        "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>",
                 )
                 warningBanner.isVisible = true
             }
@@ -220,7 +225,7 @@ class NetworkInspectorPanel(
                 val message = serverStatus.message
                 warningBanner.setText(
                     "<html><b>ERROR: '$message'</b> You may have the Flocon desktop app running.  " +
-                            "If so, close the app and click the server retry action above.</html>"
+                        "If so, close the app and click the server retry action above.</html>",
                 )
                 warningBanner.isVisible = true
             }
@@ -238,7 +243,7 @@ class NetworkInspectorPanel(
     private inner class ClearAction : AnAction(
         "Clear All",
         "Clear all captured network traffic",
-        AllIcons.Actions.GC
+        AllIcons.Actions.GC,
     ) {
         override fun actionPerformed(e: AnActionEvent) {
             viewModel.dispatch(NetworkInspectorIntent.ClearAll)
@@ -250,7 +255,7 @@ class NetworkInspectorPanel(
     private inner class AutoScrollAction : ToggleAction(
         "Auto-scroll to latest",
         "Automatically scroll to show new requests",
-        AllIcons.RunConfigurations.Scroll_down
+        AllIcons.RunConfigurations.Scroll_down,
     ) {
         override fun isSelected(e: AnActionEvent): Boolean {
             return viewModel.state.value.autoScrollEnabled
@@ -270,7 +275,7 @@ class NetworkInspectorPanel(
     private inner class ConfigureColumnsAction : AnAction(
         "Configure Columns",
         "Choose which columns are visible",
-        AllIcons.General.Settings
+        AllIcons.General.Settings,
     ) {
         override fun actionPerformed(e: AnActionEvent) {
             val dialog = ColumnConfigDialog(project)
@@ -321,8 +326,11 @@ class NetworkInspectorPanel(
         override fun actionPerformed(e: AnActionEvent) {
             when (viewModel.state.value.serverState) {
                 is MessageServerState.Running -> viewModel.dispatch(NetworkInspectorIntent.StopServer)
+
                 is MessageServerState.Stopped, is MessageServerState.Error -> viewModel.dispatch(NetworkInspectorIntent.StartServer)
-                else -> { /* ignore */
+
+                else -> {
+                    /* ignore */
                 }
             }
         }

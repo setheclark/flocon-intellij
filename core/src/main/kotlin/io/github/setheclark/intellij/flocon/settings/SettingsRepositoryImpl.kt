@@ -5,8 +5,8 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.models.settings.NetworkSettings
 import io.github.openflocon.domain.settings.repository.SettingsRepository
-import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.adb.AdbStatus
+import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +24,7 @@ class SettingsRepositoryImpl(
             displayOldSessions = false,
             autoScroll = true,
             invertList = true,
-        )
+        ),
     )
 
     override var networkSettings: NetworkSettings
@@ -50,9 +50,8 @@ class SettingsRepositoryImpl(
         }
     }
 
-
     override suspend fun setFontSizeMultiplier(value: Float) {
-        //noop
+        // noop
     }
 
     override val fontSizeMultiplier: StateFlow<Float>

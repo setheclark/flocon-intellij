@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
 @Inject
 class RemoteDeviceDataSourceImpl(
     private val json: Json,
-    private val server: Server
+    private val server: Server,
 ) : RemoteDeviceDataSource {
 
     override val activeDevices: Flow<Set<DeviceIdAndPackageNameDomainModel>> = server.activeDevices

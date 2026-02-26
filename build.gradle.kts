@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.changelog) apply false
     alias(libs.plugins.qodana) apply false
     alias(libs.plugins.kover) apply false
+    alias(libs.plugins.ktlint) apply false
 }
 
 version = providers.gradleProperty("pluginVersion").get()

@@ -27,7 +27,7 @@ class NetworkFilterViewModel(
 
     private val devices = combine(
         observeDevicesAndAppsUseCase(),
-        observeCurrentDeviceIdAndPackageNameUseCase().filterNotNull()
+        observeCurrentDeviceIdAndPackageNameUseCase().filterNotNull(),
     ) { devices, current ->
         // Deduplicate by deviceId + packageName
         val uniqueDevices = devices.distinctBy { it.deviceId to it.packageName }
@@ -57,7 +57,7 @@ class NetworkFilterViewModel(
     ) { filter, devices ->
         NetworkFilterPanelState(
             devices = devices,
-            filterText = filter.searchText
+            filterText = filter.searchText,
         )
     }
 

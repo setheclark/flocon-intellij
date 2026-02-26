@@ -20,7 +20,7 @@ class PluginToolWindowFactory : ToolWindowFactory, DumbAware {
         val content = contentFactory.createContent(
             uiGraph.networkInspectorPanel,
             "Network",
-            false
+            false,
         )
         content.isCloseable = false
 

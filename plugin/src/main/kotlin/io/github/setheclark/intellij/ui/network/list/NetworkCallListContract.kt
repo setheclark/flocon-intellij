@@ -1,6 +1,5 @@
 package io.github.setheclark.intellij.ui.network.list
 
-
 data class NetworkCallListState(
     val calls: List<NetworkCallListItem>,
     val autoScrollEnabled: Boolean,

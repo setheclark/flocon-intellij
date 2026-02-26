@@ -63,14 +63,14 @@ class NetworkFilterPanel(
         val searchText = searchField.text.trim()
 
         viewModel.dispatch(
-            NetworkFilterIntent.UpdateFilter(searchText)
+            NetworkFilterIntent.UpdateFilter(searchText),
         )
     }
 
     private fun dispatchDeviceUpdate() {
         (deviceComboBox.selectedItem as? DeviceFilterItem)?.let {
             viewModel.dispatch(
-                NetworkFilterIntent.UpdateDeviceSelection(it)
+                NetworkFilterIntent.UpdateDeviceSelection(it),
             )
         }
     }

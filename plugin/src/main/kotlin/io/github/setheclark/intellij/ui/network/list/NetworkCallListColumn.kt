@@ -56,7 +56,8 @@ enum class NetworkCallListColumn(
         preferredWidth = 50,
         valueClass = Long::class.java,
         getValue = { it.size ?: 0L },
-    );
+    ),
+    ;
 
     val renderer: TableCellRenderer by lazy {
         when (this) {
@@ -110,7 +111,7 @@ enum class NetworkCallListColumn(
             isSelected: Boolean,
             hasFocus: Boolean,
             row: Int,
-            column: Int
+            column: Int,
         ): Component {
             val formatted = (value as? Long)?.let {
                 timeFormatter.format(Instant.ofEpochMilli(it))
@@ -129,7 +130,7 @@ enum class NetworkCallListColumn(
             isSelected: Boolean,
             hasFocus: Boolean,
             row: Int,
-            column: Int
+            column: Int,
         ): Component {
             val formatted = (value as? Double)?.let { formatDuration(it) } ?: "..."
             return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
@@ -155,7 +156,7 @@ enum class NetworkCallListColumn(
             isSelected: Boolean,
             hasFocus: Boolean,
             row: Int,
-            column: Int
+            column: Int,
         ): Component {
             val formatted = formatSize(value as? Long)
             return super.getTableCellRendererComponent(table, formatted, isSelected, hasFocus, row, column)
@@ -181,7 +182,7 @@ enum class NetworkCallListColumn(
             isSelected: Boolean,
             hasFocus: Boolean,
             row: Int,
-            column: Int
+            column: Int,
         ): Component {
             val statusCode = value as? Int
             val displayText = statusCode?.toString() ?: "..."
@@ -212,7 +213,7 @@ enum class NetworkCallListColumn(
             isSelected: Boolean,
             hasFocus: Boolean,
             row: Int,
-            column: Int
+            column: Int,
         ): Component {
             val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
 

@@ -36,7 +36,6 @@ class BodyStoreTest {
         bodyStore = BodyStore(settingsProvider)
     }
 
-
     @Test
     fun `returns null for null body`() = runTest {
         val key = bodyStore.store("call-1", BodyType.REQUEST, null)
@@ -86,7 +85,6 @@ class BodyStoreTest {
         bodyStore.retrieve(key1) shouldBe "updated body"
     }
 
-
     @Test
     fun `compresses body when compression is enabled`() = runTest {
         settingsProvider.updateSettings(createSettings(compressionEnabled = true))
@@ -135,7 +133,6 @@ class BodyStoreTest {
         retrieved shouldBe originalBody
     }
 
-
     @Test
     fun `truncates body exceeding max size`() = runTest {
         val maxSize = 100
@@ -173,7 +170,6 @@ class BodyStoreTest {
         retrieved shouldBe largeBody
     }
 
-
     @Test
     fun `returns null for null key`() = runTest {
         val result = bodyStore.retrieve(null)
@@ -201,8 +197,8 @@ class BodyStoreTest {
         settingsProvider.updateSettings(
             createSettings(
                 maxBodyCacheSizeBytes = 100,
-                compressionEnabled = false
-            )
+                compressionEnabled = false,
+            ),
         )
 
         // Store 3 bodies
@@ -220,14 +216,13 @@ class BodyStoreTest {
         bodyStore.retrieve(key2).shouldBeNull()
     }
 
-
     @Test
     fun `evicts oldest entries when cache exceeds max size`() = runTest {
         settingsProvider.updateSettings(
             createSettings(
                 maxBodyCacheSizeBytes = 100,
-                compressionEnabled = false
-            )
+                compressionEnabled = false,
+            ),
         )
 
         // Store entries that exceed cache size
@@ -247,8 +242,8 @@ class BodyStoreTest {
         settingsProvider.updateSettings(
             createSettings(
                 maxBodyCacheSizeBytes = 100,
-                compressionEnabled = false
-            )
+                compressionEnabled = false,
+            ),
         )
 
         // Store several entries
@@ -259,7 +254,6 @@ class BodyStoreTest {
         val stats = bodyStore.getStats()
         stats.totalSizeBytes shouldBeLessThan 101
     }
-
 
     @Test
     fun `removes specific body by call ID and type`() = runTest {
@@ -304,7 +298,6 @@ class BodyStoreTest {
         stats.entryCount shouldBe 0
     }
 
-
     @Test
     fun `removes all bodies for a call ID`() = runTest {
         val requestKey = bodyStore.store("call-1", BodyType.REQUEST, "request body")
@@ -343,7 +336,6 @@ class BodyStoreTest {
         sizeAfter shouldBe "other".toByteArray().size.toLong()
     }
 
-
     @Test
     fun `removes all entries`() = runTest {
         bodyStore.store("call-1", BodyType.REQUEST, "body 1")
@@ -365,7 +357,6 @@ class BodyStoreTest {
         val key = bodyStore.store("call-2", BodyType.REQUEST, "new body")
         bodyStore.retrieve(key) shouldBe "new body"
     }
-
 
     @Test
     fun `returns zero stats for empty store`() = runTest {
@@ -412,8 +403,8 @@ class BodyStoreTest {
         settingsProvider.updateSettings(
             createSettings(
                 maxBodyCacheSizeBytes = 100,
-                compressionEnabled = false
-            )
+                compressionEnabled = false,
+            ),
         )
 
         bodyStore.store("call-1", BodyType.REQUEST, "x".repeat(50))
@@ -421,7 +412,6 @@ class BodyStoreTest {
         val stats = bodyStore.getStats()
         stats.usagePercent shouldBe 50
     }
-
 
     @Test
     fun `handles concurrent stores safely`() = runTest {

@@ -61,7 +61,7 @@ class InMemoryLocalDevicesDataSource : LocalDevicesDataSource {
 
     override suspend fun insertDeviceApp(
         deviceId: DeviceId,
-        app: DeviceAppDomainModel
+        app: DeviceAppDomainModel,
     ): InsertResult {
         val deviceApps = appsState.value[deviceId] ?: emptyMap()
         val exists = deviceApps.containsKey(app.packageName)
@@ -84,14 +84,14 @@ class InMemoryLocalDevicesDataSource : LocalDevicesDataSource {
 
     override suspend fun getDeviceAppByPackage(
         deviceId: DeviceId,
-        packageName: AppPackageName
+        packageName: AppPackageName,
     ): DeviceAppDomainModel? {
         return appsState.value[deviceId]?.get(packageName)
     }
 
     override fun observeDeviceAppByPackage(
         deviceId: DeviceId,
-        packageName: AppPackageName
+        packageName: AppPackageName,
     ): Flow<DeviceAppDomainModel?> {
         return appsState.map { apps ->
             apps[deviceId]?.get(packageName)
@@ -105,14 +105,14 @@ class InMemoryLocalDevicesDataSource : LocalDevicesDataSource {
     override suspend fun saveAppIcon(
         deviceId: DeviceId,
         appPackageName: AppPackageName,
-        iconEncoded: String
+        iconEncoded: String,
     ) {
         log.w { "no-op:saveAppIcon: $deviceId|$appPackageName" }
     }
 
     override suspend fun hasAppIcon(
         deviceId: DeviceId,
-        appPackageName: AppPackageName
+        appPackageName: AppPackageName,
     ): Boolean {
         log.w { "no-op:hasAppIcon: $deviceId|$appPackageName" }
         return false
@@ -120,7 +120,7 @@ class InMemoryLocalDevicesDataSource : LocalDevicesDataSource {
 
     override fun observeDeviceSdkVersion(
         deviceId: DeviceId,
-        appPackageName: String
+        appPackageName: String,
     ): Flow<String?> {
         log.w { "no-op:observeDeviceSdkVersion: $deviceId|$appPackageName" }
         return flowOf(null)
@@ -137,7 +137,7 @@ class InMemoryLocalDevicesDataSource : LocalDevicesDataSource {
 
     override suspend fun deleteApp(
         deviceId: DeviceId,
-        packageName: AppPackageName
+        packageName: AppPackageName,
     ) {
         appsState.update { current ->
             val deviceApps = current[deviceId] ?: return@update current

@@ -49,18 +49,20 @@ class ResponsePanel(
                         statusCode = response.statusCode,
                         timestamp = timestamp,
                         body = it,
-                        contentType = response.contentType
+                        contentType = response.contentType,
                     )
                 }
 
                 bodyPanel.showBody(response.body, response.contentType, context)
                 showContent()
             }
+
             is NetworkResponse.Failure -> {
                 headersPanel.showHeaders(emptyMap())
                 bodyPanel.showBody("Error: ${response.issue}", null, null)
                 showContent()
             }
+
             null -> showEmpty()
         }
     }

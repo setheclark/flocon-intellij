@@ -36,7 +36,7 @@ interface FloconDeviceBindingContainer {
     companion object {
         @Provides
         fun provideHandleDeviceAndAppUseCase(
-            devicesRepository: DevicesRepository
+            devicesRepository: DevicesRepository,
         ): HandleDeviceAndAppUseCase = HandleDeviceAndAppUseCase(devicesRepository)
 
         @Provides

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * Allows controlling settings without IntelliJ platform dependencies.
  */
 class FakeNetworkStorageSettingsProvider(
-    initialSettings: NetworkStorageSettings = NetworkStorageSettings()
+    initialSettings: NetworkStorageSettings = NetworkStorageSettings(),
 ) : NetworkStorageSettingsProvider {
 
     private val _settings = MutableStateFlow(initialSettings)

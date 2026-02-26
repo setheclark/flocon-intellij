@@ -32,13 +32,13 @@ interface FloconMessagesBindingContainer {
         @Provides
         @IntoSet
         fun provideDevicesMessageReceiver(
-            impl: DevicesRepositoryImpl
+            impl: DevicesRepositoryImpl,
         ): MessagesReceiverRepository = impl
 
         @Provides
         @IntoSet
         fun provideNetworkMessageReceiver(
-            impl: NetworkRepositoryImpl
+            impl: NetworkRepositoryImpl,
         ): MessagesReceiverRepository = impl
 
         @Provides

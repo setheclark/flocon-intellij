@@ -10,6 +10,12 @@ plugins {
     alias(libs.plugins.changelog)
     alias(libs.plugins.qodana)
     alias(libs.plugins.kover)
+    alias(libs.plugins.ktlint)
+}
+
+ktlint {
+    version.set("1.8.0")
+    outputToConsole.set(true)
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -89,7 +95,8 @@ intellijPlatform {
 
     publishing {
         token = providers.environmentVariable("PUBLISH_TOKEN")
-        channels = providers.gradleProperty("pluginVersion").map { listOf(it.substringAfter('-', "").substringBefore('.').ifEmpty { "default" }) }
+        channels =
+            providers.gradleProperty("pluginVersion").map { listOf(it.substringAfter('-', "").substringBefore('.').ifEmpty { "default" }) }
     }
 
     pluginVerification {

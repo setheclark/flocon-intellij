@@ -14,7 +14,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 @Service(Service.Level.APP)
 @State(
     name = "FloconNetworkStorageSettings",
-    storages = [Storage("flocon-network-storage.xml")]
+    storages = [Storage("flocon-network-storage.xml")],
 )
 class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSettingsState> {
 

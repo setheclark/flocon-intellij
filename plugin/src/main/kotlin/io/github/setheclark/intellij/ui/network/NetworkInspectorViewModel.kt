@@ -42,7 +42,7 @@ class NetworkInspectorViewModel(
     private val log = Logger.withPluginTag("NetworkInspectorViewModel")
 
     private val _state = MutableStateFlow(
-        NetworkInspectorState(serverState = observeServerStatusUseCase().value)
+        NetworkInspectorState(serverState = observeServerStatusUseCase().value),
     )
     val state: StateFlow<NetworkInspectorState> = _state.asStateFlow()
 
@@ -80,7 +80,6 @@ class NetworkInspectorViewModel(
             is NetworkInspectorIntent.DisableAutoScroll -> {
                 _state.update { it.copy(autoScrollEnabled = false) }
             }
-
 
             is NetworkInspectorIntent.StartServer -> {
                 scope.launch { startServerUseCase() }

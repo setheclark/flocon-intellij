@@ -70,7 +70,9 @@ class OverviewPanel : JPanel(BorderLayout()) {
                 }
                 if (isEmpty()) append("Success")
             }
+
             is NetworkResponse.Failure -> "Error: ${response.issue}"
+
             null -> "Pending"
         }
 
@@ -134,9 +136,11 @@ class OverviewPanel : JPanel(BorderLayout()) {
 
     private fun createQueryParametersSection(): JPanel {
         return createSection("Query Parameters") {
-            add(queryParametersPanel.apply {
-                alignmentX = LEFT_ALIGNMENT
-            })
+            add(
+                queryParametersPanel.apply {
+                    alignmentX = LEFT_ALIGNMENT
+                },
+            )
         }
     }
 
@@ -145,11 +149,13 @@ class OverviewPanel : JPanel(BorderLayout()) {
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
             alignmentX = LEFT_ALIGNMENT
 
-            add(JBLabel(title).apply {
-                font = font.deriveFont(Font.BOLD, 14f)
-                border = JBUI.Borders.emptyBottom(8)
-                alignmentX = LEFT_ALIGNMENT
-            })
+            add(
+                JBLabel(title).apply {
+                    font = font.deriveFont(Font.BOLD, 14f)
+                    border = JBUI.Borders.emptyBottom(8)
+                    alignmentX = LEFT_ALIGNMENT
+                },
+            )
 
             buildContent()
         }
@@ -161,10 +167,13 @@ class OverviewPanel : JPanel(BorderLayout()) {
             maximumSize = Dimension(Int.MAX_VALUE, JBUI.scale(24))
             border = JBUI.Borders.emptyBottom(4)
 
-            add(JBLabel("$label:").apply {
-                foreground = JBColor.GRAY
-                preferredSize = Dimension(JBUI.scale(100), preferredSize.height)
-            }, BorderLayout.WEST)
+            add(
+                JBLabel("$label:").apply {
+                    foreground = JBColor.GRAY
+                    preferredSize = Dimension(JBUI.scale(100), preferredSize.height)
+                },
+                BorderLayout.WEST,
+            )
 
             add(valueComponent, BorderLayout.CENTER)
         }

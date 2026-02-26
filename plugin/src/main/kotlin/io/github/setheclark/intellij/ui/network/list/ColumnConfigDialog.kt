@@ -46,10 +46,12 @@ class ColumnConfigDialog(project: Project) : DialogWrapper(project) {
             checkboxes.values.forEach { add(it) }
 
             add(JBLabel("Display").apply { font = font.deriveFont(Font.BOLD) })
-            add(JPanel(BorderLayout()).apply {
-                add(JBLabel("Open call details in:"), BorderLayout.WEST)
-                add(openModeComboBox, BorderLayout.CENTER)
-            })
+            add(
+                JPanel(BorderLayout()).apply {
+                    add(JBLabel("Open call details in:"), BorderLayout.WEST)
+                    add(openModeComboBox, BorderLayout.CENTER)
+                },
+            )
         }
     }
 
