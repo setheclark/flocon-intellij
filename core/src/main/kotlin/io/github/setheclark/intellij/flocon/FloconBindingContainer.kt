@@ -22,7 +22,7 @@ import io.github.setheclark.intellij.flocon.settings.SettingsRepositoryImpl
         FloconDeviceBindingContainer::class,
         FloconMessagesBindingContainer::class,
         FloconNetworkBindingContainer::class,
-    ]
+    ],
 )
 interface FloconBindingContainer {
 
@@ -34,10 +34,9 @@ interface FloconBindingContainer {
 
     companion object {
 
-
         @Provides
         fun provideHandleNewAppUseCase(
-            devicesRepository: DevicesRepository
+            devicesRepository: DevicesRepository,
         ): HandleNewAppUseCase = HandleNewAppUseCase(devicesRepository)
 
         @Provides

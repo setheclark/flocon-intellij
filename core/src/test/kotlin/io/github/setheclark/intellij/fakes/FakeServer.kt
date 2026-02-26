@@ -17,7 +17,7 @@ class FakeServer : Server {
 
     private val _receivedMessages = MutableSharedFlow<FloconIncomingMessageDataModel>(
         replay = 0,
-        extraBufferCapacity = 64
+        extraBufferCapacity = 64,
     )
     override val receivedMessages: Flow<FloconIncomingMessageDataModel> = _receivedMessages
 
@@ -26,7 +26,7 @@ class FakeServer : Server {
 
     private val _receivedFiles = MutableSharedFlow<FloconReceivedFileDomainModel>(
         replay = 0,
-        extraBufferCapacity = 64
+        extraBufferCapacity = 64,
     )
     override val receivedFiles: Flow<FloconReceivedFileDomainModel> = _receivedFiles
 
@@ -62,7 +62,7 @@ class FakeServer : Server {
 
     override suspend fun sendMessageToClient(
         deviceIdAndPackageName: FloconDeviceIdAndPackageNameDataModel,
-        message: FloconOutgoingMessageDataModel
+        message: FloconOutgoingMessageDataModel,
     ) {
         sentMessages.add(deviceIdAndPackageName to message)
     }

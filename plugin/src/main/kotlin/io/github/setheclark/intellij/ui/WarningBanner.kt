@@ -21,7 +21,7 @@ class WarningBanner : JPanel(FlowLayout(FlowLayout.LEFT)) {
         background = warningColor
         border = BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor.border()),
-            JBUI.Borders.empty(8, 12)
+            JBUI.Borders.empty(8, 12),
         )
         isVisible = false
 

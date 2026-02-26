@@ -28,13 +28,13 @@ interface FloconAdbBindingContainer {
 
         @Provides
         fun provideStartAdbForwardUseCase(
-            executeAdbCommandUseCase: ExecuteAdbCommandUseCase
+            executeAdbCommandUseCase: ExecuteAdbCommandUseCase,
         ): StartAdbForwardUseCase = StartAdbForwardUseCase(executeAdbCommandUseCase)
 
         @Provides
         fun provideInitAdbPathUseCase(
             settingsRepository: SettingsRepository,
-            adbRepository: AdbRepository
+            adbRepository: AdbRepository,
         ): InitAdbPathUseCase = InitAdbPathUseCase(settingsRepository, adbRepository)
     }
 }

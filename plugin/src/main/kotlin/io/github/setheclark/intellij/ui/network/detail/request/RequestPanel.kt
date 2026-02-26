@@ -43,7 +43,7 @@ class RequestPanel(
                 statusCode = null,
                 timestamp = timestamp,
                 body = it,
-                contentType = contentType
+                contentType = contentType,
             )
         }
 

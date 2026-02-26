@@ -61,18 +61,18 @@ class DevicesRepositoryImpl(
 
     override fun observeCurrentDevice(): Flow<DeviceDomainModel?> =
         localCurrentDeviceDataSource.currentDeviceId.flatMapLatest {
-            if (it == null)
+            if (it == null) {
                 flowOf(null)
-            else
+            } else {
                 localDevicesDataSource.observeDeviceById(it)
+            }
         }
-
 
     override suspend fun register(registerDeviceWithApp: RegisterDeviceWithAppDomainModel): HandleDeviceResultDomainModel =
         withContext(dispatcherProvider.data) {
             devicesMutex.withLock {
                 val isKnownDevice = localCurrentDeviceDataSource.isKnownDeviceForThisSession(
-                    registerDeviceWithApp.device.deviceId
+                    registerDeviceWithApp.device.deviceId,
                 )
                 val isKnownApp = localCurrentDeviceDataSource.isKnownAppForThisSession(
                     deviceIdAndPackageName = registerDeviceWithApp.deviceIdAndPackageName,
@@ -87,14 +87,14 @@ class DevicesRepositoryImpl(
                 } else {
                     val isNewDevice = when (
                         localDevicesDataSource.insertDevice(
-                            registerDeviceWithApp.device
+                            registerDeviceWithApp.device,
                         )
                     ) {
                         InsertResult.New -> true
                         InsertResult.Exists, InsertResult.Updated -> false
                     }
                     localCurrentDeviceDataSource.addNewDeviceConnectedForThisSession(
-                        registerDeviceWithApp.device.deviceId
+                        registerDeviceWithApp.device.deviceId,
                     )
 
                     val isNewApp = when (
@@ -137,7 +137,7 @@ class DevicesRepositoryImpl(
                 packageName?.let {
                     localDevicesDataSource.observeDeviceAppByPackage(
                         deviceId = deviceId,
-                        packageName = it
+                        packageName = it,
                     )
                 } ?: flowOf(null)
             }
@@ -152,7 +152,7 @@ class DevicesRepositoryImpl(
 
     override suspend fun getDeviceAppByPackage(
         deviceId: DeviceId,
-        appPackageName: String
+        appPackageName: String,
     ): DeviceAppDomainModel? = withContext(dispatcherProvider.data) {
         localDevicesDataSource.getDeviceAppByPackage(deviceId, appPackageName)
     }
@@ -177,11 +177,11 @@ class DevicesRepositoryImpl(
         withContext(dispatcherProvider.data) {
             localDevicesDataSource.deleteApp(
                 deviceId = deviceId,
-                packageName = packageName
+                packageName = packageName,
             )
             localCurrentDeviceDataSource.deleteApp(
                 deviceId = deviceId,
-                packageName = packageName
+                packageName = packageName,
             )
         }
     }
@@ -200,7 +200,7 @@ class DevicesRepositoryImpl(
 
     override suspend fun onMessageReceived(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
-        message: FloconIncomingMessageDomainModel
+        message: FloconIncomingMessageDomainModel,
     ) {
         when (message.method) {
             Protocol.FromDevice.Device.Method.RegisterDevice -> {
@@ -216,7 +216,7 @@ class DevicesRepositoryImpl(
 
     override suspend fun onDeviceConnected(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
-        isNewDevice: Boolean
+        isNewDevice: Boolean,
     ) = Unit
 
     // endregion MessagesReceiverRepository
@@ -225,7 +225,7 @@ class DevicesRepositoryImpl(
 
     override fun observeDeviceSdkVersion(
         deviceId: DeviceId,
-        appPackageName: String
+        appPackageName: String,
     ): Flow<String?> {
         log.w { "no-op:observeDeviceSdkVersion: $deviceId|$appPackageName" }
         return flowOf(null)
@@ -234,14 +234,14 @@ class DevicesRepositoryImpl(
     override suspend fun saveAppIcon(
         deviceId: DeviceId,
         appPackageName: String,
-        iconEncoded: String
+        iconEncoded: String,
     ) {
         log.w { "no-op:saveAppIcon: $deviceId|$appPackageName|$iconEncoded" }
     }
 
     override suspend fun hasAppIcon(
         deviceId: DeviceId,
-        appPackageName: String
+        appPackageName: String,
     ): Boolean {
         log.w { "no-op:hasAppIcon: $deviceId|$appPackageName" }
         return false
@@ -256,5 +256,4 @@ class DevicesRepositoryImpl(
     }
 
     // endregion no-op
-
 }

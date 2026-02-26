@@ -5,5 +5,5 @@ package io.github.setheclark.intellij.domain.models
  */
 data class NetworkFilter(
     val searchText: String = "",
-    val methodFilter: String? = null,  // null = all methods
+    val methodFilter: String? = null, // null = all methods
 )

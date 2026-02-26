@@ -13,6 +13,6 @@ data class ScratchFileContext(
 ) {
     enum class BodyType {
         REQUEST,
-        RESPONSE
+        RESPONSE,
     }
 }

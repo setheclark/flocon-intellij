@@ -28,7 +28,7 @@ interface NetworkStorageSettingsProvider {
  * Update settings using a transform function.
  */
 inline fun NetworkStorageSettingsProvider.updateSettings(
-    transform: (NetworkStorageSettings) -> NetworkStorageSettings
+    transform: (NetworkStorageSettings) -> NetworkStorageSettings,
 ) {
     updateSettings(transform(getSettings()))
 }

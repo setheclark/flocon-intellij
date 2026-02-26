@@ -11,8 +11,8 @@ import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.common.Either
 import io.github.openflocon.domain.common.Failure
 import io.github.openflocon.domain.common.Success
-import io.github.setheclark.intellij.system.process.ProcessExecutor
 import io.github.setheclark.intellij.system.Environment
+import io.github.setheclark.intellij.system.process.ProcessExecutor
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -52,7 +52,7 @@ class AdbRepositoryImpl(
     override fun executeAdbCommand(
         adbPath: String,
         deviceSerial: String?,
-        command: String
+        command: String,
     ): Either<Throwable, String> {
         log.d { "Executing ADB command: $command ${deviceSerial?.let { "on device: $it" } ?: "on all devices"}" }
         return if (deviceSerial == null) {
@@ -65,7 +65,7 @@ class AdbRepositoryImpl(
     override fun executeAdbAskSerialToAllDevices(
         adbPath: String,
         command: String,
-        serialVariableName: String
+        serialVariableName: String,
     ): Either<Throwable, String> {
         val devices = listConnectedDevices(adbPath)
 
@@ -83,7 +83,7 @@ class AdbRepositoryImpl(
                     command.replace(serialVariableName, serial)
                 } else {
                     command
-                }
+                },
             )
         }.let { results ->
             results.forEach {
@@ -131,10 +131,10 @@ class AdbRepositoryImpl(
 
         val userHome = System.getProperty("user.home")
         val possibleSdkPaths = listOf(
-            File(userHome, "Library/Android/sdk"),           // macOS default
-            File(userHome, "AppData/Local/Android/sdk"),     // Windows default
-            File(userHome, "Android/sdk"),                   // Linux common
-            File("/usr/local/android-sdk"),                  // Custom install
+            File(userHome, "Library/Android/sdk"), // macOS default
+            File(userHome, "AppData/Local/Android/sdk"), // Windows default
+            File(userHome, "Android/sdk"), // Linux common
+            File("/usr/local/android-sdk"), // Custom install
         )
 
         for (sdkPath in possibleSdkPaths) {
@@ -145,7 +145,9 @@ class AdbRepositoryImpl(
             }
         }
 
-        log.w { "ADB executable not found. Checked: android.adb.path property, PATH environment, ANDROID_HOME, ANDROID_SDK_ROOT, and common SDK locations" }
+        log.w {
+            "ADB executable not found. Checked: android.adb.path property, PATH environment, ANDROID_HOME, ANDROID_SDK_ROOT, and common SDK locations"
+        }
         return null
     }
 
@@ -174,7 +176,7 @@ class AdbRepositoryImpl(
                     }
                 log.d { "Found ${devices.size} connected device(s)" }
                 devices
-            }
+            },
         )
     }
 

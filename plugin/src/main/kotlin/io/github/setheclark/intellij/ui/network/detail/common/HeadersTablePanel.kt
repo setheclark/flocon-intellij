@@ -90,14 +90,17 @@ class HeadersTablePanel : JPanel(BorderLayout()) {
         // Keyboard shortcut: Cmd+C (Mac) or Ctrl+C (Windows/Linux)
         val copyKeyStroke = KeyStroke.getKeyStroke(
             KeyEvent.VK_C,
-            Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx
+            Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx,
         )
         table.inputMap.put(copyKeyStroke, "copy")
-        table.actionMap.put("copy", object : AbstractAction() {
-            override fun actionPerformed(e: ActionEvent) {
-                copySelectedValue()
-            }
-        })
+        table.actionMap.put(
+            "copy",
+            object : AbstractAction() {
+                override fun actionPerformed(e: ActionEvent) {
+                    copySelectedValue()
+                }
+            },
+        )
 
         // Right-click context menu using IntelliJ's action system
         val actionGroup = DefaultActionGroup().apply {
@@ -184,7 +187,7 @@ private class KeyColumnRenderer : DefaultTableCellRenderer() {
         isSelected: Boolean,
         hasFocus: Boolean,
         row: Int,
-        column: Int
+        column: Int,
     ): Component {
         val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
         font = font.deriveFont(Font.BOLD)

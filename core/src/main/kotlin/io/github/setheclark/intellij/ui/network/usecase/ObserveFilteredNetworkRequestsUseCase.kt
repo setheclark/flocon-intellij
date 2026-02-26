@@ -65,7 +65,10 @@ internal fun NetworkCallEntity.matchesSearchText(searchText: String): Boolean {
     if (request.body?.lowercase()?.contains(search) == true) return true
     if (request.headers.any { (key, value) ->
             key.lowercase().contains(search) || value.lowercase().contains(search)
-        }) return true
+        }
+    ) {
+        return true
+    }
 
     // Search in response fields
     response?.let { response ->
@@ -78,7 +81,10 @@ internal fun NetworkCallEntity.matchesSearchText(searchText: String): Boolean {
                 if (response.body?.lowercase()?.contains(search) == true) return true
                 if (response.headers.any { (key, value) ->
                         key.lowercase().contains(search) || value.lowercase().contains(search)
-                    }) return true
+                    }
+                ) {
+                    return true
+                }
             }
         }
     }

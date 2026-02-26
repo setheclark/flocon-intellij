@@ -39,14 +39,14 @@ class NetworkMessageMapper(
                         persisted = true,
                         query = graphQl.queryName,
                         operationName = graphQl.queryName,
-                        operationType = graphQl.operationType
+                        operationType = graphQl.operationType,
                     )
 
                     is GraphQlExtracted.WithBody -> NetworkRequest.Type.GraphQl(
                         persisted = false,
                         query = graphQl.requestBody.query,
                         operationName = graphQl.queryName,
-                        operationType = graphQl.operationType
+                        operationType = graphQl.operationType,
                     )
                 }
             }
@@ -54,6 +54,7 @@ class NetworkMessageMapper(
             patchedGraphQl != null -> patchedGraphQl
 
             decoded.floconNetworkType == "grpc" -> NetworkRequest.Type.Grpc
+
             else -> NetworkRequest.Type.Http
         }
 

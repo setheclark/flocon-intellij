@@ -162,16 +162,26 @@ jobs:
           distribution: zulu
           java-version: 21
 
+      # Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: true
+
+      # Run ktlint
+      - name: Run ktlint
+        run: ./gradlew :core:ktlintCheck :plugin:ktlintCheck
+
       # Run Qodana inspections
-#      - name: Qodana - Code Inspection
-#        uses: JetBrains/qodana-action@v2025.3
-#        with:
-#          args: --linter,qodana-jvm-community
-#          cache-default-branch-only: true
-#          pr-mode: false
-#        env:
-#          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
-#          QODANA_ENDPOINT: 'https://qodana.cloud'
+      - name: Qodana - Code Inspection
+        uses: JetBrains/qodana-action@v2025.3
+        with:
+          args: --linter,qodana-jvm-community
+          cache-default-branch-only: true
+          pr-mode: false
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          QODANA_ENDPOINT: 'https://qodana.cloud'
 
   # Run plugin structure verification along with IntelliJ Plugin Verifier
   verify:

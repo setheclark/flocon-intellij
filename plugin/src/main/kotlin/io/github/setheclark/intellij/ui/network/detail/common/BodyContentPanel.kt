@@ -7,15 +7,18 @@ import com.intellij.ide.scratch.ScratchRootType
 import com.intellij.lang.Language
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.ScrollType
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.FileTypeManager
+import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.fileTypes.PlainTextFileType
 import com.intellij.openapi.project.Project
 import com.intellij.ui.EditorTextField
-import com.intellij.ui.LanguageTextField
 import com.intellij.ui.JBColor
+import com.intellij.ui.LanguageTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
@@ -26,9 +29,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import java.awt.BorderLayout
 import java.awt.Cursor
-import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.colors.EditorFontType
-import com.intellij.openapi.fileTypes.LanguageFileType
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.time.Instant
@@ -103,7 +103,7 @@ class BodyContentPanel(
             overlayPane.width - buttonSize.width - padding,
             padding,
             buttonSize.width,
-            buttonSize.height
+            buttonSize.height,
         )
     }
 
@@ -223,7 +223,7 @@ class BodyContentPanel(
                         "$filename.$extension",
                         language,
                         formattedBody,
-                        ScratchFileService.Option.create_new_always
+                        ScratchFileService.Option.create_new_always,
                     )
                 }
 
@@ -281,6 +281,7 @@ class BodyContentPanel(
         val fileTypeManager = FileTypeManager.getInstance()
         return when {
             contentType == null -> PlainTextFileType.INSTANCE
+
             contentType.contains("json", ignoreCase = true) ->
                 fileTypeManager.getFileTypeByExtension("json")
 

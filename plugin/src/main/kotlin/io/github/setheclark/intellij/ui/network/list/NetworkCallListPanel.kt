@@ -143,7 +143,6 @@ class NetworkCallListPanel(
         viewModel.dispatch(NetworkCallListIntent.DisableAutoScroll)
     }
 
-
     private fun observeState() {
         scope.launch {
             var previousAutoScrollEnabled = false

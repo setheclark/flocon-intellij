@@ -28,9 +28,17 @@ class NetworkCallFileEditor(
     override fun isValid() = true
     override fun setState(state: FileEditorState) {}
     override fun getState(level: FileEditorStateLevel): FileEditorState = FileEditorState.INSTANCE
-    override fun addPropertyChangeListener(l: PropertyChangeListener) { pcs.addPropertyChangeListener(l) }
-    override fun removePropertyChangeListener(l: PropertyChangeListener) { pcs.removePropertyChangeListener(l) }
-    override fun dispose() { scope.cancel() }
+    override fun addPropertyChangeListener(l: PropertyChangeListener) {
+        pcs.addPropertyChangeListener(l)
+    }
+    override fun removePropertyChangeListener(l: PropertyChangeListener) {
+        pcs.removePropertyChangeListener(l)
+    }
+    override fun dispose() {
+        scope.cancel()
+    }
     override fun <T : Any?> getUserData(key: Key<T>) = userData.getUserData(key)
-    override fun <T : Any?> putUserData(key: Key<T>, value: T?) { userData.putUserData(key, value) }
+    override fun <T : Any?> putUserData(key: Key<T>, value: T?) {
+        userData.putUserData(key, value)
+    }
 }

@@ -12,16 +12,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @SingleIn(AppScope::class)
 class InMemoryAdbLocalDataSource : AdbLocalDataSource {
 
-    private val _state = MutableStateFlow<Set<DeviceWithSerialDomainModel>>(emptySet())
+    private val _devicesWithSerial = MutableStateFlow<Set<DeviceWithSerialDomainModel>>(emptySet())
 
     override val devicesWithSerial: Flow<Set<DeviceWithSerialDomainModel>>
-        get() = _state
+        get() = _devicesWithSerial
 
     override suspend fun add(item: DeviceWithSerialDomainModel) {
-        _state.value += item
+        _devicesWithSerial.value += item
     }
 
     override suspend fun getFromDeviceId(deviceId: String): DeviceWithSerialDomainModel? {
-        return _state.value.firstOrNull { it.deviceId == deviceId }
+        return _devicesWithSerial.value.firstOrNull { it.deviceId == deviceId }
     }
 }

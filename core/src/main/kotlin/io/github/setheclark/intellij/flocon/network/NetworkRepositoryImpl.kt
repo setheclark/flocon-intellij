@@ -45,7 +45,7 @@ class NetworkRepositoryImpl(
 
     override suspend fun onMessageReceived(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
-        message: FloconIncomingMessageDomainModel
+        message: FloconIncomingMessageDomainModel,
     ) {
         withContext(dispatchers.data) {
             when (message.method) {
@@ -84,7 +84,7 @@ class NetworkRepositoryImpl(
 
     override suspend fun onDeviceConnected(
         deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
-        isNewDevice: Boolean
+        isNewDevice: Boolean,
     ) = Unit
 
     // endregion

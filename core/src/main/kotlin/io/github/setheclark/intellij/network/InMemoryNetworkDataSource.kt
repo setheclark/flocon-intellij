@@ -135,7 +135,7 @@ class InMemoryNetworkDataSource(
 
     override suspend fun getByDeviceAndPackage(
         deviceId: String,
-        packageName: String
+        packageName: String,
     ): List<NetworkCallEntity> {
         return calls.value.values
             .filter { it.entity.deviceId == deviceId && it.entity.packageName == packageName }
@@ -144,7 +144,7 @@ class InMemoryNetworkDataSource(
 
     override fun observeByDeviceAndPackage(
         deviceId: String,
-        packageName: String
+        packageName: String,
     ): Flow<List<NetworkCallEntity>> {
         return calls.map { map ->
             map.values
@@ -225,7 +225,7 @@ class InMemoryNetworkDataSource(
                 is NetworkResponse.Success -> r.copy(body = null)
                 is NetworkResponse.Failure -> r
                 null -> null
-            }
+            },
         )
     }
 
@@ -239,7 +239,7 @@ class InMemoryNetworkDataSource(
                 is NetworkResponse.Success -> r.copy(body = responseBody)
                 is NetworkResponse.Failure -> r
                 null -> null
-            }
+            },
         )
     }
 }

@@ -77,7 +77,7 @@ class NetworkCallListViewModel(
             method = request.method,
             status = (response as? NetworkResponse.Success)?.statusCode,
             duration = response?.durationMs,
-            size = (response as? NetworkResponse.Success)?.size
+            size = (response as? NetworkResponse.Success)?.size,
         )
     }
 }
