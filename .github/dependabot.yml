@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    ignore:
+      # These are synced from the Flocon submodule — do not update independently
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-coroutines*"
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-serialization*"
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-datetime"
+      - dependency-name: "io.ktor:*"
+      - dependency-name: "co.touchlab:kermit*"
+      - dependency-name: "androidx.paging:paging*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "03:00"

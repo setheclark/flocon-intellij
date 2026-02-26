@@ -2,7 +2,7 @@
 
 set -e
 
-SUBMODULE_PATH="flocon-upstream"
+SUBMODULE_PATH="flocon/upstream"
 
 echo "Updating Flocon submodule to latest release tag..."
 

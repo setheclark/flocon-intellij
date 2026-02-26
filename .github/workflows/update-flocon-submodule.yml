@@ -1,0 +1,94 @@
+name: Update Flocon Submodule
+
+on:
+  schedule:
+    - cron: "30 3 * * *"  # 03:30 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Check for new Flocon release tag
+        id: check
+        run: |
+          cd flocon/upstream
+          git fetch --tags
+
+          LATEST_TAG=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No release tags found"
+            exit 1
+          fi
+
+          CURRENT_TAG=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+
+          echo "latest_tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+          echo "current_tag=$CURRENT_TAG" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT_TAG" = "$LATEST_TAG" ]; then
+            echo "update_needed=false" >> "$GITHUB_OUTPUT"
+            echo "Already at latest tag: $LATEST_TAG"
+          else
+            echo "update_needed=true" >> "$GITHUB_OUTPUT"
+            echo "Update available: $CURRENT_TAG -> $LATEST_TAG"
+          fi
+
+      - name: Update submodule and sync dependency versions
+        if: steps.check.outputs.update_needed == 'true'
+        run: |
+          cd flocon/upstream
+          git checkout "${{ steps.check.outputs.latest_tag }}"
+          cd ../..
+
+          get_upstream_version() {
+            grep "^$1 = " flocon/upstream/FloconDesktop/gradle/libs.versions.toml \
+              | sed 's/.*= "\(.*\)"/\1/'
+          }
+
+          update_parent_version() {
+            local key="$1" val="$2"
+            sed -i "s/^$key = \".*\"/$key = \"$val\"/" gradle/libs.versions.toml
+          }
+
+          for key in kotlinx-coroutines kotlinx-serialization kotlinx-dateTime ktor kermit paging; do
+            val="$(get_upstream_version "$key")"
+            if [ -n "$val" ]; then
+              update_parent_version "$key" "$val"
+              echo "Updated $key = $val"
+            else
+              echo "Warning: could not find version for $key in upstream TOML"
+            fi
+          done
+
+      - name: Create Pull Request
+        if: steps.check.outputs.update_needed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-flocon-${{ steps.check.outputs.latest_tag }}
+          commit-message: "Update Flocon submodule to ${{ steps.check.outputs.latest_tag }}"
+          title: "Update Flocon submodule to ${{ steps.check.outputs.latest_tag }}"
+          body: |
+            Automated update of the Flocon submodule from `${{ steps.check.outputs.current_tag }}` to `${{ steps.check.outputs.latest_tag }}`.
+
+            Also syncs the following Flocon-coupled dependency versions from upstream's `libs.versions.toml`:
+            - `kotlinx-coroutines`
+            - `kotlinx-serialization`
+            - `kotlinx-dateTime`
+            - `ktor`
+            - `kermit`
+            - `paging`
+          add-paths: |
+            flocon/upstream
+            gradle/libs.versions.toml

@@ -11,7 +11,7 @@ ktlint-gradle = "14.0.1"
 # Flocon dependecies
 kotlinx-coroutines = "1.10.2"
 kotlinx-serialization = "1.9.0"
-kotlinx-datetime = "0.7.1"
+kotlinx-dateTime = "0.7.1"
 ktor = "3.2.3"
 kermit = "2.0.8"
 paging = "3.3.2"
@@ -37,7 +37,7 @@ ktor-client-core = { module = "io.ktor:ktor-client-core-jvm", version.ref = "kto
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
-kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-dateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-dateTime" }
 paging-common = { module = "androidx.paging:paging-common", version.ref = "paging" }
 # endregion
 
