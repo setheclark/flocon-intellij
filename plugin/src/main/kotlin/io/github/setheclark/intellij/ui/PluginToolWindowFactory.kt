@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
+import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.di.appGraph
 
 /**
@@ -19,7 +20,7 @@ class PluginToolWindowFactory : ToolWindowFactory, DumbAware {
         val contentFactory = ContentFactory.getInstance()
         val content = contentFactory.createContent(
             uiGraph.networkInspectorPanel,
-            "Network",
+            PluginBundle.message("tab.network"),
             false,
         )
         content.isCloseable = false

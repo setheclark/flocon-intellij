@@ -19,6 +19,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.adb.AdbStatus
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.MessageServerState
@@ -214,19 +215,12 @@ class NetworkInspectorPanel(
     ) {
         when {
             adbStatus == AdbStatus.NotFound -> {
-                warningBanner.setText(
-                    "<html><b>ADB not found.</b> USB device connections won't work. " +
-                        "Add 'adb' to PATH or set ANDROID_HOME environment variable.</html>",
-                )
+                warningBanner.setText(PluginBundle.message("banner.adbNotFound"))
                 warningBanner.isVisible = true
             }
 
             serverStatus is MessageServerState.Error -> {
-                val message = serverStatus.message
-                warningBanner.setText(
-                    "<html><b>ERROR: '$message'</b> You may have the Flocon desktop app running.  " +
-                        "If so, close the app and click the server retry action above.</html>",
-                )
+                warningBanner.setText(PluginBundle.message("banner.serverError", serverStatus.message))
                 warningBanner.isVisible = true
             }
 
@@ -241,8 +235,8 @@ class NetworkInspectorPanel(
     // Action implementations - dispatch intents to ViewModel
 
     private inner class ClearAction : AnAction(
-        "Clear All",
-        "Clear all captured network traffic",
+        PluginBundle.message("action.clearAll.text"),
+        PluginBundle.message("action.clearAll.description"),
         AllIcons.Actions.GC,
     ) {
         override fun actionPerformed(e: AnActionEvent) {
@@ -253,8 +247,8 @@ class NetworkInspectorPanel(
     }
 
     private inner class AutoScrollAction : ToggleAction(
-        "Auto-scroll to latest",
-        "Automatically scroll to show new requests",
+        PluginBundle.message("action.autoScroll.text"),
+        PluginBundle.message("action.autoScroll.description"),
         AllIcons.RunConfigurations.Scroll_down,
     ) {
         override fun isSelected(e: AnActionEvent): Boolean {
@@ -273,8 +267,8 @@ class NetworkInspectorPanel(
     }
 
     private inner class ConfigureColumnsAction : AnAction(
-        "Configure Columns",
-        "Choose which columns are visible",
+        PluginBundle.message("action.configureColumns.text"),
+        PluginBundle.message("action.configureColumns.description"),
         AllIcons.General.Settings,
     ) {
         override fun actionPerformed(e: AnActionEvent) {
@@ -291,22 +285,22 @@ class NetworkInspectorPanel(
         override fun update(e: AnActionEvent) {
             when (viewModel.state.value.serverState) {
                 is MessageServerState.Running -> {
-                    e.presentation.text = "Stop Message Server"
-                    e.presentation.description = "Stop the server"
+                    e.presentation.text = PluginBundle.message("action.stopServer.text")
+                    e.presentation.description = PluginBundle.message("action.stopServer.description")
                     e.presentation.icon = AllIcons.Actions.Suspend
                     e.presentation.isEnabled = true
                 }
 
                 is MessageServerState.Stopped -> {
-                    e.presentation.text = "Start Message Server"
-                    e.presentation.description = "Start the server"
+                    e.presentation.text = PluginBundle.message("action.startServer.text")
+                    e.presentation.description = PluginBundle.message("action.startServer.description")
                     e.presentation.icon = AllIcons.Actions.Execute
                     e.presentation.isEnabled = true
                 }
 
                 is MessageServerState.Error -> {
-                    e.presentation.text = "Retry Message Server"
-                    e.presentation.description = "Retry starting the server"
+                    e.presentation.text = PluginBundle.message("action.retryServer.text")
+                    e.presentation.description = PluginBundle.message("action.retryServer.description")
                     e.presentation.icon = AllIcons.Actions.Restart
                     e.presentation.isEnabled = true
                 }

@@ -5,6 +5,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.ui.network.detail.common.HeadersTablePanel
@@ -68,12 +69,12 @@ class OverviewPanel : JPanel(BorderLayout()) {
                     if (isNotEmpty()) append(" - ")
                     append(it)
                 }
-                if (isEmpty()) append("Success")
+                if (isEmpty()) append(PluginBundle.message("label.statusSuccess"))
             }
 
             is NetworkResponse.Failure -> "Error: ${response.issue}"
 
-            null -> "Pending"
+            null -> PluginBundle.message("label.statusPending")
         }
 
         durationLabel.text = response?.durationMs?.let { "${it}ms" } ?: "N/A"
@@ -119,23 +120,23 @@ class OverviewPanel : JPanel(BorderLayout()) {
     }
 
     private fun createGeneralSection(): JPanel {
-        return createSection("General") {
-            add(createRow("Method", methodLabel))
-            add(createRow("Name", nameLabel))
-            add(createRow("Status", statusLabel))
-            add(createRow("URL", urlLabel))
+        return createSection(PluginBundle.message("section.general")) {
+            add(createRow(PluginBundle.message("label.overview.method"), methodLabel))
+            add(createRow(PluginBundle.message("label.overview.name"), nameLabel))
+            add(createRow(PluginBundle.message("label.overview.status"), statusLabel))
+            add(createRow(PluginBundle.message("label.overview.url"), urlLabel))
         }
     }
 
     private fun createTimingSection(): JPanel {
-        return createSection("Timing") {
-            add(createRow("Duration", durationLabel))
-            add(createRow("Start Time", startTimeLabel))
+        return createSection(PluginBundle.message("section.timing")) {
+            add(createRow(PluginBundle.message("label.overview.duration"), durationLabel))
+            add(createRow(PluginBundle.message("label.overview.startTime"), startTimeLabel))
         }
     }
 
     private fun createQueryParametersSection(): JPanel {
-        return createSection("Query Parameters") {
+        return createSection(PluginBundle.message("section.queryParameters")) {
             add(
                 queryParametersPanel.apply {
                     alignmentX = LEFT_ALIGNMENT

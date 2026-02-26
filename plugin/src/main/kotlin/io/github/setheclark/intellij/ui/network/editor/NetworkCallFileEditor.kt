@@ -5,6 +5,7 @@ import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.fileEditor.FileEditorStateLevel
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.UserDataHolderBase
+import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.ui.network.detail.DetailPanel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -22,7 +23,7 @@ class NetworkCallFileEditor(
 
     override fun getComponent(): JComponent = panel
     override fun getPreferredFocusedComponent(): JComponent = panel
-    override fun getName() = "Network Call"
+    override fun getName() = PluginBundle.message("editor.networkCall.name")
     override fun getFile() = file
     override fun isModified() = false
     override fun isValid() = true

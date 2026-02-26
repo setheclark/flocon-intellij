@@ -4,6 +4,7 @@ import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.SearchTextField
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
@@ -23,7 +24,7 @@ class NetworkFilterPanel(
 ) : JPanel() {
 
     private val searchField = SearchTextField().apply {
-        textEditor.emptyText.text = "Filter requests..."
+        textEditor.emptyText.text = PluginBundle.message("label.filter.placeholder")
     }
 
     private val deviceComboBox = JComboBox<DeviceFilterItem>()

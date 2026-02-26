@@ -6,6 +6,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.tabs.JBTabsFactory
 import com.intellij.ui.tabs.TabInfo
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.ui.network.detail.common.BodyContentPanel
 import io.github.setheclark.intellij.ui.network.detail.common.HeadersTablePanel
@@ -26,14 +27,14 @@ class ResponsePanel(
     private val tabs = JBTabsFactory.createTabs(project)
     private val headersPanel = HeadersTablePanel()
 
-    private val emptyLabel = JBLabel("No response").apply {
+    private val emptyLabel = JBLabel(PluginBundle.message("label.noResponse")).apply {
         horizontalAlignment = JBLabel.CENTER
         foreground = JBColor.GRAY
     }
 
     init {
-        tabs.addTab(TabInfo(headersPanel).setText("Headers"))
-        tabs.addTab(TabInfo(bodyPanel).setText("Body"))
+        tabs.addTab(TabInfo(headersPanel).setText(PluginBundle.message("tab.headers")))
+        tabs.addTab(TabInfo(bodyPanel).setText(PluginBundle.message("tab.body")))
         showEmpty()
     }
 
