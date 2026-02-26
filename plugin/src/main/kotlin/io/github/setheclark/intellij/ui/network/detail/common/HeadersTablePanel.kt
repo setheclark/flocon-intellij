@@ -1,7 +1,6 @@
 package io.github.setheclark.intellij.ui.network.detail.common
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
-import io.github.setheclark.intellij.PluginBundle
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -12,6 +11,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
+import io.github.setheclark.intellij.PluginBundle
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Font

@@ -1,10 +1,10 @@
 package io.github.setheclark.intellij.ui.network.filter
 
 import com.intellij.ui.DocumentAdapter
-import io.github.setheclark.intellij.PluginBundle
 import com.intellij.ui.SearchTextField
 import com.intellij.util.ui.JBUI
 import dev.zacsweers.metro.Inject
+import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
