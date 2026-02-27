@@ -28,17 +28,21 @@ interface AppGraph : ProjectGraph.Factory {
 
     val applicationServiceDelegate: ApplicationServiceDelegate
 
-    @Binds
-    val SystemProcessExecutor.bind: ProcessExecutor
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideProcessExecutor(impl: SystemProcessExecutor): ProcessExecutor = impl
 
-    @Binds
-    val InMemoryNetworkDataSource.bind: NetworkDataSource
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideNetworkDataSource(impl: InMemoryNetworkDataSource): NetworkDataSource = impl
 
-    @Binds
-    val NetworkStorageSettingsProviderImpl.bind: NetworkStorageSettingsProvider
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideNetworkStorageSettingsProvider(impl: NetworkStorageSettingsProviderImpl): NetworkStorageSettingsProvider = impl
 
-    @Binds
-    val IntellijEnvironment.bind: Environment
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideEnvironment(impl: IntellijEnvironment): Environment = impl
 
     @Provides
     @SingleIn(AppScope::class)
