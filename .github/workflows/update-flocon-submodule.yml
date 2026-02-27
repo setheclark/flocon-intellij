@@ -52,13 +52,15 @@ jobs:
           cd ../..
 
           get_upstream_version() {
-            grep "^$1 = " flocon/upstream/FloconDesktop/gradle/libs.versions.toml \
+            sed -n '/^\[versions\]/,/^\[/p' flocon/upstream/FloconDesktop/gradle/libs.versions.toml \
+              | grep "^$1 = " \
+              | head -1 \
               | sed 's/.*= "\(.*\)"/\1/'
           }
 
           update_parent_version() {
             local key="$1" val="$2"
-            sed -i "s/^$key = \".*\"/$key = \"$val\"/" gradle/libs.versions.toml
+            sed -i "s|^$key = \".*\"|$key = \"$val\"|" gradle/libs.versions.toml
           }
 
           for key in kotlinx-coroutines kotlinx-serialization kotlinx-dateTime ktor kermit paging; do
