@@ -76,7 +76,7 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update-flocon-${{ steps.check.outputs.latest_tag }}
+          branch: update-flocon-submodule
           commit-message: "Update Flocon submodule to ${{ steps.check.outputs.latest_tag }}"
           title: "Update Flocon submodule to ${{ steps.check.outputs.latest_tag }}"
           body: |
