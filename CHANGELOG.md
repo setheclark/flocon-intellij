@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated Flocon verion to [1.7.8](https://github.com/openflocon/Flocon/releases/tag/1.7.8).  This addresses issues parsing `operationName` from graphQl query params.
+
 ## [0.1.8] - 2026-02-23
 
 ### Fixed
