@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-03-02
+
 ### Changed
 
 - Updated Flocon verion to [1.7.8](https://github.com/openflocon/Flocon/releases/tag/1.7.8).  This addresses issues parsing `operationName` from graphQl query params.
@@ -34,6 +36,7 @@
 - Ability to open network details as an editor window (configurable in settings)
 - A changelog :)
 
-[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/setheclark/flocon-intellij/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/setheclark/flocon-intellij/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/setheclark/flocon-intellij/commits/v0.1.7
