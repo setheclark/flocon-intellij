@@ -1,21 +1,20 @@
+import org.gradle.kotlin.dsl.ktlintRuleset
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.ChangelogPluginExtension
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.extensions.excludeCoroutines
+import org.jetbrains.intellij.platform.gradle.extensions.excludeKotlinStdlib
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.intellij.platform)
     alias(libs.plugins.metro)
     alias(libs.plugins.changelog)
     alias(libs.plugins.qodana)
     alias(libs.plugins.kover)
     alias(libs.plugins.ktlint)
-}
-
-ktlint {
-    version.set("1.8.0")
-    outputToConsole.set(true)
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -39,14 +38,12 @@ dependencies {
     intellijPlatform {
         intellijIdea(providers.gradleProperty("platformVersion").get())
 
-        // Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
-        bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
+        bundledPlugin("org.jetbrains.kotlin")
 
-        // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
-        plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
-
-        // Module Dependencies. Uses `platformBundledModules` property from the gradle.properties file for bundled IntelliJ Platform modules.
-        bundledModules(providers.gradleProperty("platformBundledModules").map { it.split(',') })
+        zipSigner()
+        pluginVerifier()
+        @Suppress("UnstableApiUsage")
+        composeUI()
 
         testFramework(TestFrameworkType.Platform)
     }
@@ -59,6 +56,8 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.kotest.assertions)
+
+    ktlintRuleset("io.nlopez.compose.rules:ktlint:0.5.6")
 }
 
 configure<ChangelogPluginExtension> {
@@ -123,6 +122,11 @@ kover {
     }
 }
 
+ktlint {
+    version.set("1.8.0")
+    outputToConsole.set(true)
+}
+
 tasks {
     publishPlugin {
         dependsOn(patchChangelog)
@@ -170,9 +174,6 @@ intellijPlatformTesting {
 
 // Exclude transitive dependencies that conflict with IDE bundled libraries
 private fun ModuleDependency.excludeBundledDependencies() {
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+    excludeKotlinStdlib()
+    excludeCoroutines()
 }

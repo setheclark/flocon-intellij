@@ -1,19 +1,18 @@
 package io.github.setheclark.intellij.ui.network
 
+import androidx.compose.runtime.Immutable
 import io.github.setheclark.intellij.adb.AdbStatus
 import io.github.setheclark.intellij.domain.models.NetworkFilter
 import io.github.setheclark.intellij.server.MessageServerState
 
+@Immutable
 data class NetworkInspectorState(
     val selectedCallId: String? = null,
     val filter: NetworkFilter = NetworkFilter(),
     val serverState: MessageServerState = MessageServerState.Stopped,
     val adbStatus: AdbStatus = AdbStatus.Initializing,
     val autoScrollEnabled: Boolean = true,
-) {
-    val isDetailVisible: Boolean
-        get() = selectedCallId != null
-}
+)
 
 sealed interface NetworkInspectorIntent {
     // Selection

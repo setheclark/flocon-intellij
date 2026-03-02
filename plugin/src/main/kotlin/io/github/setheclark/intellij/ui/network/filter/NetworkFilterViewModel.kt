@@ -1,7 +1,9 @@
 package io.github.setheclark.intellij.ui.network.filter
 
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
+import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.ui.network.NetworkInspectorIntent.UpdateFilter
 import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Inject
+@SingleIn(ProjectScope::class)
 class NetworkFilterViewModel(
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val parentViewModel: NetworkInspectorViewModel,

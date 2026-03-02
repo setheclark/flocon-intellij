@@ -1,89 +1,114 @@
 package io.github.setheclark.intellij.ui.network.filter
 
-import com.intellij.ui.DocumentAdapter
-import com.intellij.ui.SearchTextField
-import com.intellij.util.ui.JBUI
-import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.PluginBundle
-import io.github.setheclark.intellij.di.ViewModelCoroutineScope
-import kotlinx.coroutines.CoroutineScope
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import io.github.setheclark.intellij.stringResource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
-import java.awt.BorderLayout
-import java.awt.event.ActionEvent
-import javax.swing.JComboBox
-import javax.swing.JPanel
-import javax.swing.event.DocumentEvent
+import org.jetbrains.jewel.foundation.ExperimentalJewelApi
+import org.jetbrains.jewel.foundation.lazy.rememberSelectableLazyListState
+import org.jetbrains.jewel.foundation.theme.JewelTheme
+import org.jetbrains.jewel.ui.component.Icon
+import org.jetbrains.jewel.ui.component.IconButton
+import org.jetbrains.jewel.ui.component.ListComboBox
+import org.jetbrains.jewel.ui.component.Text
+import org.jetbrains.jewel.ui.component.TextField
+import org.jetbrains.jewel.ui.icons.AllIconsKeys
+import org.jetbrains.jewel.ui.painter.hints.Stateful
+import org.jetbrains.jewel.ui.theme.textFieldStyle
 
-@Inject
-class NetworkFilterPanel(
-    @param:ViewModelCoroutineScope private val scope: CoroutineScope,
-    private val viewModel: NetworkFilterViewModel,
-) : JPanel() {
+@OptIn(ExperimentalJewelApi::class)
+@Composable
+fun NetworkFilterPanel(
+    viewModel: NetworkFilterViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.state.collectAsState(
+        initial = NetworkFilterPanelState(
+            devices = DevicesRenderModel(emptyList(), -1),
+            filterText = "",
+        ),
+    )
 
-    private val searchField = SearchTextField().apply {
-        textEditor.emptyText.text = PluginBundle.message("label.filter.placeholder")
-    }
+    val searchState = rememberTextFieldState()
 
-    private val deviceComboBox = JComboBox<DeviceFilterItem>()
-    private val deviceSelectionListener = { _: ActionEvent -> dispatchDeviceUpdate() }
-
-    init {
-        // Setup filter listeners
-        setupFilterListeners()
-
-        layout = BorderLayout(8, 0)
-        border = JBUI.Borders.empty(4, 8)
-        add(deviceComboBox, BorderLayout.WEST)
-        add(searchField, BorderLayout.CENTER)
-
-        observeState()
-    }
-
-    private fun observeState() {
-        scope.launch {
-            viewModel.state.map { it.devices }.distinctUntilChanged().collectLatest {
-                updateDeviceComboBox(it)
+    LaunchedEffect(searchState) {
+        snapshotFlow { searchState.text.toString() }
+            .distinctUntilChanged()
+            .collectLatest { text ->
+                viewModel.dispatch(NetworkFilterIntent.UpdateFilter(text))
             }
-        }
     }
 
-    private fun setupFilterListeners() {
-        searchField.addDocumentListener(object : DocumentAdapter() {
-            override fun textChanged(e: DocumentEvent) {
-                dispatchFilterUpdate()
-            }
-        })
-
-        deviceComboBox.addActionListener(deviceSelectionListener)
+    // Workaround for JEWEL-1244: sync external selection changes into list state
+    val listState = rememberSelectableLazyListState()
+    val devices = state.devices
+    LaunchedEffect(devices.selectedIndex) {
+        val key = devices.devices.getOrNull(devices.selectedIndex)?.toString()
+        listState.selectedKeys = if (key != null) setOf(key) else emptySet()
     }
 
-    private fun dispatchFilterUpdate() {
-        val searchText = searchField.text.trim()
-
-        viewModel.dispatch(
-            NetworkFilterIntent.UpdateFilter(searchText),
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ListComboBox(
+            modifier = Modifier.widthIn(max = 200.dp),
+            items = devices.devices.map { it.toString() },
+            selectedIndex = devices.selectedIndex,
+            onSelectedItemChange = { index ->
+                devices.devices.getOrNull(index)?.let { device ->
+                    viewModel.dispatch(NetworkFilterIntent.UpdateDeviceSelection(device))
+                }
+            },
+            listState = listState,
+            itemKeys = { _, item -> item },
         )
-    }
 
-    private fun dispatchDeviceUpdate() {
-        (deviceComboBox.selectedItem as? DeviceFilterItem)?.let {
-            viewModel.dispatch(
-                NetworkFilterIntent.UpdateDeviceSelection(it),
-            )
-        }
-    }
-
-    private fun updateDeviceComboBox(renderModel: DevicesRenderModel) {
-        deviceComboBox.removeActionListener(deviceSelectionListener)
-        try {
-            deviceComboBox.removeAllItems()
-            renderModel.devices.forEach { deviceComboBox.addItem(it) }
-            deviceComboBox.selectedIndex = renderModel.selectedIndex
-        } finally {
-            deviceComboBox.addActionListener(deviceSelectionListener)
-        }
+        TextField(
+            modifier = Modifier.weight(1f),
+            state = searchState,
+            placeholder = {
+                Text(text = stringResource("label.filter.placeholder"))
+            },
+            leadingIcon = {
+                Icon(
+                    key = AllIconsKeys.Actions.Find,
+                    contentDescription = null,
+                )
+            },
+            trailingIcon = if (searchState.text.isNotEmpty()) {
+                {
+                    IconButton(
+                        onClick = { searchState.setTextAndPlaceCursorAtEnd("") },
+                        style = JewelTheme.textFieldStyle.iconButtonStyle,
+                    ) { buttonState ->
+                        Icon(
+                            key = AllIconsKeys.General.Close,
+                            contentDescription = null,
+                            hint = Stateful(buttonState),
+                        )
+                    }
+                }
+            } else {
+                null
+            },
+        )
     }
 }

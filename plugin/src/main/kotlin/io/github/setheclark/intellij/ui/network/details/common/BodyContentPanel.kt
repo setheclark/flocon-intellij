@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui.network.detail.common
+package io.github.setheclark.intellij.ui.network.details.common
 
 import co.touchlab.kermit.Logger
 import com.intellij.icons.AllIcons
@@ -6,7 +6,6 @@ import com.intellij.ide.scratch.ScratchFileService
 import com.intellij.ide.scratch.ScratchRootType
 import com.intellij.lang.Language
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.ex.EditorEx
@@ -161,8 +160,6 @@ class BodyContentPanel(
                     editor.setVerticalScrollbarVisible(true)
                     editor.setHorizontalScrollbarVisible(true)
                     editor.isViewer = true
-                    editor.caretModel.moveToOffset(0)
-                    editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
                     return editor
                 }
             }.apply {

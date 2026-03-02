@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui.network.detail
+package io.github.setheclark.intellij.ui.network.details
 
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.ui.network.usecase.ObserveCallUseCase

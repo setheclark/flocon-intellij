@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui.network.detail.common
+package io.github.setheclark.intellij.ui.network.details.common
 
 /**
  * Context information for creating a scratch file from body content.
