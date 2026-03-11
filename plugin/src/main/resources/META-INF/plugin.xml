@@ -19,7 +19,7 @@ Network traffic inspector for Android apps using the Flocon SDK.
 <ol>
     <li>Integrate the Flocon SDK into your Android app</li>
     <li>Connect your device via USB or WiFi</li>
-    <li>Open the Flocon tool window (View → Tool Windows → Flocon)</li>
+    <li>Open the Flocon tool window (View → Tool Windows → Network Inspector)</li>
     <li>Run your app and watch network traffic appear in real-time</li>
 </ol>
     ]]></description>
