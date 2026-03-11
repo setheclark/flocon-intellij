@@ -15,6 +15,7 @@ import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.settings.CallDetailOpenMode
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsState
+import io.github.setheclark.intellij.ui.PluginToolWindowFactory
 import io.github.setheclark.intellij.ui.network.details.DetailPanelFactory
 import io.github.setheclark.intellij.ui.network.editor.NetworkCallVirtualFile
 import kotlinx.coroutines.CoroutineScope
@@ -76,7 +77,9 @@ class NetworkCallTabManager(
     }
 
     private fun openAsToolWindowTab(callId: String, callName: String) {
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Network Inspector") ?: return
+        val toolWindow = ToolWindowManager
+            .getInstance(project)
+            .getToolWindow(PluginToolWindowFactory.ID) ?: return
         val contentManager = toolWindow.contentManager
 
         val existing = openTabs[callId]

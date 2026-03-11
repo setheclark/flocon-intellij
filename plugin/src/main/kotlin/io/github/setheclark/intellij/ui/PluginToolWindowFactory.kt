@@ -15,6 +15,10 @@ import org.jetbrains.jewel.bridge.addComposeTab
  */
 class PluginToolWindowFactory : ToolWindowFactory, DumbAware {
 
+    companion object {
+        const val ID = "Network Inspector"
+    }
+
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         System.setProperty("compose.interop.blending", "true")
 
