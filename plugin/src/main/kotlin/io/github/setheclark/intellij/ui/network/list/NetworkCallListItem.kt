@@ -1,6 +1,9 @@
 package io.github.setheclark.intellij.ui.network.list
 
-class NetworkCallListItem(
+import androidx.compose.runtime.Immutable
+
+@Immutable
+data class NetworkCallListItem(
     val callId: String,
     val startTime: Long,
     val name: String,

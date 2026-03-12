@@ -1,5 +1,8 @@
 package io.github.setheclark.intellij.ui.network.list
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class NetworkCallListState(
     val calls: List<NetworkCallListItem>,
     val autoScrollEnabled: Boolean,
