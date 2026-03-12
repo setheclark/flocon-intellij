@@ -51,6 +51,15 @@ Inspect detailed request and response information including headers, query param
 
 ## Installation
 
+### From JetBrains Marketplace
+
+1. Open IntelliJ IDEA
+2. Go to **Settings → Plugins → Marketplace**
+3. Search for **"Flocon Network Inspector"**
+4. Click **Install** and restart IntelliJ IDEA
+
+Alternatively, install directly from the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/30172-flocon-network-inspector).
+
 ### From Source
 
 1. Clone the repository with submodules:
@@ -69,10 +78,6 @@ Inspect detailed request and response information including headers, query param
    - **Settings → Plugins → ⚙️ (gear icon) → Install Plugin from Disk**
    - Select: `plugin/build/distributions/flocon-intellij-<version>.zip`
    - Restart IntelliJ IDEA
-
-### From JetBrains Marketplace
-
-*Coming soon* - The plugin will be available on the JetBrains Marketplace.
 
 ---
 
