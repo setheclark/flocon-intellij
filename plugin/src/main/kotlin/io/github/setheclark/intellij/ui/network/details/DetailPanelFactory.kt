@@ -5,7 +5,7 @@ import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import dev.zacsweers.metro.Inject
-import io.github.setheclark.intellij.ui.network.details.common.BodyContentPanel
+import io.github.setheclark.intellij.ui.WithProject
 import io.github.setheclark.intellij.ui.network.usecase.ObserveCallUseCase
 import kotlinx.coroutines.flow.flowOf
 import org.jetbrains.jewel.bridge.compose
@@ -22,22 +22,26 @@ class DetailPanelFactory(
             callIdFlow = flowOf(callId),
             observeCallUseCase = observeCallUseCase,
         )
-        val requestBodyPanel = BodyContentPanel(project)
-        val responseBodyPanel = BodyContentPanel(project)
-        return DetailsPanel(viewModel, requestBodyPanel, responseBodyPanel)
+        return DetailsPanel(project, viewModel)
     }
 
     class DetailsPanel(
+        project: Project,
         viewModel: DetailPanelViewModel,
-        requestBodyPanel: BodyContentPanel,
-        responseBodyPanel: BodyContentPanel,
     ) : JPanel(BorderLayout()) {
 
         init {
+            System.setProperty("compose.swing.render.on.graphics", "true")
+            System.setProperty("compose.interop.blending", "true")
+
             background = UIUtil.getPanelBackground()
             border = JBUI.Borders.customLineLeft(JBColor.border())
             add(
-                compose(focusOnClickInside = true) { DetailsContent(viewModel, requestBodyPanel, responseBodyPanel) },
+                compose(focusOnClickInside = true) {
+                    WithProject(project) {
+                        DetailsContent(viewModel)
+                    }
+                },
                 BorderLayout.CENTER,
             )
         }

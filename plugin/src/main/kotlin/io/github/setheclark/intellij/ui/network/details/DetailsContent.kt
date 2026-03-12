@@ -14,7 +14,6 @@ import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.stringResource
 import io.github.setheclark.intellij.ui.component.TabbedContent
-import io.github.setheclark.intellij.ui.network.details.common.BodyContentPanel
 import io.github.setheclark.intellij.ui.network.details.common.EmptyContent
 import io.github.setheclark.intellij.ui.network.details.common.HttpMessageContent
 import io.github.setheclark.intellij.ui.network.details.common.ScratchFileContext
@@ -25,8 +24,6 @@ import org.jetbrains.jewel.ui.component.Text
 @Composable
 fun DetailsContent(
     viewModel: DetailPanelViewModel,
-    requestBodyPanel: BodyContentPanel,
-    responseBodyPanel: BodyContentPanel,
     modifier: Modifier = Modifier,
 ) {
     val selectedCall by viewModel.selectedCall.collectAsState(initial = null)
@@ -66,8 +63,8 @@ fun DetailsContent(
     ) { index ->
         when (index) {
             0 -> OverviewTab(currentCall, Modifier.fillMaxSize())
-            1 -> ResponseTab(currentCall, responseBodyPanel)
-            2 -> RequestTab(currentCall, requestBodyPanel)
+            1 -> ResponseTab(currentCall)
+            2 -> RequestTab(currentCall)
         }
     }
 }
@@ -75,7 +72,6 @@ fun DetailsContent(
 @Composable
 private fun RequestTab(
     call: NetworkCallEntity,
-    bodyPanel: BodyContentPanel,
 ) {
     val request = call.request
     val contentType = request.headers.entries
@@ -97,14 +93,12 @@ private fun RequestTab(
         body = request.body,
         contentType = contentType,
         scratchContext = scratchContext,
-        bodyContentPanel = bodyPanel,
     )
 }
 
 @Composable
 private fun ResponseTab(
     call: NetworkCallEntity,
-    bodyPanel: BodyContentPanel,
 ) {
     val response = call.response
 
@@ -143,7 +137,6 @@ private fun ResponseTab(
             body = body,
             contentType = contentType,
             scratchContext = scratchContext,
-            bodyContentPanel = bodyPanel,
         )
     }
 }
