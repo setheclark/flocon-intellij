@@ -6,11 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -45,9 +41,10 @@ fun HttpMessageContent(
     body: String?,
     contentType: String?,
     scratchContext: ScratchFileContext?,
+    selectedTabIndex: Int,
+    onTabSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val project = LocalProject.current
 
@@ -59,15 +56,12 @@ fun HttpMessageContent(
     TabbedContent(
         tabs = tabs,
         selectedIndex = selectedTabIndex,
-        onTabSelect = {
-            // K2 bug: https://youtrack.jetbrains.com/projects/KT/issues/KT-78881/K2-False-positive-Assigned-value-is-never-read-in-composable-function
-            @Suppress("AssignedValueIsNeverRead")
-            selectedTabIndex = it
-        },
+        onTabSelect = onTabSelect,
         modifier = modifier,
     ) { index ->
         when (index) {
             0 -> HeadersTable(headers, Modifier.fillMaxSize())
+
             1 -> Box(modifier = Modifier.fillMaxSize()) {
                 if (body == null) {
                     EmptyContent(stringResource("label.bodyNotAvailable"), Modifier.fillMaxSize())
@@ -83,7 +77,7 @@ fun HttpMessageContent(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(8.dp)
-                            .padding(end = 16.dp)
+                            .padding(end = 16.dp),
                     ) {
                         IconActionButton(
                             key = AllIconsKeys.Actions.MenuSaveall,

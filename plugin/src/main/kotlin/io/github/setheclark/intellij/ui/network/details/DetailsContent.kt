@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
@@ -48,23 +45,20 @@ fun DetailsContent(
         stringResource("tab.request"),
     )
 
-    // Reset tab index to Overview when the selected call changes.
-    var selectedTabIndex by remember(currentCall.callId) { mutableIntStateOf(0) }
+    val selectedTabIndex by viewModel.selectedTabIndex.collectAsState()
+    val selectedResponseSubTab by viewModel.selectedResponseSubTab.collectAsState()
+    val selectedRequestSubTab by viewModel.selectedRequestSubTab.collectAsState()
 
     TabbedContent(
         tabs = tabNames,
         selectedIndex = selectedTabIndex,
-        onTabSelect = {
-            // K2 bug: https://youtrack.jetbrains.com/projects/KT/issues/KT-78881/K2-False-positive-Assigned-value-is-never-read-in-composable-function
-            @Suppress("AssignedValueIsNeverRead")
-            selectedTabIndex = it
-        },
+        onTabSelect = { viewModel.selectedTabIndex.value = it },
         modifier = modifier.fillMaxSize(),
     ) { index ->
         when (index) {
             0 -> OverviewTab(currentCall, Modifier.fillMaxSize())
-            1 -> ResponseTab(currentCall)
-            2 -> RequestTab(currentCall)
+            1 -> ResponseTab(currentCall, selectedResponseSubTab) { viewModel.selectedResponseSubTab.value = it }
+            2 -> RequestTab(currentCall, selectedRequestSubTab) { viewModel.selectedRequestSubTab.value = it }
         }
     }
 }
@@ -72,6 +66,8 @@ fun DetailsContent(
 @Composable
 private fun RequestTab(
     call: NetworkCallEntity,
+    selectedTabIndex: Int,
+    onTabSelect: (Int) -> Unit,
 ) {
     val request = call.request
     val contentType = request.headers.entries
@@ -93,12 +89,16 @@ private fun RequestTab(
         body = request.body,
         contentType = contentType,
         scratchContext = scratchContext,
+        selectedTabIndex = selectedTabIndex,
+        onTabSelect = onTabSelect,
     )
 }
 
 @Composable
 private fun ResponseTab(
     call: NetworkCallEntity,
+    selectedTabIndex: Int,
+    onTabSelect: (Int) -> Unit,
 ) {
     val response = call.response
 
@@ -137,6 +137,8 @@ private fun ResponseTab(
             body = body,
             contentType = contentType,
             scratchContext = scratchContext,
+            selectedTabIndex = selectedTabIndex,
+            onTabSelect = onTabSelect,
         )
     }
 }

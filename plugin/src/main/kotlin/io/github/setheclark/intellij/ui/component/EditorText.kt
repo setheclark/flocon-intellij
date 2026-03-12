@@ -32,7 +32,8 @@ enum class ContentType(val extension: String) {
     Css("css"),
     Yaml("yaml"),
     GraphQL("graphql"),
-    Unknown("txt");
+    Unknown("txt"),
+    ;
 
     companion object {
         fun fromMimeType(contentType: String?): ContentType {
@@ -70,7 +71,7 @@ fun EditorText(
     editor?.let {
         SwingPanel(
             modifier = modifier,
-            factory = { editor.component }
+            factory = { editor.component },
         )
     }
 }
