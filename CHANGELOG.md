@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed icon size for "View" -> "Tool Windows" menu
+- Fix plugin instructions to use the correct tool window name
+
 ## [0.1.9] - 2026-03-02
 
 ### Changed
