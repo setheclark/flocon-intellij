@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- UI Rewrite using Compose
+
 ### Fixed
 
 - Fixed icon size for "View" -> "Tool Windows" menu
