@@ -1,7 +1,9 @@
 package io.github.setheclark.intellij.ui.network.list
 
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
+import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 @Inject
+@SingleIn(ProjectScope::class)
 class NetworkCallListViewModel(
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val parentViewModel: NetworkInspectorViewModel,
@@ -54,7 +57,7 @@ class NetworkCallListViewModel(
         )
     }.stateIn(
         scope = scope,
-        started = SharingStarted.Eagerly,
+        started = SharingStarted.WhileSubscribed(5_000),
         initialValue = NetworkCallListState(calls = emptyList(), autoScrollEnabled = true),
     )
 

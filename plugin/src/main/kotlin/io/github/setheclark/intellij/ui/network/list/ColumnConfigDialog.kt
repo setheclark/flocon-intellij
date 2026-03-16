@@ -9,31 +9,36 @@ import com.intellij.ui.components.panels.VerticalLayout
 import com.intellij.util.ui.JBUI
 import io.github.setheclark.intellij.PluginBundle
 import io.github.setheclark.intellij.settings.CallDetailOpenMode
+import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsState
+import io.github.setheclark.intellij.settings.updateSettings
 import java.awt.BorderLayout
 import java.awt.Font
 import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-class ColumnConfigDialog(project: Project) : DialogWrapper(project) {
+class ColumnConfigDialog(
+    project: Project,
+    private val settingsProvider: NetworkStorageSettingsProvider,
+) : DialogWrapper(project) {
 
     private val checkboxes: Map<NetworkCallListColumn, JBCheckBox>
     private val openModeComboBox: JComboBox<CallDetailOpenMode>
 
     init {
         title = PluginBundle.message("dialog.configureColumns.title")
-        val settings = NetworkStorageSettingsState.getInstance()
+        val hiddenColumns = settingsProvider.getSettings().hiddenColumns
         checkboxes = NetworkCallListColumn.entries
             .filter { it != NetworkCallListColumn.TIME }
             .associateWith { col ->
-                JBCheckBox(col.displayName, col.name !in settings.hiddenColumns)
+                JBCheckBox(col.displayName, col.name !in hiddenColumns)
             }
         openModeComboBox = JComboBox(CallDetailOpenMode.entries.toTypedArray()).apply {
             renderer = SimpleListCellRenderer.create { label, value, _ ->
                 label.text = value?.displayName ?: ""
             }
-            selectedItem = settings.callDetailOpenMode
+            selectedItem = NetworkStorageSettingsState.getInstance().callDetailOpenMode
         }
         init()
     }
@@ -57,14 +62,15 @@ class ColumnConfigDialog(project: Project) : DialogWrapper(project) {
     }
 
     override fun doOKAction() {
-        val settings = NetworkStorageSettingsState.getInstance()
-        settings.hiddenColumns = checkboxes
+        val newHiddenColumns = checkboxes
             .filter { (_, cb) -> !cb.isSelected }
             .keys
             .map { it.name }
-            .toMutableSet()
-        (openModeComboBox.selectedItem as? CallDetailOpenMode)?.let {
-            settings.callDetailOpenMode = it
+            .toSet()
+        settingsProvider.updateSettings { it.copy(hiddenColumns = newHiddenColumns) }
+
+        (openModeComboBox.selectedItem as? CallDetailOpenMode)?.let { mode ->
+            NetworkStorageSettingsState.getInstance().callDetailOpenMode = mode
         }
         super.doOKAction()
     }

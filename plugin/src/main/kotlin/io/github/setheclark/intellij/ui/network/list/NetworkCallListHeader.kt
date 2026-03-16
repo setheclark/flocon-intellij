@@ -24,10 +24,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.setheclark.intellij.stringResource
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.Orientation
 import org.jetbrains.jewel.ui.component.Divider
+import org.jetbrains.jewel.ui.component.Icon
 import org.jetbrains.jewel.ui.component.Text
+import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import java.awt.Cursor
 
 @Composable
@@ -50,8 +53,6 @@ internal fun CallListHeader(
         visibleColumns.forEachIndexed { index, col ->
             val isLast = index == visibleColumns.lastIndex
             val isTime = col == NetworkCallListColumn.TIME
-            // TODO: After Compose migration is complete, update this to proper icon
-            val indicator = if (isTime) if (sortAscending) " ▲" else " ▼" else ""
             val widthModifier = if (isLast) Modifier.weight(1f) else Modifier.width(columnWidths[index].dp)
             val colModifier = widthModifier
                 .then(
@@ -70,12 +71,31 @@ internal fun CallListHeader(
                 )
                 .padding(start = 2.dp, end = 4.dp)
             Box(modifier = colModifier) {
-                Text(
-                    text = col.displayName + indicator,
-                    fontWeight = if (isTime) FontWeight.SemiBold else FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (isTime) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = col.displayName,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Icon(
+                            key = if (sortAscending) {
+                                AllIconsKeys.General.ArrowUp
+                            } else {
+                                AllIconsKeys.General.ArrowDown
+                            },
+                            contentDescription = stringResource(if (sortAscending) "column.sort.ascending" else "column.sort.descending"),
+                        )
+                    }
+                } else {
+                    Text(
+                        text = col.displayName,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (!isLast) {
                 ColumnResizeHandle(

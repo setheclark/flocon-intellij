@@ -21,6 +21,7 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
     var callDetailOpenMode: CallDetailOpenMode = CallDetailOpenMode.TOOL_WINDOW_TAB
 
     var hiddenColumns: MutableSet<String> = mutableSetOf()
+    var columnWidths: MutableMap<String, Float> = mutableMapOf()
 
     var maxStoredCalls: Int = NetworkStorageSettings.DEFAULT_MAX_STORED_CALLS
     var maxBodyCacheSizeBytes: Long = NetworkStorageSettings.DEFAULT_MAX_BODY_CACHE_SIZE_BYTES
@@ -38,6 +39,8 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
         maxBodyCacheSizeBytes = maxBodyCacheSizeBytes,
         maxBodySizeBytes = maxBodySizeBytes,
         compressionEnabled = compressionEnabled,
+        hiddenColumns = hiddenColumns.toSet(),
+        columnWidths = columnWidths.toMap(),
     )
 
     fun updateFrom(settings: NetworkStorageSettings) {
@@ -45,6 +48,8 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
         maxBodyCacheSizeBytes = settings.maxBodyCacheSizeBytes
         maxBodySizeBytes = settings.maxBodySizeBytes
         compressionEnabled = settings.compressionEnabled
+        hiddenColumns = settings.hiddenColumns.toMutableSet()
+        columnWidths = settings.columnWidths.toMutableMap()
     }
 
     companion object {

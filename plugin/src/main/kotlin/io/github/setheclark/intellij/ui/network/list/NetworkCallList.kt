@@ -41,8 +41,10 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.github.setheclark.intellij.settings.NetworkStorageSettingsState
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.Orientation
 import org.jetbrains.jewel.ui.component.Divider
 import org.jetbrains.jewel.ui.component.ListItemState
@@ -54,20 +56,27 @@ import org.jetbrains.jewel.ui.component.styling.LocalSelectableLazyColumnStyle
 fun NetworkCallList(
     listState: NetworkCallListState,
     selectedCallId: String?,
-    columnsVersion: Int,
+    visibleColumns: List<NetworkCallListColumn>,
+    columnWidths: Map<String, Float>,
+    onColumnWidthChange: (Map<String, Float>) -> Unit,
     onIntent: (NetworkCallListIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val visibleColumns = remember(columnsVersion) {
-        NetworkStorageSettingsState.getInstance().let { settings ->
-            NetworkCallListColumn.entries.filter {
-                it == NetworkCallListColumn.TIME || it.name !in settings.hiddenColumns
-            }
-        }
+    val onColumnChange by rememberUpdatedState(onColumnWidthChange)
+    val columnWidthsList: SnapshotStateList<Float> = remember(visibleColumns) {
+        visibleColumns.map { col ->
+            columnWidths[col.name] ?: col.preferredWidth.toFloat()
+        }.toMutableStateList()
     }
 
-    val columnWidths = remember(columnsVersion) {
-        visibleColumns.map { it.preferredWidth.toFloat() }.toMutableStateList()
+    LaunchedEffect(columnWidthsList) {
+        snapshotFlow { columnWidthsList.toList() }
+            .drop(1)
+            .debounce(500)
+            .collect { widths ->
+                val map = visibleColumns.zip(widths).associate { (col, w) -> col.name to w }
+                onColumnChange(map)
+            }
     }
 
     var sortAscending by remember { mutableStateOf(true) }
@@ -133,7 +142,7 @@ fun NetworkCallList(
     ) {
         CallListHeader(
             visibleColumns = visibleColumns,
-            columnWidths = columnWidths,
+            columnWidths = columnWidthsList,
             containerWidthDp = containerWidthDp,
             sortAscending = sortAscending,
             onToggleSort = { sortAscending = !sortAscending },
@@ -154,7 +163,7 @@ fun NetworkCallList(
                         isSelected = call.callId == selectedCallId,
                         isActive = isFocused,
                         visibleColumns = visibleColumns,
-                        columnWidths = columnWidths,
+                        columnWidths = columnWidthsList,
                         onSelect = {
                             onIntent(NetworkCallListIntent.SelectCall(call.callId))
                             focusRequester.requestFocus()
@@ -183,6 +192,7 @@ private fun CallListRow(
     val itemState = ListItemState(isSelected = isSelected, isActive = isActive)
     val bgColor by style.simpleListItemStyle.colors.backgroundFor(itemState)
     val contentColor by style.simpleListItemStyle.colors.contentFor(itemState)
+    val isDark = JewelTheme.isDark
 
     Row(
         modifier = Modifier
@@ -201,7 +211,7 @@ private fun CallListRow(
         visibleColumns.forEachIndexed { index, col ->
             val isLast = index == visibleColumns.lastIndex
             val text = col.formatForDisplay(call)
-            val color = if (!isSelected) col.colorForDisplay(call) ?: contentColor else contentColor
+            val color = if (!isSelected) col.colorForDisplay(call, isDark) ?: contentColor else contentColor
             val widthModifier = if (isLast) Modifier.weight(1f) else Modifier.width(columnWidths[index].dp)
             Text(
                 text = text,
@@ -217,8 +227,8 @@ private fun CallListRow(
     }
 }
 
-private fun NetworkCallListColumn.colorForDisplay(call: NetworkCallListItem): Color? = when (this) {
-    NetworkCallListColumn.STATUS -> call.status?.let { statusColor(it) }
-    NetworkCallListColumn.METHOD -> methodColor(call.method)
+private fun NetworkCallListColumn.colorForDisplay(call: NetworkCallListItem, isDark: Boolean): Color? = when (this) {
+    NetworkCallListColumn.STATUS -> call.status?.let { statusColor(it, isDark) }
+    NetworkCallListColumn.METHOD -> methodColor(call.method, isDark)
     else -> null
 }

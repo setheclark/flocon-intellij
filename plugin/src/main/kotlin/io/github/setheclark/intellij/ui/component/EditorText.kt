@@ -2,25 +2,21 @@ package io.github.setheclark.intellij.ui.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.application.edtWriteAction
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import io.github.setheclark.intellij.ui.LocalProject
 import io.github.setheclark.intellij.util.IntellijUtil.formatText
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -83,12 +79,12 @@ private fun rememberEditor(
     contentType: ContentType,
 ): Editor? {
     var editor by remember { mutableStateOf<Editor?>(null) }
+    val compositionScope = rememberCoroutineScope()
 
     DisposableEffect(project, contentType) {
-        val scope = CoroutineScope(Dispatchers.EDT)
         val disposable = Disposer.newDisposable("editor")
 
-        scope.launch {
+        val creationJob = compositionScope.launch(Dispatchers.EDT) {
             val fileType = FileTypeManager.getInstance().getFileTypeByExtension(contentType.extension)
             val formattedText = formatText(project, text, fileType)
             val doc = EditorFactory.getInstance().createDocument(formattedText)
@@ -106,11 +102,11 @@ private fun rememberEditor(
         }
 
         onDispose {
-            scope.launch {
-                Disposer.dispose(disposable)
-                editor?.let(EditorFactory.getInstance()::releaseEditor)
-                editor = null
-            }
+            creationJob.cancel()
+            val editorToRelease = editor
+            editor = null
+            Disposer.dispose(disposable)
+            editorToRelease?.let(EditorFactory.getInstance()::releaseEditor)
         }
     }
 

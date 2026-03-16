@@ -20,6 +20,9 @@ class ApplicationService(scope: CoroutineScope) : Disposable {
     val appGraph: AppGraph
 
     init {
+        System.setProperty("compose.interop.blending", "true")
+        System.setProperty("compose.swing.render.on.graphics", "true")
+
         log.i { "initialized" }
         appGraph = createGraphFactory<AppGraph.Factory>().create(scope)
 
