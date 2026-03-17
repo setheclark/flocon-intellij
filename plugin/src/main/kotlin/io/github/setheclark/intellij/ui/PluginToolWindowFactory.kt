@@ -20,8 +20,6 @@ class PluginToolWindowFactory : ToolWindowFactory, DumbAware {
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        System.setProperty("compose.interop.blending", "true")
-
         val uiGraph = appGraph.create(project)
 
         toolWindow.addComposeTab(

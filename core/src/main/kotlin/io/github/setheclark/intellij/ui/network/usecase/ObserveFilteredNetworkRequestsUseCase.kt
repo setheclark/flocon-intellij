@@ -26,7 +26,6 @@ class ObserveFilteredNetworkRequestsUseCase(
             .observeCalls(deviceIdAndPackageName.deviceId, deviceIdAndPackageName.packageName)
             .map { it.applyFilter(filter, deviceIdAndPackageName) }
             .distinctUntilChanged()
-        // TODO Filter
     }
 }
 

@@ -31,9 +31,6 @@ class DetailPanelFactory(
     ) : JPanel(BorderLayout()) {
 
         init {
-            System.setProperty("compose.swing.render.on.graphics", "true")
-            System.setProperty("compose.interop.blending", "true")
-
             background = UIUtil.getPanelBackground()
             border = JBUI.Borders.customLineLeft(JBColor.border())
             add(

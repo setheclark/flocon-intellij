@@ -28,19 +28,19 @@ private fun formatSize(size: Long?): String = when {
     else -> "${size / (1024 * 1024)} MB"
 }
 
-internal fun statusColor(code: Int): Color = when (code) {
-    in 200..299 -> Color(0xFF4CAF50)
-    in 300..399 -> Color(0xFF2196F3)
-    in 400..499 -> Color(0xFFFF9800)
-    in 500..599 -> Color(0xFFF44336)
+internal fun statusColor(code: Int, isDark: Boolean): Color = when (code) {
+    in 200..299 -> if (isDark) Color(0xFF66BB6A) else Color(0xFF2E7D32)
+    in 300..399 -> if (isDark) Color(0xFF64B5F6) else Color(0xFF1565C0)
+    in 400..499 -> if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
+    in 500..599 -> if (isDark) Color(0xFFEF9A9A) else Color(0xFFC62828)
     else -> Color.Unspecified
 }
 
-internal fun methodColor(method: String): Color = when (method.uppercase()) {
-    "GET" -> Color(0xFF4CAF50)
-    "POST" -> Color(0xFF2196F3)
-    "PUT" -> Color(0xFFFF9800)
-    "DELETE" -> Color(0xFFF44336)
-    "PATCH" -> Color(0xFF9C27B0)
+internal fun methodColor(method: String, isDark: Boolean): Color = when (method.uppercase()) {
+    "GET" -> if (isDark) Color(0xFF66BB6A) else Color(0xFF2E7D32)
+    "POST" -> if (isDark) Color(0xFF64B5F6) else Color(0xFF1565C0)
+    "PUT" -> if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
+    "DELETE" -> if (isDark) Color(0xFFEF9A9A) else Color(0xFFC62828)
+    "PATCH" -> if (isDark) Color(0xFFCe93D8) else Color(0xFF6A1B9A)
     else -> Color.Unspecified
 }

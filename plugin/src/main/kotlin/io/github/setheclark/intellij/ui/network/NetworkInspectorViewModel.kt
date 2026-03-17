@@ -9,6 +9,9 @@ import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
+import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
+import io.github.setheclark.intellij.settings.updateSettings
+import io.github.setheclark.intellij.ui.network.list.NetworkCallListColumn
 import io.github.setheclark.intellij.ui.network.usecase.ClearAllNetworkCallsUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveCurrentAppInstanceUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveServerStatusUseCase
@@ -38,19 +41,26 @@ class NetworkInspectorViewModel(
     private val stopServerUseCase: StopMessageServerUseCase,
     private val observeCurrentDeviceIdAndPackageNameUseCase: ObserveCurrentDeviceIdAndPackageNameUseCase,
     private val observeCurrentAppInstanceUseCase: ObserveCurrentAppInstanceUseCase,
+    private val settingsProvider: NetworkStorageSettingsProvider,
 ) {
     private val log = Logger.withPluginTag("NetworkInspectorViewModel")
 
+    private val initialSettings = settingsProvider.settings.value
     private val _state = MutableStateFlow(
-        NetworkInspectorState(serverState = observeServerStatusUseCase().value),
+        NetworkInspectorState(
+            serverState = observeServerStatusUseCase().value,
+            visibleColumns = computeVisibleColumns(initialSettings.hiddenColumns),
+            columnWidths = initialSettings.columnWidths,
+        ),
     )
     val state: StateFlow<NetworkInspectorState> = _state.asStateFlow()
 
-    private val _openCallInTabEvent = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)
-    val openCallInTabEvent: SharedFlow<Pair<String, String>> = _openCallInTabEvent.asSharedFlow()
+    private val _openCallInTabEvent = MutableSharedFlow<OpenCallInTabEvent>(extraBufferCapacity = 1)
+    val openCallInTabEvent: SharedFlow<OpenCallInTabEvent> = _openCallInTabEvent.asSharedFlow()
 
     init {
         observeDataSources()
+        observeSettings()
     }
 
     fun dispatch(intent: NetworkInspectorIntent) {
@@ -81,6 +91,12 @@ class NetworkInspectorViewModel(
                 _state.update { it.copy(autoScrollEnabled = false) }
             }
 
+            is NetworkInspectorIntent.UpdateColumnWidths -> {
+                scope.launch {
+                    settingsProvider.updateSettings { it.copy(columnWidths = intent.widths) }
+                }
+            }
+
             is NetworkInspectorIntent.StartServer -> {
                 scope.launch { startServerUseCase() }
             }
@@ -90,7 +106,9 @@ class NetworkInspectorViewModel(
             }
 
             is NetworkInspectorIntent.OpenCallInTab -> {
-                scope.launch { _openCallInTabEvent.emit(intent.callId to intent.callName) }
+                scope.launch {
+                    _openCallInTabEvent.emit(OpenCallInTabEvent(intent.callId, intent.callName))
+                }
             }
         }
     }
@@ -130,4 +148,22 @@ class NetworkInspectorViewModel(
                 }
         }
     }
+
+    private fun observeSettings() {
+        scope.launch {
+            settingsProvider.settings.collect { settings ->
+                _state.update { state ->
+                    state.copy(
+                        visibleColumns = computeVisibleColumns(settings.hiddenColumns),
+                        columnWidths = state.columnWidths,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun computeVisibleColumns(hiddenColumns: Set<String>): List<NetworkCallListColumn> =
+        NetworkCallListColumn.entries.filter {
+            it == NetworkCallListColumn.TIME || it.name !in hiddenColumns
+        }
 }

@@ -10,10 +10,12 @@ import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
 import io.github.setheclark.intellij.ui.network.usecase.ObserveDevicesAndAppsUseCase
 import io.github.setheclark.intellij.ui.network.usecase.SelectDeviceAndAppUseCase
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @Inject
@@ -62,7 +64,11 @@ class NetworkFilterViewModel(
             devices = devices,
             filterText = filter.searchText,
         )
-    }
+    }.stateIn(
+        scope = scope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = NetworkFilterPanelState(DevicesRenderModel(emptyList(), -1), ""),
+    )
 
     fun dispatch(intent: NetworkFilterIntent) {
         when (intent) {
