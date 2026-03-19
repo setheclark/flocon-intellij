@@ -19,9 +19,9 @@ internal fun NetworkCallListColumn.formatForDisplay(call: NetworkCallListItem): 
     NetworkCallListColumn.SIZE -> formatSize(call.size)
 }
 
-private fun formatDuration(ms: Double): String = if (ms >= 1000) "%.3f s".format(ms / 1000) else "%.3f ms".format(ms)
+internal fun formatDuration(ms: Double): String = if (ms >= 1000) "%.3f s".format(ms / 1000) else "%.3f ms".format(ms)
 
-private fun formatSize(size: Long?): String = when {
+internal fun formatSize(size: Long?): String = when {
     size == null -> "-"
     size < 1024 -> "$size B"
     size < 1024 * 1024 -> "${size / 1024} KB"
