@@ -2,11 +2,12 @@ package io.github.setheclark.intellij.ui.network.details.common
 
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.ContextMenuState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -15,11 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import io.github.setheclark.intellij.PluginBundle.message
 import io.github.setheclark.intellij.stringResource
 import kotlinx.coroutines.launch
 import org.jetbrains.jewel.ui.component.Text
+import java.awt.datatransfer.StringSelection
 
 @Composable
 fun HeadersTable(
@@ -40,8 +42,8 @@ fun HeadersTable(
         headers.entries.sortedBy { it.key.lowercase() }
     }
 
-    LazyColumn(modifier = modifier) {
-        items(sortedHeaders, key = { it.key }) { (name, value) ->
+    Column(modifier = modifier) {
+        sortedHeaders.forEach { (name, value) ->
             HeaderRow(name = name, value = value)
         }
     }
@@ -52,23 +54,28 @@ private fun HeaderRow(name: String, value: String) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
 
-    val copyName = stringResource("action.copyName.text")
-    val copyValue = stringResource("action.copyValue.text")
-    val copy = stringResource("action.copyNameValue.text", name, value)
-
-    ContextMenuArea(
-        items = {
-            listOf(
-                ContextMenuItem(copyName) { scope.launch { clipboard.setText(name) } },
-                ContextMenuItem(copyValue) { scope.launch { clipboard.setText(value) } },
-                ContextMenuItem(copy) { scope.launch { clipboard.setText("$name: $value") } },
-            )
-        },
-    ) {
-        KeyValueRow(key = name, value = value)
+    // Workaround for https://issuetracker.google.com/issues/300781578?pli=1
+    DisableSelection {
+        ContextMenuArea(
+            items = {
+                listOf(
+                    ContextMenuItem(message("action.copyName.text")) {
+                        scope.launch { clipboard.copyString(name) }
+                    },
+                    ContextMenuItem(message("action.copyValue.text")) {
+                        scope.launch { clipboard.copyString(value) }
+                    },
+                    ContextMenuItem(message("action.copyNameValue.text", name, value)) {
+                        scope.launch { clipboard.copyString("$name: $value") }
+                    },
+                )
+            },
+        ) {
+            KeyValueRow(key = name, value = value)
+        }
     }
 }
 
-private suspend fun Clipboard.setText(text: String) {
-    setClipEntry(ClipEntry(AnnotatedString(text)))
+suspend fun Clipboard.copyString(text: String) {
+    setClipEntry(ClipEntry(StringSelection(text)))
 }

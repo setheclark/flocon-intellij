@@ -7,6 +7,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.setheclark.intellij.di.appGraph
+import io.github.setheclark.intellij.ui.network.details.DetailLayoutMode
 
 class NetworkCallFileEditorProvider : FileEditorProvider, DumbAware {
     override fun accept(project: Project, file: VirtualFile) = file is NetworkCallVirtualFile
@@ -14,7 +15,7 @@ class NetworkCallFileEditorProvider : FileEditorProvider, DumbAware {
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
         file as NetworkCallVirtualFile
         val factory = appGraph.create(project).detailPanelFactory
-        val panel = factory.create(file.callId)
+        val panel = factory.create(file.callId, DetailLayoutMode.Editor)
         return NetworkCallFileEditor(file, panel)
     }
 
