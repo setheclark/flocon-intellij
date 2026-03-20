@@ -26,7 +26,6 @@ import org.jetbrains.jewel.ui.icons.AllIconsKeys
 fun NetworkInspectorToolbar(
     state: NetworkInspectorState,
     onIntent: (NetworkInspectorIntent) -> Unit,
-    onConfigureColumns: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -66,12 +65,13 @@ fun NetworkInspectorToolbar(
             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         )
 
-        IconActionButton(
-            key = AllIconsKeys.General.Settings,
-            contentDescription = stringResource("action.configureColumns.text"),
-            onClick = onConfigureColumns,
+        SelectableIconActionButton(
+            key = if (state.sortAscending) AllIconsKeys.General.ArrowUp else AllIconsKeys.General.ArrowDown,
+            contentDescription = stringResource("action.sortOrder.text"),
+            selected = !state.sortAscending,
+            onClick = { onIntent(NetworkInspectorIntent.ToggleSortOrder) },
             focusable = false,
-            tooltip = { Text(stringResource("action.configureColumns.description")) },
+            tooltip = { Text(stringResource("action.sortOrder.description")) },
         )
 
         Spacer(modifier = Modifier.weight(1f))

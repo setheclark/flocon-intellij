@@ -1,23 +1,16 @@
 package io.github.setheclark.intellij.ui.network.list
 
 import androidx.compose.ui.graphics.Color
+import io.github.setheclark.intellij.domain.models.RequestTypeFilter
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private val timeFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("HH:mm:ss.SSS")
+    .ofPattern("HH:mm:ss")
     .withZone(ZoneId.systemDefault())
 
-internal fun NetworkCallListColumn.formatForDisplay(call: NetworkCallListItem): String = when (this) {
-    NetworkCallListColumn.TIME -> timeFormatter.format(Instant.ofEpochMilli(call.startTime))
-    NetworkCallListColumn.NAME -> call.name
-    NetworkCallListColumn.STATUS -> call.status?.toString() ?: "..."
-    NetworkCallListColumn.METHOD -> call.method
-    NetworkCallListColumn.URL -> call.url
-    NetworkCallListColumn.DURATION -> call.duration?.let { formatDuration(it) } ?: "..."
-    NetworkCallListColumn.SIZE -> formatSize(call.size)
-}
+internal fun formatTime(startTime: Long): String = timeFormatter.format(Instant.ofEpochMilli(startTime))
 
 internal fun formatDuration(ms: Double): String = if (ms >= 1000) "%.3f s".format(ms / 1000) else "%.3f ms".format(ms)
 
@@ -43,4 +36,18 @@ internal fun methodColor(method: String, isDark: Boolean): Color = when (method.
     "DELETE" -> if (isDark) Color(0xFFEF9A9A) else Color(0xFFC62828)
     "PATCH" -> if (isDark) Color(0xFFCe93D8) else Color(0xFF6A1B9A)
     else -> Color.Unspecified
+}
+
+/** Returns the label to show in the type badge, or null for plain HTTP (no badge). */
+internal fun typeLabel(type: RequestTypeFilter): String? = when (type) {
+    RequestTypeFilter.Http -> null
+    RequestTypeFilter.GraphQl -> "GQL"
+    RequestTypeFilter.Grpc -> "gRPC"
+}
+
+/** Returns the color for the type badge, or null for plain HTTP. */
+internal fun typeBadgeColor(type: RequestTypeFilter, isDark: Boolean): Color? = when (type) {
+    RequestTypeFilter.Http -> null
+    RequestTypeFilter.GraphQl -> if (isDark) Color(0xFFBA68C8) else Color(0xFF7B1FA2)
+    RequestTypeFilter.Grpc -> if (isDark) Color(0xFF4DB6AC) else Color(0xFF00695C)
 }

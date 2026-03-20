@@ -5,7 +5,9 @@ import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
+import io.github.setheclark.intellij.domain.models.RequestTypeFilter
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
+import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.ui.network.NetworkInspectorIntent
 import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
@@ -91,6 +93,11 @@ class NetworkCallListViewModel(
             status = (response as? NetworkResponse.Success)?.statusCode,
             duration = response?.durationMs,
             size = (response as? NetworkResponse.Success)?.size,
+            requestType = when (request.type) {
+                is NetworkRequest.Type.Http -> RequestTypeFilter.Http
+                is NetworkRequest.Type.GraphQl -> RequestTypeFilter.GraphQl
+                is NetworkRequest.Type.Grpc -> RequestTypeFilter.Grpc
+            },
         )
     }
 }

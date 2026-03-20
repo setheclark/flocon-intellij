@@ -5,7 +5,7 @@ import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
-import io.github.setheclark.intellij.ui.network.NetworkInspectorIntent.UpdateFilter
+import io.github.setheclark.intellij.ui.network.NetworkInspectorIntent
 import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
 import io.github.setheclark.intellij.ui.network.usecase.ObserveDevicesAndAppsUseCase
 import io.github.setheclark.intellij.ui.network.usecase.SelectDeviceAndAppUseCase
@@ -59,27 +59,49 @@ class NetworkFilterViewModel(
     val state = combine(
         filterFlow,
         devices,
-    ) { filter, devices ->
+        parentViewModel.state,
+    ) { filter, devices, inspectorState ->
         NetworkFilterPanelState(
             devices = devices,
             filterText = filter.searchText,
+            filterExpanded = inspectorState.filterExpanded,
+            activeMethodFilters = inspectorState.activeMethodFilters,
+            activeStatusFilters = inspectorState.activeStatusFilters,
+            activeTypeFilters = inspectorState.activeTypeFilters,
         )
-    }.stateIn(
-        scope = scope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = NetworkFilterPanelState(DevicesRenderModel(emptyList(), -1), ""),
-    )
+    }.distinctUntilChanged()
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = NetworkFilterPanelState(DevicesRenderModel(emptyList(), -1), ""),
+        )
 
     fun dispatch(intent: NetworkFilterIntent) {
         when (intent) {
             is NetworkFilterIntent.UpdateFilter -> {
-                parentViewModel.dispatch(UpdateFilter(intent.filter))
+                parentViewModel.dispatch(NetworkInspectorIntent.UpdateFilter(intent.filter))
             }
 
             is NetworkFilterIntent.UpdateDeviceSelection -> {
                 scope.launch {
                     selectDeviceAndAppUseCase(intent.device.deviceId, intent.device.packageName)
                 }
+            }
+
+            is NetworkFilterIntent.ToggleMethodFilter -> {
+                parentViewModel.dispatch(NetworkInspectorIntent.ToggleMethodFilter(intent.method))
+            }
+
+            is NetworkFilterIntent.ToggleStatusFilter -> {
+                parentViewModel.dispatch(NetworkInspectorIntent.ToggleStatusFilter(intent.group))
+            }
+
+            is NetworkFilterIntent.ToggleTypeFilter -> {
+                parentViewModel.dispatch(NetworkInspectorIntent.ToggleTypeFilter(intent.type))
+            }
+
+            is NetworkFilterIntent.ToggleFilterPanel -> {
+                parentViewModel.dispatch(NetworkInspectorIntent.ToggleFilterPanel)
             }
         }
     }

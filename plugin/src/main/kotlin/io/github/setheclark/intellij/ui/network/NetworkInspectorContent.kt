@@ -16,7 +16,6 @@ import io.github.setheclark.intellij.server.MessageServerState
 import io.github.setheclark.intellij.stringResource
 import io.github.setheclark.intellij.ui.WarningBanner
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterPanel
-import io.github.setheclark.intellij.ui.network.list.ColumnConfigDialog
 import io.github.setheclark.intellij.ui.network.list.NetworkCallList
 
 /**
@@ -58,22 +57,12 @@ fun NetworkInspectorContent(
             NetworkInspectorToolbar(
                 state = state,
                 onIntent = { uiGraph.networkInspectorViewModel.dispatch(it) },
-                onConfigureColumns = {
-                    val dialog = ColumnConfigDialog(uiGraph.project, uiGraph.settingsProvider)
-                    dialog.show()
-                },
                 modifier = Modifier.fillMaxHeight(),
             )
             NetworkCallList(
                 listState = listState,
                 selectedCallId = state.selectedCallId,
-                visibleColumns = state.visibleColumns,
-                columnWidths = state.columnWidths,
-                onColumnWidthChange = { widths ->
-                    uiGraph.networkInspectorViewModel.dispatch(
-                        NetworkInspectorIntent.UpdateColumnWidths(widths),
-                    )
-                },
+                sortAscending = state.sortAscending,
                 onIntent = { uiGraph.networkCallListViewModel.dispatch(it) },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
             )

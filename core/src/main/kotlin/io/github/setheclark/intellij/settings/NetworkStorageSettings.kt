@@ -28,18 +28,6 @@ data class NetworkStorageSettings(
      * Uses GZIP compression which typically achieves 80-90% reduction for JSON/XML.
      */
     val compressionEnabled: Boolean = DEFAULT_COMPRESSION_ENABLED,
-
-    /**
-     * Names of columns that are hidden in the network call list.
-     * The TIME column is always visible and is never added to this set.
-     */
-    val hiddenColumns: Set<String> = emptySet(),
-
-    /**
-     * Persisted widths (in dp) for each visible column, keyed by column name.
-     * Falls back to the column's [preferredWidth] when no entry is present.
-     */
-    val columnWidths: Map<String, Float> = emptyMap(),
 ) {
     companion object {
         const val DEFAULT_MAX_STORED_CALLS = 1000

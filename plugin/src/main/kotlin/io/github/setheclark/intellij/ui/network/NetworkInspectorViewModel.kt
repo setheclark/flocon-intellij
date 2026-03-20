@@ -9,9 +9,6 @@ import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
-import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
-import io.github.setheclark.intellij.settings.updateSettings
-import io.github.setheclark.intellij.ui.network.list.NetworkCallListColumn
 import io.github.setheclark.intellij.ui.network.usecase.ClearAllNetworkCallsUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveCurrentAppInstanceUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveServerStatusUseCase
@@ -41,16 +38,12 @@ class NetworkInspectorViewModel(
     private val stopServerUseCase: StopMessageServerUseCase,
     private val observeCurrentDeviceIdAndPackageNameUseCase: ObserveCurrentDeviceIdAndPackageNameUseCase,
     private val observeCurrentAppInstanceUseCase: ObserveCurrentAppInstanceUseCase,
-    private val settingsProvider: NetworkStorageSettingsProvider,
 ) {
     private val log = Logger.withPluginTag("NetworkInspectorViewModel")
 
-    private val initialSettings = settingsProvider.settings.value
     private val _state = MutableStateFlow(
         NetworkInspectorState(
             serverState = observeServerStatusUseCase().value,
-            visibleColumns = computeVisibleColumns(initialSettings.hiddenColumns),
-            columnWidths = initialSettings.columnWidths,
         ),
     )
     val state: StateFlow<NetworkInspectorState> = _state.asStateFlow()
@@ -60,7 +53,6 @@ class NetworkInspectorViewModel(
 
     init {
         observeDataSources()
-        observeSettings()
     }
 
     fun dispatch(intent: NetworkInspectorIntent) {
@@ -72,6 +64,40 @@ class NetworkInspectorViewModel(
 
             is NetworkInspectorIntent.UpdateFilter -> {
                 _state.update { it.copy(filter = it.filter.copy(searchText = intent.filter)) }
+            }
+
+            is NetworkInspectorIntent.ToggleMethodFilter -> {
+                _state.update { state ->
+                    val new = state.activeMethodFilters.toggle(intent.method)
+                    state.copy(
+                        activeMethodFilters = new,
+                        filter = state.filter.copy(methodFilter = new.ifEmpty { null }),
+                    )
+                }
+            }
+
+            is NetworkInspectorIntent.ToggleStatusFilter -> {
+                _state.update { state ->
+                    val new = state.activeStatusFilters.toggle(intent.group)
+                    state.copy(
+                        activeStatusFilters = new,
+                        filter = state.filter.copy(statusFilter = new.ifEmpty { null }),
+                    )
+                }
+            }
+
+            is NetworkInspectorIntent.ToggleTypeFilter -> {
+                _state.update { state ->
+                    val new = state.activeTypeFilters.toggle(intent.type)
+                    state.copy(
+                        activeTypeFilters = new,
+                        filter = state.filter.copy(typeFilter = new.ifEmpty { null }),
+                    )
+                }
+            }
+
+            is NetworkInspectorIntent.ToggleFilterPanel -> {
+                _state.update { it.copy(filterExpanded = !it.filterExpanded) }
             }
 
             is NetworkInspectorIntent.ClearAll -> {
@@ -91,10 +117,8 @@ class NetworkInspectorViewModel(
                 _state.update { it.copy(autoScrollEnabled = false) }
             }
 
-            is NetworkInspectorIntent.UpdateColumnWidths -> {
-                scope.launch {
-                    settingsProvider.updateSettings { it.copy(columnWidths = intent.widths) }
-                }
+            is NetworkInspectorIntent.ToggleSortOrder -> {
+                _state.update { it.copy(sortAscending = !it.sortAscending) }
             }
 
             is NetworkInspectorIntent.StartServer -> {
@@ -148,22 +172,6 @@ class NetworkInspectorViewModel(
                 }
         }
     }
-
-    private fun observeSettings() {
-        scope.launch {
-            settingsProvider.settings.collect { settings ->
-                _state.update { state ->
-                    state.copy(
-                        visibleColumns = computeVisibleColumns(settings.hiddenColumns),
-                        columnWidths = state.columnWidths,
-                    )
-                }
-            }
-        }
-    }
-
-    private fun computeVisibleColumns(hiddenColumns: Set<String>): List<NetworkCallListColumn> =
-        NetworkCallListColumn.entries.filter {
-            it == NetworkCallListColumn.TIME || it.name !in hiddenColumns
-        }
 }
+
+private fun <T> Set<T>.toggle(item: T): Set<T> = if (item in this) this - item else this + item

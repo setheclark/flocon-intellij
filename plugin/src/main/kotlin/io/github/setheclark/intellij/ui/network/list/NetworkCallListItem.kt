@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.ui.network.list
 
 import androidx.compose.runtime.Immutable
+import io.github.setheclark.intellij.domain.models.RequestTypeFilter
 
 @Immutable
 data class NetworkCallListItem(
@@ -12,4 +13,5 @@ data class NetworkCallListItem(
     val status: Int?,
     val duration: Double?,
     val size: Long?,
+    val requestType: RequestTypeFilter,
 )
