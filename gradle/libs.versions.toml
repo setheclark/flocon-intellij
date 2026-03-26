@@ -4,7 +4,7 @@ kotlin = "2.3.20"
 intellij-platform = "2.13.1"
 metro = "0.11.4"
 changelog = "2.5.0"
-kover = "0.9.7"
+kover = "0.9.8"
 qodana = "2025.3.2"
 ktlint-gradle = "14.2.0"
 
