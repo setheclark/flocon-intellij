@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -134,18 +135,27 @@ fun BodyPane(
         Divider(orientation = Orientation.Horizontal, modifier = Modifier.fillMaxWidth())
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (activeBody == null) {
-                val emptyLabel = when {
-                    showResponse && call.response == null -> stringResource("label.pending")
-                    else -> stringResource("label.noBody")
-                }
-                EmptyContent(emptyLabel, Modifier.fillMaxSize())
-            } else {
+            // Both editors stay composed simultaneously so tab switching is instant.
+            // The inactive editor is collapsed to 0×0 rather than removed from composition.
+            if (requestBody != null) {
                 EditorText(
-                    text = activeBody,
-                    contentType = ContentType.fromMimeType(activeContentType),
-                    modifier = Modifier.fillMaxSize(),
+                    text = requestBody,
+                    contentType = ContentType.fromMimeType(requestContentType),
+                    modifier = if (!showResponse) Modifier.fillMaxSize() else Modifier.size(0.dp),
                 )
+            } else if (!showResponse) {
+                EmptyContent(stringResource("label.noBody"), Modifier.fillMaxSize())
+            }
+
+            if (responseBody != null) {
+                EditorText(
+                    text = responseBody,
+                    contentType = ContentType.fromMimeType(responseContentType),
+                    modifier = if (showResponse) Modifier.fillMaxSize() else Modifier.size(0.dp),
+                )
+            } else if (showResponse) {
+                val emptyLabel = if (call.response == null) stringResource("label.pending") else stringResource("label.noBody")
+                EmptyContent(emptyLabel, Modifier.fillMaxSize())
             }
         }
     }
