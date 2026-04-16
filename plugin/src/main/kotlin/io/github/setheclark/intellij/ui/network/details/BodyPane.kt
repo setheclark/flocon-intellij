@@ -39,6 +39,7 @@ import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.stringResource
 import io.github.setheclark.intellij.ui.LocalProject
+import io.github.setheclark.intellij.util.IntellijUtil
 import io.github.setheclark.intellij.ui.component.ContentType
 import io.github.setheclark.intellij.ui.component.EditorText
 import io.github.setheclark.intellij.ui.network.details.common.EmptyContent
@@ -180,11 +181,12 @@ private fun BodyToggleTab(
     )
 }
 
-private fun openInScratchFile(project: Project, context: ScratchFileContext) {
+private suspend fun openInScratchFile(project: Project, context: ScratchFileContext) {
     val contentType = ContentType.fromMimeType(context.contentType)
     val fileType = FileTypeManager.getInstance().getFileTypeByExtension(contentType.extension)
     val language = if (fileType is LanguageFileType) fileType.language else Language.ANY
     val filename = generateScratchFilename(context)
+    val formattedBody = IntellijUtil.formatText(project, context.body, fileType)
     try {
         val scratchFile = WriteCommandAction.writeCommandAction(project)
             .compute<VirtualFile?, Exception> {
@@ -192,7 +194,7 @@ private fun openInScratchFile(project: Project, context: ScratchFileContext) {
                     project,
                     "$filename.${contentType.extension}",
                     language,
-                    context.body,
+                    formattedBody,
                     ScratchFileService.Option.create_new_always,
                 )
             }
