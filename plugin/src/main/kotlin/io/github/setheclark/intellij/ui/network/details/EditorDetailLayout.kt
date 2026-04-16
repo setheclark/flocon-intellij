@@ -23,6 +23,7 @@ import io.github.setheclark.intellij.settings.NetworkStorageSettingsState
 import io.github.setheclark.intellij.stringResource
 import io.github.setheclark.intellij.ui.network.details.common.HeadersTable
 import io.github.setheclark.intellij.ui.network.details.common.KeyValueRow
+import io.github.setheclark.intellij.ui.network.details.common.rememberMaxKeyWidth
 import io.github.setheclark.intellij.util.buildCurlCommand
 import io.github.setheclark.intellij.util.parseQueryParameters
 import kotlinx.coroutines.FlowPreview
@@ -174,6 +175,24 @@ private fun EditorLeftPanel(
     val responseHeaders = (call.response as? NetworkResponse.Success)?.headers
     val requestHeaders = call.request.headers.takeIf { it.isNotEmpty() }
 
+    // Key column widths — computed unconditionally so composable call rules are satisfied
+    val urlLabel = stringResource("label.detail.url")
+    val startTimeLabel = stringResource("label.overview.startTime")
+    val generalKeyWidth = rememberMaxKeyWidth(listOf(urlLabel, startTimeLabel))
+    val queryKeyWidth = rememberMaxKeyWidth(sortedQueryParams.map { it.key })
+    val graphqlType = call.request.type as? NetworkRequest.Type.GraphQl
+    val graphqlKeys = remember(graphqlType) {
+        buildList {
+            if (graphqlType != null) {
+                graphqlType.operationName?.let { add("Operation Name") }
+                add("Operation Type")
+                add("Persisted")
+                graphqlType.query?.let { add("Has Query") }
+            }
+        }
+    }
+    val graphqlKeyWidth = rememberMaxKeyWidth(graphqlKeys)
+
     var expandedSection by remember(call.callId) { mutableStateOf<String?>("general") }
     fun toggle(key: String) {
         expandedSection = if (expandedSection == key) null else key
@@ -188,8 +207,8 @@ private fun EditorLeftPanel(
                 onToggle = { toggle("general") },
             ) {
                 Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-                    KeyValueRow(key = stringResource("label.detail.url"), value = call.request.url)
-                    KeyValueRow(key = stringResource("label.overview.startTime"), value = startTimeText)
+                    KeyValueRow(key = urlLabel, value = java.net.URLDecoder.decode(call.request.url, "UTF-8"), keyWidth = generalKeyWidth)
+                    KeyValueRow(key = startTimeLabel, value = startTimeText, keyWidth = generalKeyWidth)
                 }
             }
 
@@ -203,7 +222,7 @@ private fun EditorLeftPanel(
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
                         sortedQueryParams.forEach { (key, value) ->
-                            KeyValueRow(key = key, value = value)
+                            KeyValueRow(key = key, value = value, keyWidth = queryKeyWidth)
                         }
                     }
                 }
@@ -218,10 +237,10 @@ private fun EditorLeftPanel(
                     onToggle = { toggle("graphql") },
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-                        type.operationName?.let { KeyValueRow(key = "Operation Name", value = it) }
-                        KeyValueRow(key = "Operation Type", value = type.operationType)
-                        KeyValueRow(key = "Persisted", value = type.persisted.toString())
-                        type.query?.let { KeyValueRow(key = "Has Query", value = "Yes") }
+                        type.operationName?.let { KeyValueRow(key = "Operation Name", value = it, keyWidth = graphqlKeyWidth) }
+                        KeyValueRow(key = "Operation Type", value = type.operationType, keyWidth = graphqlKeyWidth)
+                        KeyValueRow(key = "Persisted", value = type.persisted.toString(), keyWidth = graphqlKeyWidth)
+                        type.query?.let { KeyValueRow(key = "Has Query", value = "Yes", keyWidth = graphqlKeyWidth) }
                     }
                 }
             }

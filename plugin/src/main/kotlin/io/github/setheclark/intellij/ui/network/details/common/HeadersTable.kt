@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.setheclark.intellij.PluginBundle.message
 import io.github.setheclark.intellij.stringResource
@@ -28,7 +29,12 @@ fun HeadersTable(
     headers: Map<String, String>?,
     modifier: Modifier = Modifier,
 ) {
-    if (headers.isNullOrEmpty()) {
+    val sortedHeaders = remember(headers) {
+        headers?.entries?.sortedBy { it.key.lowercase() }.orEmpty()
+    }
+    val keyWidth = rememberMaxKeyWidth(sortedHeaders.map { it.key })
+
+    if (sortedHeaders.isEmpty()) {
         Box(
             modifier = modifier.fillMaxWidth().padding(8.dp),
             contentAlignment = Alignment.Center,
@@ -38,19 +44,15 @@ fun HeadersTable(
         return
     }
 
-    val sortedHeaders = remember(headers) {
-        headers.entries.sortedBy { it.key.lowercase() }
-    }
-
     Column(modifier = modifier) {
         sortedHeaders.forEach { (name, value) ->
-            HeaderRow(name = name, value = value)
+            HeaderRow(name = name, value = value, keyWidth = keyWidth)
         }
     }
 }
 
 @Composable
-private fun HeaderRow(name: String, value: String) {
+private fun HeaderRow(name: String, value: String, keyWidth: Dp) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
 
@@ -71,7 +73,7 @@ private fun HeaderRow(name: String, value: String) {
                 )
             },
         ) {
-            KeyValueRow(key = name, value = value)
+            KeyValueRow(key = name, value = value, keyWidth = keyWidth)
         }
     }
 }
