@@ -40,7 +40,7 @@ class DetailPanelFactory(
             background = UIUtil.getPanelBackground()
             border = JBUI.Borders.customLineLeft(JBColor.border())
             add(
-                compose(focusOnClickInside = true) {
+                compose(focusOnClickInside = false) {
                     WithProject(project) {
                         DetailsContent(viewModel)
                     }

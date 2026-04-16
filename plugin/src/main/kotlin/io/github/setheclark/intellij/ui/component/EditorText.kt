@@ -10,6 +10,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.UiDataProvider
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
@@ -70,7 +72,12 @@ fun EditorText(
     editor?.let {
         SwingPanel(
             modifier = modifier,
-            factory = { editor.component },
+            factory = {
+                UiDataProvider.wrapComponent(it.component) { sink ->
+                    sink[CommonDataKeys.EDITOR] = it
+                    sink[CommonDataKeys.PROJECT] = project
+                }
+            },
         )
     }
 }
