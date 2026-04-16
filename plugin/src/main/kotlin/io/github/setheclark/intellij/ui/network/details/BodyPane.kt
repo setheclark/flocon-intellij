@@ -39,11 +39,11 @@ import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.stringResource
 import io.github.setheclark.intellij.ui.LocalProject
-import io.github.setheclark.intellij.util.IntellijUtil
 import io.github.setheclark.intellij.ui.component.ContentType
 import io.github.setheclark.intellij.ui.component.EditorText
 import io.github.setheclark.intellij.ui.network.details.common.EmptyContent
 import io.github.setheclark.intellij.ui.network.details.common.ScratchFileContext
+import io.github.setheclark.intellij.util.IntellijUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.jewel.foundation.theme.JewelTheme

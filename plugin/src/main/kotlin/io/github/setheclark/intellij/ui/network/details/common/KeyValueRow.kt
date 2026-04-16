@@ -23,8 +23,8 @@ import org.jetbrains.jewel.ui.component.Text
 fun KeyValueRow(
     key: String,
     value: String,
-    keyWidth: Dp? = null,
     modifier: Modifier = Modifier,
+    keyWidth: Dp? = null,
 ) {
     Row(
         modifier = modifier
@@ -62,6 +62,6 @@ fun rememberMaxKeyWidth(keys: List<String>): Dp {
     val style = LocalTextStyle.current.merge(TextStyle(fontWeight = FontWeight.Bold))
     return remember(keys, density, style) {
         val maxPx = keys.maxOfOrNull { textMeasurer.measure(it, style).size.width } ?: 0
-        with(density) { maxPx.toDp() } + 12.dp  // gap between key and value
+        with(density) { maxPx.toDp() } + 12.dp // gap between key and value
     }
 }
