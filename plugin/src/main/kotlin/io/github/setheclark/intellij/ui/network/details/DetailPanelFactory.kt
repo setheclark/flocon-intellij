@@ -12,15 +12,21 @@ import org.jetbrains.jewel.bridge.compose
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
+enum class DetailLayoutMode {
+    ToolWindow,
+    Editor,
+}
+
 @Inject
 class DetailPanelFactory(
     private val project: Project,
     private val observeCallUseCase: ObserveCallUseCase,
 ) {
-    fun create(callId: String): DetailsPanel {
+    fun create(callId: String, layoutMode: DetailLayoutMode = DetailLayoutMode.ToolWindow): DetailsPanel {
         val viewModel = DetailPanelViewModel(
             callIdFlow = flowOf(callId),
             observeCallUseCase = observeCallUseCase,
+            layoutMode = layoutMode,
         )
         return DetailsPanel(project, viewModel)
     }
@@ -34,7 +40,7 @@ class DetailPanelFactory(
             background = UIUtil.getPanelBackground()
             border = JBUI.Borders.customLineLeft(JBColor.border())
             add(
-                compose(focusOnClickInside = true) {
+                compose(focusOnClickInside = false) {
                     WithProject(project) {
                         DetailsContent(viewModel)
                     }

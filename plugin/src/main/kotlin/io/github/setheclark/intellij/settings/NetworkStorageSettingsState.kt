@@ -20,6 +20,8 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
 
     var callDetailOpenMode: CallDetailOpenMode = CallDetailOpenMode.TOOL_WINDOW_TAB
 
+    var detailLeftPanelWidthDp: Float = 280f
+
     var hiddenColumns: MutableSet<String> = mutableSetOf()
     var columnWidths: MutableMap<String, Float> = mutableMapOf()
 

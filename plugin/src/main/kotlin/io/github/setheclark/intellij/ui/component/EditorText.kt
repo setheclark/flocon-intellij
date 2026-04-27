@@ -2,6 +2,7 @@ package io.github.setheclark.intellij.ui.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -9,7 +10,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.UiDataProvider
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileTypes.FileTypeManager
@@ -19,6 +23,7 @@ import io.github.setheclark.intellij.ui.LocalProject
 import io.github.setheclark.intellij.util.IntellijUtil.formatText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class ContentType(val extension: String) {
     Json("json"),
@@ -67,7 +72,12 @@ fun EditorText(
     editor?.let {
         SwingPanel(
             modifier = modifier,
-            factory = { editor.component },
+            factory = {
+                UiDataProvider.wrapComponent(it.component) { sink ->
+                    sink[CommonDataKeys.EDITOR] = it
+                    sink[CommonDataKeys.PROJECT] = project
+                }
+            },
         )
     }
 }
@@ -107,6 +117,18 @@ private fun rememberEditor(
             editor = null
             Disposer.dispose(disposable)
             editorToRelease?.let(EditorFactory.getInstance()::releaseEditor)
+        }
+    }
+
+    // Update document content when text changes, without recreating the editor
+    LaunchedEffect(text) {
+        val currentEditor = editor ?: return@LaunchedEffect
+        withContext(Dispatchers.EDT) {
+            val fileType = FileTypeManager.getInstance().getFileTypeByExtension(contentType.extension)
+            val formattedText = formatText(project, text, fileType)
+            WriteCommandAction.writeCommandAction(project).run<Throwable> {
+                currentEditor.document.setText(formattedText)
+            }
         }
     }
 
