@@ -57,7 +57,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.kotest.assertions)
 
-    ktlintRuleset("io.nlopez.compose.rules:ktlint:0.5.7")
+    ktlintRuleset("io.nlopez.compose.rules:ktlint:0.5.8")
 }
 
 configure<ChangelogPluginExtension> {
