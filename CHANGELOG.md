@@ -6,6 +6,7 @@
 
 ### Changed
 
+- Redesigned the call details UI.
 - UI Rewrite using Compose
 
 ### Fixed
