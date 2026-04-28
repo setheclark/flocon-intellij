@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-28
+
 ### Changed
 
 - Add "Show hidden tabs" button for tool window tabs.
@@ -47,7 +49,8 @@
 - Ability to open network details as an editor window (configurable in settings)
 - A changelog :)
 
-[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.1.9...HEAD
+[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/setheclark/flocon-intellij/compare/v0.1.9...v0.2.0
 [0.1.9]: https://github.com/setheclark/flocon-intellij/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/setheclark/flocon-intellij/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/setheclark/flocon-intellij/commits/v0.1.7
