@@ -6,6 +6,7 @@
 
 ### Changed
 
+- Add "Show hidden tabs" button for tool window tabs.
 - Redesigned the call details UI.
 - UI Rewrite using Compose
 
