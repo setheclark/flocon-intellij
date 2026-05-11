@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated Flocon version to [1.8.1](https://github.com/openflocon/Flocon/releases/tag/1.8.1). This will prevent the creation of the ~/Desktop/Flocon directory.
+
 ## [0.2.0] - 2026-04-28
 
 ### Changed
