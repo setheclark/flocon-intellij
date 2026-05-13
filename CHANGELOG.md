@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed logic for normalizing line separators
+
 ## [0.2.1] - 2026-05-13
 
 ### Changed
