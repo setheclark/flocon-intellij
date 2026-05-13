@@ -143,7 +143,7 @@ private fun rememberEditor(
         val creationJob = compositionScope.launch(Dispatchers.EDT) {
             try {
                 val fileType = FileTypeManager.getInstance().getFileTypeByExtension(contentType.extension)
-                val formattedText = normalizeLineSeparators(formatText(project, text, fileType))
+                val formattedText = formatText(project, text, fileType)
                 val doc = EditorFactory.getInstance().createDocument(formattedText)
                 val createdEditor = EditorFactory.getInstance()
                     .createEditor(doc, project, fileType, true) as Editor
@@ -178,7 +178,7 @@ private fun rememberEditor(
         withContext(Dispatchers.EDT) {
             try {
                 val fileType = FileTypeManager.getInstance().getFileTypeByExtension(contentType.extension)
-                val formattedText = normalizeLineSeparators(formatText(project, text, fileType))
+                val formattedText = formatText(project, text, fileType)
                 WriteCommandAction.writeCommandAction(project).run<Throwable> {
                     currentEditor.document.setText(formattedText)
                 }
@@ -192,8 +192,6 @@ private fun rememberEditor(
 
     return state
 }
-
-private fun normalizeLineSeparators(text: String): String = text.replace("\r\n", "\n").replace("\r", "\n")
 
 private fun isLikelyBinary(text: String): Boolean {
     if (text.isEmpty()) return false

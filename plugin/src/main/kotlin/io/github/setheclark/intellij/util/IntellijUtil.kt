@@ -14,19 +14,20 @@ object IntellijUtil {
         text: String,
         fileType: FileType,
     ): String = coroutineScope {
+        val normalizedText = text.replace("\r\n", "\n").replace("\r", "\n")
         try {
             val psiFile = PsiFileFactory.getInstance(project)
                 .createFileFromText(
                     "temp.${fileType.defaultExtension}",
                     fileType,
-                    text,
+                    normalizedText,
                 )
             WriteCommandAction.writeCommandAction(project).compute<String, Exception> {
                 CodeStyleManager.getInstance(project).reformat(psiFile)
                 psiFile.text
             }
-        } catch (_: Exception) {
-            text
+        } catch (_: Throwable) {
+            normalizedText
         }
     }
 }
