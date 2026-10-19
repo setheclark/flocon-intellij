@@ -12,7 +12,7 @@ ktlint-gradle = "14.2.0"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-dateTime = "0.7.1"
-ktor = "3.5.0"
+ktor = "3.5.1"
 kermit = "2.1.0"
 paging = "3.5.0"
 
