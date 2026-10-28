@@ -17,6 +17,14 @@ sourceSets {
         kotlin {
             srcDir("${rootProject.projectDir}/flocon/upstream/FloconDesktop/domain/src/commonMain/kotlin")
             exclude("**/DI.kt")
+            // Depend on FileKit, which the plugin doesn't use
+            exclude(
+                "**/analytics/usecase/ExportAnalyticsToCsvUseCase.kt",
+                "**/network/usecase/CreateNetworkLogHtmlUseCase.kt",
+                "**/network/usecase/ExportNetworkCallsToCsvUseCase.kt",
+                "**/network/usecase/ImportNetworkCallsFromCsvUseCase.kt",
+                "**/table/usecase/ExportTableToCsvUseCase.kt",
+            )
         }
     }
 }
