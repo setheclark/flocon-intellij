@@ -1,6 +1,6 @@
 [versions]
 # plugins
-kotlin = "2.4.0"
+kotlin = "2.4.21"
 intellij-platform = "2.19.0"
 metro = "1.2.1"
 changelog = "2.5.0"
