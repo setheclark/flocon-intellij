@@ -24,6 +24,10 @@ interface FloconNetworkBindingContainer {
 
         @Provides
         @SingleIn(AppScope::class)
-        fun provideServer(json: Json): Server = ServerJvm(json)
+        fun provideServer(json: Json): Server = ServerJvm(
+            json = json,
+            // Backs upstream's HTTP network-export route, which the plugin doesn't support yet.
+            networkRepository = lazy { error("Network export API is not supported by the plugin") },
+        )
     }
 }

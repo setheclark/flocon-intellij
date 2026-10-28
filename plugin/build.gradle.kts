@@ -60,6 +60,12 @@ dependencies {
     ktlintRuleset("io.nlopez.compose.rules:ktlint:0.5.8")
 }
 
+// The IDE provides the Kotlin stdlib; Metro's runtime pulls in a newer one that must not be bundled
+configurations.runtimeClasspath {
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-reflect")
+}
+
 configure<ChangelogPluginExtension> {
     path.set("${project.projectDir}/../CHANGELOG.md")
 }
