@@ -63,7 +63,8 @@ jobs:
             sed -i "s|^$key = \".*\"|$key = \"$val\"|" gradle/libs.versions.toml
           }
 
-          for key in kotlinx-coroutines kotlinx-serialization kotlinx-dateTime ktor kermit paging; do
+          # ktor and kotlinx-coroutines are intentionally not synced: newer versions need a newer coroutines than the IDE bundles
+          for key in kotlinx-serialization kotlinx-dateTime kermit paging; do
             val="$(get_upstream_version "$key")"
             if [ -n "$val" ]; then
               update_parent_version "$key" "$val"
@@ -85,10 +86,8 @@ jobs:
             Automated update of the Flocon submodule from `${{ steps.check.outputs.current_tag }}` to `${{ steps.check.outputs.latest_tag }}`.
 
             Also syncs the following Flocon-coupled dependency versions from upstream's `libs.versions.toml`:
-            - `kotlinx-coroutines`
             - `kotlinx-serialization`
             - `kotlinx-dateTime`
-            - `ktor`
             - `kermit`
             - `paging`
           add-paths: |

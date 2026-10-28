@@ -6,7 +6,7 @@
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![IntelliJ Platform](https://img.shields.io/badge/IntelliJ-2025.2%2B-blue.svg)](https://plugins.jetbrains.com/docs/intellij)
+[![IntelliJ Platform](https://img.shields.io/badge/IntelliJ-2026.2%2B-blue.svg)](https://plugins.jetbrains.com/docs/intellij)
 
 <!-- Plugin description -->
 IntelliJ IDEA plugin for real-time network inspection of Android applications using the [Flocon SDK](https://github.com/openflocon/Flocon).
@@ -40,7 +40,7 @@ Inspect detailed request and response information including headers, query param
 ## Requirements
 
 ### Plugin Requirements
-- **IntelliJ IDEA**: 2025.2 or later (Community or Ultimate Edition)
+- **IntelliJ IDEA**: 2026.2 or later (Community or Ultimate Edition)
 - **JDK**: 21 or later
 
 ### Android App Requirements

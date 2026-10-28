@@ -1,7 +1,7 @@
 [versions]
 # plugins
 kotlin = "2.4.0"
-intellij-platform = "2.13.1"
+intellij-platform = "2.19.0"
 metro = "1.2.1"
 changelog = "2.5.0"
 kover = "0.9.8"
@@ -9,10 +9,10 @@ qodana = "2026.1.3"
 ktlint-gradle = "14.2.0"
 
 # Flocon dependecies
-kotlinx-coroutines = "1.11.0"
+kotlinx-coroutines = "1.10.2" # keep in line with the IDE-bundled coroutines (no IDE ships 1.11 yet)
 kotlinx-serialization = "1.11.0"
 kotlinx-dateTime = "0.7.1"
-ktor = "3.5.1"
+ktor = "3.4.3" # keep <3.5: Ktor 3.5 needs coroutines 1.11 (runBlockingK), newer than the IDE bundles
 kermit = "2.1.0"
 paging = "3.5.0"
 
