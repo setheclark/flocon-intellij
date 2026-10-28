@@ -1,6 +1,7 @@
 import org.gradle.kotlin.dsl.ktlintRuleset
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.ChangelogPluginExtension
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.extensions.excludeCoroutines
 import org.jetbrains.intellij.platform.gradle.extensions.excludeKotlinStdlib
@@ -107,6 +108,8 @@ intellijPlatform {
     pluginVerification {
         ides {
             recommended()
+            // Android Studio bundles its own, older Jewel/Compose; verify against it explicitly
+            create(IntelliJPlatformType.AndroidStudio, "2026.2.1.8")
         }
     }
 }

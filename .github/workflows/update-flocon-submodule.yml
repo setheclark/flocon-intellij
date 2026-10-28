@@ -74,12 +74,32 @@ jobs:
             fi
           done
 
-      - name: Create Pull Request
+      # create-pull-request force-resets its branch on every run, which would discard any fix
+      # commits pushed to an open bump PR. Leave an already-open PR for this tag alone.
+      - name: Check for an open PR for this tag
+        id: open_pr
         if: steps.check.outputs.update_needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COUNT=$(gh pr list --state open --head "update-flocon-submodule-${{ steps.check.outputs.latest_tag }}" --json number --jq 'length')
+          if [ "$COUNT" -gt 0 ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "A PR for ${{ steps.check.outputs.latest_tag }} is already open; skipping"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check.outputs.update_needed == 'true' && steps.open_pr.outputs.exists != 'true'
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update-flocon-submodule
+          # PRs opened with the default GITHUB_TOKEN do not trigger other workflows, so the Build
+          # workflow would never run on them. Set the FLOCON_UPDATE_TOKEN secret (a fine-grained PAT
+          # with contents + pull-requests write access) so bump PRs get CI; falls back to GITHUB_TOKEN.
+          token: ${{ secrets.FLOCON_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+          branch: update-flocon-submodule-${{ steps.check.outputs.latest_tag }}
+          delete-branch: true
           commit-message: "Update Flocon submodule to ${{ steps.check.outputs.latest_tag }}"
           title: "Update Flocon submodule to ${{ steps.check.outputs.latest_tag }}"
           body: |
