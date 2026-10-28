@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Update Flocon to 1.10.0
+
 ## [0.2.2] - 2026-05-13
 
 ### Fixed
