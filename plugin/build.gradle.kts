@@ -57,7 +57,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.kotest.assertions)
 
-    ktlintRuleset("io.nlopez.compose.rules:ktlint:0.5.8")
+    ktlintRuleset("io.nlopez.compose.rules:ktlint:0.6.8")
 }
 
 // The IDE provides the Kotlin stdlib; Metro's runtime pulls in a newer one that must not be bundled
