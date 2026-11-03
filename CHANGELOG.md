@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- UI Improvements to the device/app selection menu
+
 ## [0.2.3] - 2026-10-28
 
 ### Changed
