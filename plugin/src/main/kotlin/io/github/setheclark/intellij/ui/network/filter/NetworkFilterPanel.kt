@@ -72,18 +72,18 @@ fun NetworkFilterPanel(
     ) {
         val selectedDevice = devices.devices.getOrNull(devices.selectedIndex)
         Tooltip(tooltip = { Text(selectedDevice?.fullLabel.orEmpty()) }) {
-        ListComboBox(
-            modifier = Modifier.widthIn(max = 320.dp),
-            items = devices.devices.map { it.shortLabel },
-            selectedIndex = devices.selectedIndex,
-            onSelectedItemChange = { index ->
-                devices.devices.getOrNull(index)?.let { device ->
-                    viewModel.dispatch(NetworkFilterIntent.UpdateDeviceSelection(device))
-                }
-            },
-            listState = listState,
-            itemKeys = { index, _ -> devices.devices.getOrNull(index)?.key.orEmpty() },
-        )
+            ListComboBox(
+                modifier = Modifier.widthIn(max = 320.dp),
+                items = devices.devices.map { it.shortLabel },
+                selectedIndex = devices.selectedIndex,
+                onSelectedItemChange = { index ->
+                    devices.devices.getOrNull(index)?.let { device ->
+                        viewModel.dispatch(NetworkFilterIntent.UpdateDeviceSelection(device))
+                    }
+                },
+                listState = listState,
+                itemKeys = { index, _ -> devices.devices.getOrNull(index)?.key.orEmpty() },
+            )
         }
 
         TextField(
