@@ -28,6 +28,7 @@ class ObserveDevicesAndAppsUseCase(
                                     deviceName = device.deviceName,
                                     deviceId = device.deviceId,
                                     packageName = app.packageName,
+                                    appName = app.name,
                                     appInstance = app.lastAppInstance.toString(),
                                 )
                             }
@@ -43,5 +44,6 @@ data class DeviceAndAppModel(
     val deviceName: String,
     val deviceId: DeviceId,
     val packageName: String,
+    val appName: String,
     val appInstance: String,
 )

@@ -46,6 +46,7 @@ class NetworkFilterViewModel(
             DeviceFilterItem(
                 displayName = device.deviceName.takeUnless { it.isEmpty() } ?: device.deviceId.take(12),
                 packageName = device.packageName,
+                appName = device.appName,
                 deviceId = device.deviceId,
             )
         }

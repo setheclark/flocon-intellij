@@ -1,5 +1,6 @@
 package io.github.setheclark.intellij.ui.network.filter
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,11 +27,12 @@ import org.jetbrains.jewel.ui.component.IconButton
 import org.jetbrains.jewel.ui.component.ListComboBox
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.TextField
+import org.jetbrains.jewel.ui.component.Tooltip
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.jetbrains.jewel.ui.painter.hints.Stateful
 import org.jetbrains.jewel.ui.theme.textFieldStyle
 
-@OptIn(ExperimentalJewelApi::class)
+@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun NetworkFilterPanel(
     viewModel: NetworkFilterViewModel,
@@ -57,7 +59,7 @@ fun NetworkFilterPanel(
     val listState = rememberSelectableLazyListState()
     val devices = state.devices
     LaunchedEffect(devices.selectedIndex) {
-        val key = devices.devices.getOrNull(devices.selectedIndex)?.toString()
+        val key = devices.devices.getOrNull(devices.selectedIndex)?.key
         listState.selectedKeys = if (key != null) setOf(key) else emptySet()
     }
 
@@ -68,9 +70,11 @@ fun NetworkFilterPanel(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val selectedDevice = devices.devices.getOrNull(devices.selectedIndex)
+        Tooltip(tooltip = { Text(selectedDevice?.fullLabel.orEmpty()) }) {
         ListComboBox(
-            modifier = Modifier.widthIn(max = 200.dp),
-            items = devices.devices.map { it.toString() },
+            modifier = Modifier.widthIn(max = 320.dp),
+            items = devices.devices.map { it.shortLabel },
             selectedIndex = devices.selectedIndex,
             onSelectedItemChange = { index ->
                 devices.devices.getOrNull(index)?.let { device ->
@@ -78,8 +82,9 @@ fun NetworkFilterPanel(
                 }
             },
             listState = listState,
-            itemKeys = { _, item -> item },
+            itemKeys = { index, _ -> devices.devices.getOrNull(index)?.key.orEmpty() },
         )
+        }
 
         TextField(
             modifier = Modifier.weight(1f),
