@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui.network.filter
+package io.github.setheclark.intellij.ui.chrome
 
 private const val MAX_DEVICE_NAME_LENGTH = 28
 

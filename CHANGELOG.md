@@ -7,6 +7,7 @@
 ### Changed
 
 - UI Improvements to the device/app selection menu
+- Internal: device/app picker, server controls and warning banner are now shared tool window components, ready for new feature tabs
 
 ## [0.2.3] - 2026-10-28
 

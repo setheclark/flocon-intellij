@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui
+package io.github.setheclark.intellij.ui.chrome
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

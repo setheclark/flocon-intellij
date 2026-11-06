@@ -4,17 +4,13 @@ import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
-import io.github.openflocon.domain.messages.usecase.StartServerUseCase
-import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
-import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
 import io.github.setheclark.intellij.settings.updateSettings
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListColumn
 import io.github.setheclark.intellij.ui.network.usecase.ClearAllNetworkCallsUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveCurrentAppInstanceUseCase
-import io.github.setheclark.intellij.ui.network.usecase.ObserveServerStatusUseCase
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -34,11 +30,7 @@ import kotlinx.coroutines.launch
 @SingleIn(ProjectScope::class)
 class NetworkInspectorViewModel(
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
-    private val adbStatusDataSource: AdbStatusDataSource,
-    private val observeServerStatusUseCase: ObserveServerStatusUseCase,
     private val clearAllNetworkCallsUseCase: ClearAllNetworkCallsUseCase,
-    private val startServerUseCase: StartServerUseCase,
-    private val stopServerUseCase: StopMessageServerUseCase,
     private val observeCurrentDeviceIdAndPackageNameUseCase: ObserveCurrentDeviceIdAndPackageNameUseCase,
     private val observeCurrentAppInstanceUseCase: ObserveCurrentAppInstanceUseCase,
     private val settingsProvider: NetworkStorageSettingsProvider,
@@ -48,7 +40,6 @@ class NetworkInspectorViewModel(
     private val initialSettings = settingsProvider.settings.value
     private val _state = MutableStateFlow(
         NetworkInspectorState(
-            serverState = observeServerStatusUseCase().value,
             visibleColumns = computeVisibleColumns(initialSettings.hiddenColumns),
             columnWidths = initialSettings.columnWidths,
         ),
@@ -97,14 +88,6 @@ class NetworkInspectorViewModel(
                 }
             }
 
-            is NetworkInspectorIntent.StartServer -> {
-                scope.launch { startServerUseCase() }
-            }
-
-            is NetworkInspectorIntent.StopServer -> {
-                scope.launch { stopServerUseCase() }
-            }
-
             is NetworkInspectorIntent.OpenCallInTab -> {
                 scope.launch {
                     _openCallInTabEvent.emit(OpenCallInTabEvent(intent.callId, intent.callName))
@@ -114,19 +97,6 @@ class NetworkInspectorViewModel(
     }
 
     private fun observeDataSources() {
-        // Observe server state
-        scope.launch {
-            observeServerStatusUseCase().collect { serverState ->
-                _state.update { it.copy(serverState = serverState) }
-            }
-        }
-
-        // Observe ADB status
-        scope.launch {
-            adbStatusDataSource.status.collect { status ->
-                _state.update { it.copy(adbStatus = status) }
-            }
-        }
 
         // Observe session changes to reset auto-scroll when a new app session starts
         scope.launch {

@@ -7,6 +7,7 @@ import dev.zacsweers.metro.GraphExtension
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
+import io.github.setheclark.intellij.ui.chrome.ToolWindowChromeViewModel
 import io.github.setheclark.intellij.ui.network.NetworkCallTabManager
 import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
 import io.github.setheclark.intellij.ui.network.details.DetailPanelFactory
@@ -26,6 +27,8 @@ interface ProjectGraph {
     val settingsProvider: NetworkStorageSettingsProvider
 
     val networkInspectorViewModel: NetworkInspectorViewModel
+
+    val toolWindowChromeViewModel: ToolWindowChromeViewModel
 
     val networkFilterViewModel: NetworkFilterViewModel
 
