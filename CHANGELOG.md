@@ -9,6 +9,7 @@
 - Network history is now saved to an embedded database in the IDE system directory and survives IDE and app restarts. Bodies are stored in full as plain text, with no truncation
 - A new launch of the app keeps the previous app session's calls; the list shows the current session of the selected device and app
 - Warning banner when the history database cannot be opened and history is kept in memory only
+- Request and response bodies are read from the history database only when the body tab that shows them is opened, so selecting a call stays fast for very large bodies. A body whose call was purged shows a clear message
 
 ### Changed
 

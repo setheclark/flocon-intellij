@@ -97,7 +97,7 @@ fun EditorText(
     )
 
     when (state) {
-        EditorState.Loading -> Box(modifier = modifier)
+        EditorState.Loading -> LoadingContent(modifier)
 
         is EditorState.Ready -> {
             SwingPanel(

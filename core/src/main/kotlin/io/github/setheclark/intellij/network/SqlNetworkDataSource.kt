@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.network
 
 import app.cash.sqldelight.coroutines.asFlow
+import io.github.setheclark.intellij.flocon.network.BodyContent
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
@@ -24,7 +25,7 @@ import kotlinx.serialization.json.Json
  * [NetworkDataSource] backed by the SQLite history database.
  *
  * Bodies are stored as plain text in their own table, in full, and are deleted together with their call.
- * Lists of calls never carry bodies; [getByCallId] and [observeByCallId] load them.
+ * Lists of calls never carry bodies; [getByCallId] and [getBody] load them.
  */
 class SqlNetworkDataSource internal constructor(
     database: NetworkHistoryDatabase,
@@ -82,7 +83,26 @@ class SqlNetworkDataSource internal constructor(
         queries.selectCall(callId)
             .asFlow()
             .conflate()
-            .map { query -> withContext(dispatcher) { query.executeAsOneOrNull()?.toEntity(withBodies = true) } }
+            .map { query -> withContext(dispatcher) { query.executeAsOneOrNull()?.toEntity(withBodies = false) } }
+
+    override suspend fun getBody(callId: String, type: BodyType): BodyContent = withContext(dispatcher) {
+        if (queries.selectCall(callId).executeAsOneOrNull() == null) return@withContext BodyContent.Purged
+        val kind = when (type) {
+            BodyType.REQUEST -> BODY_REQUEST
+            BodyType.RESPONSE -> BODY_RESPONSE
+        }
+        readBody(callId, kind)?.let(BodyContent::Present) ?: BodyContent.Empty
+    }
+
+    override suspend fun getBodyTypes(callId: String): Set<BodyType> = withContext(dispatcher) {
+        queries.selectBodyKinds(callId).executeAsList().mapNotNullTo(mutableSetOf()) { kind ->
+            when (kind) {
+                BODY_REQUEST -> BodyType.REQUEST
+                BODY_RESPONSE -> BodyType.RESPONSE
+                else -> null
+            }
+        }
+    }
 
     override fun observeCurrentSessionCalls(deviceId: String, packageName: String): Flow<List<NetworkCallEntity>> =
         observeCurrentAppInstance(deviceId, packageName).flatMapLatest { appInstance ->

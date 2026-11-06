@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,13 +36,16 @@ import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import io.github.setheclark.intellij.flocon.network.BodyContent
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
+import io.github.setheclark.intellij.network.BodyType
 import io.github.setheclark.intellij.stringResource
 import io.github.setheclark.intellij.ui.LocalProject
 import io.github.setheclark.intellij.ui.component.ContentType
 import io.github.setheclark.intellij.ui.component.EditorText
+import io.github.setheclark.intellij.ui.component.LoadingContent
 import io.github.setheclark.intellij.ui.network.details.common.EmptyContent
 import io.github.setheclark.intellij.ui.network.details.common.ScratchFileContext
 import io.github.setheclark.intellij.util.IntellijUtil
@@ -60,25 +65,60 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun BodyPane(
     call: NetworkCallEntity,
+    loadBody: suspend (BodyType) -> BodyContent,
+    loadBodyTypes: suspend () -> Set<BodyType>,
     modifier: Modifier = Modifier,
 ) {
     val isGrpc = call.request.type is NetworkRequest.Type.Grpc
 
-    val responseBody: String? = when (val r = call.response) {
-        is NetworkResponse.Success -> r.body
-        is NetworkResponse.Failure -> stringResource("label.networkError", r.issue)
-        null -> null
-    }
-    val responseContentType = (call.response as? NetworkResponse.Success)?.contentType
-    val requestBody = call.request.body
+    val response = call.response
+    val responseContentType = (response as? NetworkResponse.Success)?.contentType
     val requestContentType = call.request.headers.entries
         .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }?.value
 
-    // Default to response; fall back to request if response has no body
-    val defaultToResponse = responseBody != null || call.response == null
-    var showResponse by remember(call.callId) { mutableStateOf(defaultToResponse) }
+    var showResponse by remember(call.callId) { mutableStateOf(true) }
+    var userPickedSide by remember(call.callId) { mutableStateOf(false) }
+    var defaultResolved by remember(call.callId) { mutableStateOf(false) }
 
-    val activeBody = if (showResponse) responseBody else requestBody
+    // Bodies are read only for the side that is shown, and only once per call.
+    // A response body is read again when the response arrives, since it did not exist before.
+    var requestBody by remember(call.callId) { mutableStateOf<BodyContent?>(null) }
+    var responseBody by remember(call.callId, response != null) { mutableStateOf<BodyContent?>(null) }
+
+    val currentLoadBody by rememberUpdatedState(loadBody)
+    val currentLoadBodyTypes by rememberUpdatedState(loadBodyTypes)
+
+    // Default to the response; fall back to the request when only that has a body.
+    // Which bodies exist is a cheap lookup that does not read any body text.
+    LaunchedEffect(call.callId, response is NetworkResponse.Success) {
+        if (!userPickedSide && response is NetworkResponse.Success) {
+            val available = currentLoadBodyTypes()
+            if (BodyType.RESPONSE !in available && BodyType.REQUEST in available && !userPickedSide) {
+                showResponse = false
+            }
+        }
+        defaultResolved = true
+    }
+
+    LaunchedEffect(call.callId, defaultResolved, showResponse, response is NetworkResponse.Success) {
+        if (!defaultResolved) return@LaunchedEffect
+        if (showResponse) {
+            if (response is NetworkResponse.Success && responseBody == null) {
+                responseBody = currentLoadBody(BodyType.RESPONSE)
+            }
+        } else if (requestBody == null) {
+            requestBody = currentLoadBody(BodyType.REQUEST)
+        }
+    }
+
+    val responseText: String? = when (response) {
+        is NetworkResponse.Success -> (responseBody as? BodyContent.Present)?.text
+        is NetworkResponse.Failure -> stringResource("label.networkError", response.issue)
+        null -> null
+    }
+    val requestText = (requestBody as? BodyContent.Present)?.text
+
+    val activeBody = if (showResponse) responseText else requestText
     val activeContentType = if (showResponse) responseContentType else requestContentType
 
     val responseSectionLabel = if (isGrpc) stringResource("section.responseMessage") else stringResource("section.responseBody")
@@ -110,13 +150,19 @@ fun BodyPane(
             BodyToggleTab(
                 label = requestSectionLabel,
                 selected = !showResponse,
-                onClick = { showResponse = false },
+                onClick = {
+                    userPickedSide = true
+                    showResponse = false
+                },
             )
             Spacer(Modifier.width(16.dp))
             BodyToggleTab(
                 label = responseSectionLabel,
                 selected = showResponse,
-                onClick = { showResponse = true },
+                onClick = {
+                    userPickedSide = true
+                    showResponse = true
+                },
             )
             Spacer(Modifier.weight(1f))
             if (scratchContext != null) {
@@ -136,29 +182,38 @@ fun BodyPane(
         Divider(orientation = Orientation.Horizontal, modifier = Modifier.fillMaxWidth())
 
         Box(modifier = Modifier.fillMaxSize()) {
-            // Both editors stay composed simultaneously so tab switching is instant.
+            // Loaded editors stay composed so tab switching is instant.
             // The inactive editor is collapsed to 0×0 rather than removed from composition.
-            if (requestBody != null) {
+            if (requestText != null) {
                 EditorText(
-                    text = requestBody,
+                    text = requestText,
                     contentType = ContentType.fromMimeType(requestContentType),
                     modifier = if (!showResponse) Modifier.fillMaxSize() else Modifier.size(0.dp),
                 )
             } else if (!showResponse) {
-                EmptyContent(stringResource("label.noBody"), Modifier.fillMaxSize())
+                BodyPlaceholder(requestBody, pending = false)
             }
 
-            if (responseBody != null) {
+            if (responseText != null) {
                 EditorText(
-                    text = responseBody,
+                    text = responseText,
                     contentType = ContentType.fromMimeType(responseContentType),
                     modifier = if (showResponse) Modifier.fillMaxSize() else Modifier.size(0.dp),
                 )
             } else if (showResponse) {
-                val emptyLabel = if (call.response == null) stringResource("label.pending") else stringResource("label.noBody")
-                EmptyContent(emptyLabel, Modifier.fillMaxSize())
+                BodyPlaceholder(responseBody, pending = response == null)
             }
         }
+    }
+}
+
+@Composable
+private fun BodyPlaceholder(content: BodyContent?, pending: Boolean) {
+    when {
+        pending -> EmptyContent(stringResource("label.pending"), Modifier.fillMaxSize())
+        content == null -> LoadingContent(Modifier.fillMaxSize())
+        content is BodyContent.Purged -> EmptyContent(stringResource("label.bodyPurged"), Modifier.fillMaxSize())
+        else -> EmptyContent(stringResource("label.noBody"), Modifier.fillMaxSize())
     }
 }
 

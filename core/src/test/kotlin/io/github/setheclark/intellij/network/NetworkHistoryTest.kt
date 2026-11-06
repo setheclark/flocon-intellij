@@ -7,6 +7,7 @@ import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainMo
 import io.github.setheclark.intellij.domain.models.NetworkFilter
 import io.github.setheclark.intellij.fakes.FakeServer
 import io.github.setheclark.intellij.flocon.messages.MessageRemoteDataSourceImpl
+import io.github.setheclark.intellij.flocon.network.BodyContent
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkMessageMapper
 import io.github.setheclark.intellij.flocon.network.NetworkRepositoryImpl
@@ -139,14 +140,72 @@ class NetworkHistoryTest {
     }
 
     @Test
-    fun `lists do not carry bodies but details do`() = runBlocking<Unit> {
+    fun `neither lists nor observed calls carry bodies`() = runBlocking<Unit> {
         val h = harness()
         h.sendCall("call-1", appInstance = 1, requestBody = "req", responseBody = "res")
         val listed = h.awaitSession { it.singleOrNull()?.response != null }.single()
 
         listed.request.body shouldBe null
         listed.response.shouldBeInstanceOf<NetworkResponse.Success>().body shouldBe null
-        h.repository.observeCall("call-1").first { it?.request?.body == "req" }
+
+        val observed = h.repository.observeCall("call-1").first { it?.response != null }!!
+        observed.request.body shouldBe null
+        observed.response.shouldBeInstanceOf<NetworkResponse.Success>().body shouldBe null
+    }
+
+    @Test
+    fun `a body is loaded in full on demand`() = runBlocking<Unit> {
+        val h = harness()
+        val big = "x".repeat(3 * 1024 * 1024)
+        h.sendCall("call-1", appInstance = 1, requestBody = "req", responseBody = big)
+        h.awaitSession { it.singleOrNull()?.response != null }
+
+        h.repository.getBody("call-1", BodyType.REQUEST) shouldBe BodyContent.Present("req")
+        h.repository.getBody("call-1", BodyType.RESPONSE) shouldBe BodyContent.Present(big)
+    }
+
+    @Test
+    fun `a call without a body reports empty and a removed call reports purged`() = runBlocking<Unit> {
+        val h = harness()
+        h.sendCall("call-1", appInstance = 1, requestBody = null, responseBody = "res")
+        h.awaitSession { it.singleOrNull()?.response != null }
+
+        h.repository.getBody("call-1", BodyType.REQUEST) shouldBe BodyContent.Empty
+        h.repository.getBody("call-1", BodyType.RESPONSE) shouldBe BodyContent.Present("res")
+
+        h.dataSource.deleteByCallId("call-1")
+        h.repository.getBody("call-1", BodyType.RESPONSE) shouldBe BodyContent.Purged
+        h.repository.getBody("unknown", BodyType.REQUEST) shouldBe BodyContent.Purged
+    }
+
+    @Test
+    fun `which bodies exist is answered without loading them`() = runBlocking<Unit> {
+        val persistent = harness()
+        persistent.sendCall("req-only", appInstance = 1, requestBody = "req", responseBody = null)
+        persistent.sendCall("res-only", appInstance = 1, requestBody = null, responseBody = "res")
+        persistent.sendCall("both", appInstance = 1, requestBody = "req", responseBody = "res")
+        persistent.awaitSession { it.size == 3 && it.all { c -> c.response != null } }
+
+        persistent.repository.getBodyTypes("req-only") shouldBe setOf(BodyType.REQUEST)
+        persistent.repository.getBodyTypes("res-only") shouldBe setOf(BodyType.RESPONSE)
+        persistent.repository.getBodyTypes("both") shouldBe setOf(BodyType.REQUEST, BodyType.RESPONSE)
+        persistent.repository.getBodyTypes("unknown") shouldBe emptySet()
+
+        val memory = harness(unopenableFile())
+        memory.sendCall("req-only", appInstance = 1, requestBody = "req", responseBody = null)
+        memory.awaitSession { it.singleOrNull()?.response != null }
+        memory.repository.getBodyTypes("req-only") shouldBe setOf(BodyType.REQUEST)
+    }
+
+    @Test
+    fun `memory-only history loads bodies on demand too`() = runBlocking<Unit> {
+        val h = harness(unopenableFile())
+        h.sendCall("call-1", appInstance = 1, requestBody = "req", responseBody = "res")
+        h.awaitSession { it.singleOrNull()?.response != null }
+
+        h.repository.getBody("call-1", BodyType.REQUEST) shouldBe BodyContent.Present("req")
+        h.repository.getBody("call-1", BodyType.RESPONSE) shouldBe BodyContent.Present("res")
+        h.repository.getBody("gone", BodyType.RESPONSE) shouldBe BodyContent.Purged
     }
 
     @Test

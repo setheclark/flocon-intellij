@@ -36,9 +36,11 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import io.github.setheclark.intellij.flocon.network.BodyContent
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
+import io.github.setheclark.intellij.network.BodyType
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsState
 import io.github.setheclark.intellij.stringResource
 import io.github.setheclark.intellij.ui.network.details.common.HeadersTable
@@ -64,6 +66,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun EditorDetailLayout(
     call: NetworkCallEntity,
+    loadBody: suspend (BodyType) -> BodyContent,
+    loadBodyTypes: suspend () -> Set<BodyType>,
     modifier: Modifier = Modifier,
 ) {
     val settings = remember { NetworkStorageSettingsState.getInstance() }
@@ -87,7 +91,8 @@ fun EditorDetailLayout(
             call = call,
             onCopyCurl = {
                 scope.launch {
-                    clipboard.setClipEntry(ClipEntry(StringSelection(buildCurlCommand(call))))
+                    val requestBody = (loadBody(BodyType.REQUEST) as? BodyContent.Present)?.text
+                    clipboard.setClipEntry(ClipEntry(StringSelection(buildCurlCommand(call, requestBody))))
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -122,7 +127,7 @@ fun EditorDetailLayout(
 
             // Body pane
             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                BodyPane(call = call, modifier = Modifier.fillMaxSize())
+                BodyPane(call = call, loadBody = loadBody, loadBodyTypes = loadBodyTypes, modifier = Modifier.fillMaxSize())
             }
         }
     }

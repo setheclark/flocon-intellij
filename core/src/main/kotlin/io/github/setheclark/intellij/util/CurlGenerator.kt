@@ -2,7 +2,7 @@ package io.github.setheclark.intellij.util
 
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 
-fun buildCurlCommand(call: NetworkCallEntity): String = buildString {
+fun buildCurlCommand(call: NetworkCallEntity, requestBody: String?): String = buildString {
     append("curl -X ")
     append(call.request.method)
     call.request.headers.forEach { (name, value) ->
@@ -12,7 +12,7 @@ fun buildCurlCommand(call: NetworkCallEntity): String = buildString {
         append(value.replace("'", "'\\''"))
         append("'")
     }
-    call.request.body?.let { body ->
+    requestBody?.let { body ->
         append(" \\\n  -d '")
         append(body.replace("'", "'\\''"))
         append("'")

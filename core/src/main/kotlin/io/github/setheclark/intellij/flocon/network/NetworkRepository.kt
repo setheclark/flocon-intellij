@@ -1,5 +1,6 @@
 package io.github.setheclark.intellij.flocon.network
 
+import io.github.setheclark.intellij.network.BodyType
 import kotlinx.coroutines.flow.Flow
 
 interface NetworkRepository {
@@ -10,7 +11,14 @@ interface NetworkRepository {
      */
     fun observeCalls(deviceId: String, packageName: String): Flow<List<NetworkCallEntity>>
 
+    /** Observes one call without bodies; use [getBody] for those. */
     fun observeCall(callId: String): Flow<NetworkCallEntity?>
+
+    /** Loads one body of a call in full, off the calling thread. */
+    suspend fun getBody(callId: String, type: BodyType): BodyContent
+
+    /** Which bodies exist for a call, without reading their text. */
+    suspend fun getBodyTypes(callId: String): Set<BodyType>
 
     /**
      * Observes the current app instance for a device/package combination.
