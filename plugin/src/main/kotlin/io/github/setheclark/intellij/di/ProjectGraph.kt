@@ -7,12 +7,12 @@ import dev.zacsweers.metro.GraphExtension
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
-import io.github.setheclark.intellij.ui.toolwindow.ToolWindowViewModel
 import io.github.setheclark.intellij.ui.network.NetworkCallTabManager
 import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
 import io.github.setheclark.intellij.ui.network.details.DetailPanelFactory
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterViewModel
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListViewModel
+import io.github.setheclark.intellij.ui.toolwindow.ToolWindowViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

@@ -11,10 +11,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import io.github.setheclark.intellij.di.ProjectGraph
-import io.github.setheclark.intellij.ui.toolwindow.ToolWindowWarningBanner
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterPanel
 import io.github.setheclark.intellij.ui.network.list.ColumnConfigDialog
 import io.github.setheclark.intellij.ui.network.list.NetworkCallList
+import io.github.setheclark.intellij.ui.toolwindow.ToolWindowWarningBanner
 
 /**
  * Root Compose content for the Network Inspector tool window.

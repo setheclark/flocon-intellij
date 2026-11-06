@@ -97,7 +97,6 @@ class NetworkInspectorViewModel(
     }
 
     private fun observeDataSources() {
-
         // Observe session changes to reset auto-scroll when a new app session starts
         scope.launch {
             observeCurrentDeviceIdAndPackageNameUseCase()
