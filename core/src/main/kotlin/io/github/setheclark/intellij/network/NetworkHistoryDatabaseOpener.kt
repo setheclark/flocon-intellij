@@ -15,7 +15,7 @@ import java.nio.file.Files
  * Version of the history database layout. Bump it with every change to `NetworkCall.sq`.
  * History is a cache, so a mismatch drops and recreates the database instead of migrating it.
  */
-internal const val NETWORK_HISTORY_SCHEMA_VERSION = 2
+internal const val NETWORK_HISTORY_SCHEMA_VERSION = 3
 
 /**
  * Opens the history database through a bundled SQLite JDBC driver. The driver is built from a data source, never

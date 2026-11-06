@@ -39,10 +39,10 @@ fun NetworkInspectorToolbar(
     ) {
         IconActionButton(
             key = AllIconsKeys.Actions.GC,
-            contentDescription = stringResource("action.clearAll.text"),
-            onClick = { onIntent(NetworkInspectorIntent.ClearAll) },
+            contentDescription = stringResource("action.clearHistory.text"),
+            onClick = { onIntent(NetworkInspectorIntent.ClearHistory) },
             focusable = false,
-            tooltip = { Text(stringResource("action.clearAll.description")) },
+            tooltip = { Text(stringResource("action.clearHistory.description")) },
         )
 
         Divider(
