@@ -139,7 +139,7 @@ class NetworkMessageMapper(
                     persisted = requestBody.extensions.jsonObject()?.containsKey("persistedQuery") == true,
                     query = null,
                     operationName = requestBody.operationName,
-                    operationType = "mutation",
+                    operationType = null,
                 )
             } catch (t: Throwable) {
                 null

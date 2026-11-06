@@ -258,7 +258,7 @@ private fun EditorLeftPanel(
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
                         type.operationName?.let { KeyValueRow(key = "Operation Name", value = it, keyWidth = graphqlKeyWidth) }
-                        KeyValueRow(key = "Operation Type", value = type.operationType, keyWidth = graphqlKeyWidth)
+                        KeyValueRow(key = "Operation Type", value = type.operationType ?: "Unknown", keyWidth = graphqlKeyWidth)
                         KeyValueRow(key = "Persisted", value = type.persisted.toString(), keyWidth = graphqlKeyWidth)
                         type.query?.let { KeyValueRow(key = "Has Query", value = "Yes", keyWidth = graphqlKeyWidth) }
                     }

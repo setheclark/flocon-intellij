@@ -6,6 +6,7 @@
 
 ### Changed
 
+- GraphQL persisted-query calls no longer show "mutation" as their operation type; it now shows "Unknown" because the query text is not available
 - UI Improvements to the device/app selection menu
 - Internal: device/app picker, server controls and warning banner are now shared tool window components, ready for new feature tabs
 - Internal: process executor keeps double-quoted arguments with spaces intact, and a device-targeted ADB use case refuses to run when the device serial is unknown
