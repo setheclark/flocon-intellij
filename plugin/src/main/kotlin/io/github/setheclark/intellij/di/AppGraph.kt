@@ -6,8 +6,8 @@ import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import io.github.setheclark.intellij.flocon.FloconBindingContainer
-import io.github.setheclark.intellij.network.InMemoryNetworkDataSource
-import io.github.setheclark.intellij.network.NetworkDataSource
+import io.github.setheclark.intellij.network.IntellijNetworkHistoryLocation
+import io.github.setheclark.intellij.network.NetworkHistoryLocation
 import io.github.setheclark.intellij.services.ApplicationServiceDelegate
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsProviderImpl
@@ -34,7 +34,7 @@ interface AppGraph : ProjectGraph.Factory {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideNetworkDataSource(impl: InMemoryNetworkDataSource): NetworkDataSource = impl
+    fun provideNetworkHistoryLocation(impl: IntellijNetworkHistoryLocation): NetworkHistoryLocation = impl
 
     @Provides
     @SingleIn(AppScope::class)

@@ -19,7 +19,8 @@ IntelliJ IDEA plugin for real-time network inspection of Android applications us
 - **Real-time Network Monitoring**: View HTTP/HTTPS requests and responses as they happen
 - **Detailed Request/Response View**: Inspect headers, query parameters, request/response bodies
 - **Multi-Device Support**: Monitor multiple connected Android devices simultaneously
-- **Search and Filter**: Quickly find specific network calls by URL, method, or content
+- **Search and Filter**: Quickly find specific network calls by URL, method, headers, or request/response body
+- **Persistent History**: Calls and their full bodies survive IDE and app restarts
 
 ---
 
@@ -119,7 +120,7 @@ Run your Android app on the connected device. Network calls will appear in the p
 - **Use the search bar** to filter calls by URL or method
 - **Select a device** from the dropdown to filter by device/app
 - **Toggle auto-scroll** to control automatic scrolling to new calls
-- **Click "Clear All"** to remove all network calls from the list
+- **Click "Clear All"** to delete all stored network calls, for every device, app and app session
 
 ---
 
@@ -160,7 +161,7 @@ When you select a network call, the detail panel shows:
 ### Toolbar Actions
 
 - **🔄 Start/Stop Server**: Control the WebSocket server
-- **🗑️ Clear All**: Remove all network calls
+- **🗑️ Clear All**: Delete all stored network calls
 - **📜 Auto-scroll**: Toggle automatic scrolling to new calls (enabled by default)
 
 ### Filter Panel
@@ -180,6 +181,16 @@ The plugin auto-detects ADB from:
 3. System PATH
 
 If ADB is not detected, you'll see a warning banner with instructions.
+
+### Network History
+
+Network calls and their full request and response bodies are stored in an embedded SQLite database, so they survive IDE and app restarts. Bodies are stored as plain text and are never truncated.
+
+- **App sessions**: Each launch of your app is its own session. The list shows the current session of the selected device and app. Calls from earlier launches are kept in the database, not deleted when the app starts again.
+- **Where it lives**: In the IDE system directory, in a subdirectory named after the plugin id (`io.github.setheclark.flocon_plugin/network-history.db`). The system directory is per IDE and version, so two IDEs never share a database file. See [IDE directories](https://www.jetbrains.com/help/idea/directories-used-by-the-ide-to-store-settings-caches-plugins-and-logs.html) for where your IDE keeps its system directory.
+- **It is a cache**: The history is lost on an IDE major upgrade, after **File → Invalidate Caches**, and when the IDE cleans up leftover directories. A plugin update that changes the database layout also starts a fresh database.
+- **Stored unredacted**: Headers and bodies are written to disk exactly as the device sent them, including tokens and personal data. Treat the database file as sensitive.
+- **If the database cannot be opened**: The plugin deletes and recreates it once. If that fails too, it keeps history in memory only (the latest 1000 calls, bodies truncated at 1 MB) and shows a warning banner that history will not survive a restart.
 
 ---
 
@@ -207,8 +218,7 @@ If ADB is not detected, you'll see a warning banner with instructions.
 
 ### Large responses not showing
 
-- The plugin automatically compresses large response bodies
-- Very large responses (>100MB) may be truncated
+- Bodies are stored in full, with no size cap
 
 ### Plugin crashes or freezes
 

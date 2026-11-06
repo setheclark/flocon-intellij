@@ -7,6 +7,7 @@ import io.github.openflocon.domain.messages.usecase.StartServerUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
+import io.github.setheclark.intellij.network.NetworkHistoryStatusDataSource
 import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
 import io.github.setheclark.intellij.ui.toolwindow.usecase.ObserveDevicesAndAppsUseCase
 import io.github.setheclark.intellij.ui.toolwindow.usecase.ObserveServerStatusUseCase
@@ -30,6 +31,7 @@ import kotlinx.coroutines.launch
 class ToolWindowViewModel(
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val adbStatusDataSource: AdbStatusDataSource,
+    private val networkHistoryStatusDataSource: NetworkHistoryStatusDataSource,
     private val observeServerStatusUseCase: ObserveServerStatusUseCase,
     private val startServerUseCase: StartServerUseCase,
     private val stopServerUseCase: StopMessageServerUseCase,
@@ -72,14 +74,16 @@ class ToolWindowViewModel(
         devices,
         observeServerStatusUseCase(),
         adbStatusDataSource.status,
-    ) { devices, serverState, adbStatus ->
-        ToolWindowState(devices = devices, serverState = serverState, adbStatus = adbStatus)
+        networkHistoryStatusDataSource.mode,
+    ) { devices, serverState, adbStatus, historyMode ->
+        ToolWindowState(devices = devices, serverState = serverState, adbStatus = adbStatus, historyMode = historyMode)
     }.stateIn(
         scope = scope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = ToolWindowState(
             serverState = observeServerStatusUseCase().value,
             adbStatus = adbStatusDataSource.status.value,
+            historyMode = networkHistoryStatusDataSource.mode.value,
         ),
     )
 
