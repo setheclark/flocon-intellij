@@ -1,3 +1,9 @@
+## Before committing
+
+Run `./gradlew :core:ktlintFormat :plugin:ktlintFormat` and then `./gradlew :core:ktlintCheck :plugin:ktlintCheck` before committing or opening a PR. CI fails on ktlint violations. `.githooks/pre-commit` does this automatically once `git config core.hooksPath .githooks` is set; do not rely on it being set.
+
+Open a PR for changes instead of committing directly to `main`.
+
 ## Agent skills
 
 ### Issue tracker
