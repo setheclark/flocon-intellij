@@ -1,50 +1,39 @@
 package io.github.setheclark.intellij.ui.network.filter
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.setheclark.intellij.stringResource
+import io.github.setheclark.intellij.ui.toolwindow.DeviceAppPicker
+import io.github.setheclark.intellij.ui.toolwindow.DevicesRenderModel
+import io.github.setheclark.intellij.ui.toolwindow.ToolWindowIntent
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import org.jetbrains.jewel.foundation.ExperimentalJewelApi
-import org.jetbrains.jewel.foundation.lazy.rememberSelectableLazyListState
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.Icon
 import org.jetbrains.jewel.ui.component.IconButton
-import org.jetbrains.jewel.ui.component.ListComboBox
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.TextField
-import org.jetbrains.jewel.ui.component.Tooltip
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.jetbrains.jewel.ui.painter.hints.Stateful
 import org.jetbrains.jewel.ui.theme.textFieldStyle
 
-@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun NetworkFilterPanel(
     viewModel: NetworkFilterViewModel,
+    devices: DevicesRenderModel,
+    onToolWindowIntent: (ToolWindowIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val state by viewModel.state.collectAsState(
-        initial = NetworkFilterPanelState(
-            devices = DevicesRenderModel(emptyList(), -1),
-            filterText = "",
-        ),
-    )
-
     val searchState = rememberTextFieldState()
 
     LaunchedEffect(searchState) {
@@ -55,14 +44,6 @@ fun NetworkFilterPanel(
             }
     }
 
-    // Workaround for JEWEL-1244: sync external selection changes into list state
-    val listState = rememberSelectableLazyListState()
-    val devices = state.devices
-    LaunchedEffect(devices.selectedIndex) {
-        val key = devices.devices.getOrNull(devices.selectedIndex)?.key
-        listState.selectedKeys = if (key != null) setOf(key) else emptySet()
-    }
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -70,21 +51,7 @@ fun NetworkFilterPanel(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val selectedDevice = devices.devices.getOrNull(devices.selectedIndex)
-        Tooltip(tooltip = { Text(selectedDevice?.fullLabel.orEmpty()) }) {
-            ListComboBox(
-                modifier = Modifier.widthIn(max = 320.dp),
-                items = devices.devices.map { it.shortLabel },
-                selectedIndex = devices.selectedIndex,
-                onSelectedItemChange = { index ->
-                    devices.devices.getOrNull(index)?.let { device ->
-                        viewModel.dispatch(NetworkFilterIntent.UpdateDeviceSelection(device))
-                    }
-                },
-                listState = listState,
-                itemKeys = { index, _ -> devices.devices.getOrNull(index)?.key.orEmpty() },
-            )
-        }
+        DeviceAppPicker(devices = devices, onIntent = onToolWindowIntent)
 
         TextField(
             modifier = Modifier.weight(1f),

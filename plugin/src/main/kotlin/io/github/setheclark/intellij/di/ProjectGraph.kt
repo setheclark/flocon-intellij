@@ -12,6 +12,7 @@ import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
 import io.github.setheclark.intellij.ui.network.details.DetailPanelFactory
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterViewModel
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListViewModel
+import io.github.setheclark.intellij.ui.toolwindow.ToolWindowViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,6 +27,8 @@ interface ProjectGraph {
     val settingsProvider: NetworkStorageSettingsProvider
 
     val networkInspectorViewModel: NetworkInspectorViewModel
+
+    val toolWindowViewModel: ToolWindowViewModel
 
     val networkFilterViewModel: NetworkFilterViewModel
 
