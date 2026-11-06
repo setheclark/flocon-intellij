@@ -39,6 +39,16 @@ CREATE TABLE network_body (
     PRIMARY KEY (call_id, kind)
 );
 
+-- Clear history marks an app session instead of deleting its rows, so retention purges them later.
+-- Calls of the session that started at or before cleared_through (the device's own clock) are hidden.
+CREATE TABLE network_clear (
+    device_id TEXT NOT NULL,
+    package_name TEXT NOT NULL,
+    app_instance TEXT NOT NULL,
+    cleared_through INTEGER NOT NULL,
+    PRIMARY KEY (device_id, package_name, app_instance)
+);
+
 insertCall:
 INSERT OR REPLACE INTO network_call(
     call_id, device_id, package_name, app_instance, start_time, name,
@@ -68,6 +78,13 @@ SELECT * FROM network_call WHERE call_id = ?;
 selectCallsForSession:
 SELECT * FROM network_call
 WHERE device_id = ? AND package_name = ? AND app_instance = ?
+    AND NOT EXISTS (
+        SELECT 1 FROM network_clear
+        WHERE network_clear.device_id = network_call.device_id
+            AND network_clear.package_name = network_call.package_name
+            AND network_clear.app_instance = network_call.app_instance
+            AND network_call.start_time <= network_clear.cleared_through
+    )
 ORDER BY seq;
 
 selectCurrentAppInstance:
@@ -82,8 +99,15 @@ DELETE FROM network_call WHERE call_id = ?;
 deleteCallsForDevicePackage:
 DELETE FROM network_call WHERE device_id = ? AND package_name = ?;
 
-deleteAllCalls:
-DELETE FROM network_call;
+deleteClearsForDevicePackage:
+DELETE FROM network_clear WHERE device_id = ? AND package_name = ?;
+
+-- Hides every call the session has so far. Does nothing when the session has no calls.
+clearSession:
+INSERT OR REPLACE INTO network_clear(device_id, package_name, app_instance, cleared_through)
+SELECT device_id, package_name, app_instance, MAX(start_time) FROM network_call
+WHERE device_id = ? AND package_name = ? AND app_instance = ?
+GROUP BY device_id, package_name, app_instance;
 
 insertBody:
 INSERT OR REPLACE INTO network_body(call_id, kind, data) VALUES (?, ?, ?);
@@ -100,6 +124,13 @@ searchBodies:
 SELECT DISTINCT network_body.call_id FROM network_body
 JOIN network_call ON network_call.call_id = network_body.call_id
 WHERE network_call.device_id = ? AND network_call.package_name = ? AND network_call.app_instance = ?
+    AND NOT EXISTS (
+        SELECT 1 FROM network_clear
+        WHERE network_clear.device_id = network_call.device_id
+            AND network_clear.package_name = network_call.package_name
+            AND network_clear.app_instance = network_call.app_instance
+            AND network_call.start_time <= network_clear.cleared_through
+    )
     AND instr(lower(network_body.data), lower(?)) > 0;
 
 deleteBody:

@@ -66,7 +66,10 @@ interface NetworkDataSource {
     suspend fun deleteByDeviceAndPackage(deviceId: String, packageName: String)
 
     /**
-     * Deletes all network calls and bodies.
+     * Hides the calls the current app session of a device and package has received so far, using that session's
+     * newest call start time as its watermark. Other app sessions, devices and packages are unaffected.
+     * Nothing is deleted: calls that started at or before the watermark stay hidden, including ones that only
+     * arrive after the clear, and later calls are listed normally.
      */
-    suspend fun deleteAll()
+    suspend fun clearCurrentSession(deviceId: String, packageName: String)
 }

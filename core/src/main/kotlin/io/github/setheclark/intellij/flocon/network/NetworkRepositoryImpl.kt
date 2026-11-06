@@ -43,8 +43,8 @@ class NetworkRepositoryImpl(
     override suspend fun searchBodies(deviceId: String, packageName: String, text: String): Set<String> =
         networkDataSource.searchBodies(deviceId, packageName, text)
 
-    override suspend fun deleteAll() {
-        networkDataSource.deleteAll()
+    override suspend fun clearHistory(deviceId: String, packageName: String) {
+        networkDataSource.clearCurrentSession(deviceId, packageName)
     }
 
     // region MessagesReceiverRepository

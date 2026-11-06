@@ -32,5 +32,9 @@ interface NetworkRepository {
      */
     suspend fun searchBodies(deviceId: String, packageName: String, text: String): Set<String>
 
-    suspend fun deleteAll()
+    /**
+     * Clears the list of the current app session of a device and package. Other sessions, devices and apps keep
+     * their calls, and the cleared calls stay stored until retention purges them.
+     */
+    suspend fun clearHistory(deviceId: String, packageName: String)
 }

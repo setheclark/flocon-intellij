@@ -9,7 +9,7 @@ import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
 import io.github.setheclark.intellij.settings.updateSettings
 import io.github.setheclark.intellij.ui.network.list.NetworkCallListColumn
-import io.github.setheclark.intellij.ui.network.usecase.ClearAllNetworkCallsUseCase
+import io.github.setheclark.intellij.ui.network.usecase.ClearNetworkHistoryUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveCurrentAppInstanceUseCase
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.scan
@@ -30,7 +31,7 @@ import kotlinx.coroutines.launch
 @SingleIn(ProjectScope::class)
 class NetworkInspectorViewModel(
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
-    private val clearAllNetworkCallsUseCase: ClearAllNetworkCallsUseCase,
+    private val clearNetworkHistoryUseCase: ClearNetworkHistoryUseCase,
     private val observeCurrentDeviceIdAndPackageNameUseCase: ObserveCurrentDeviceIdAndPackageNameUseCase,
     private val observeCurrentAppInstanceUseCase: ObserveCurrentAppInstanceUseCase,
     private val settingsProvider: NetworkStorageSettingsProvider,
@@ -65,9 +66,10 @@ class NetworkInspectorViewModel(
                 _state.update { it.copy(filter = it.filter.copy(searchText = intent.filter)) }
             }
 
-            is NetworkInspectorIntent.ClearAll -> {
+            is NetworkInspectorIntent.ClearHistory -> {
                 scope.launch {
-                    clearAllNetworkCallsUseCase()
+                    val deviceAndPackage = observeCurrentDeviceIdAndPackageNameUseCase().first() ?: return@launch
+                    clearNetworkHistoryUseCase(deviceAndPackage)
                     _state.update {
                         it.copy(selectedCallId = null, autoScrollEnabled = true)
                     }

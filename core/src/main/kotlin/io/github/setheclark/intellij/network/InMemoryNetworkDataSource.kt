@@ -36,6 +36,9 @@ class InMemoryNetworkDataSource(
     // App instance of the most recent call for each device/package combination.
     private val currentAppInstances = MutableStateFlow<Map<DevicePackageKey, String>>(emptyMap())
 
+    // Newest cleared call start time of each app session. Calls of the session that started at or before it are hidden.
+    private val clearedThrough = MutableStateFlow<Map<AppSessionKey, Long>>(emptyMap())
+
     override fun observeCurrentAppInstance(deviceId: String, packageName: String): Flow<String?> {
         val key = DevicePackageKey(deviceId, packageName)
         return currentAppInstances
@@ -117,22 +120,17 @@ class InMemoryNetworkDataSource(
         packageName: String,
     ): Flow<List<NetworkCallEntity>> {
         val key = DevicePackageKey(deviceId, packageName)
-        return combine(calls, currentAppInstances) { map, instances ->
+        return combine(calls, currentAppInstances, clearedThrough) { map, instances, cleared ->
             val appInstance = instances[key] ?: return@combine emptyList()
-            map.values
-                .map { it.entity }
-                .filter {
-                    it.deviceId == deviceId && it.packageName == packageName && it.appInstance == appInstance
-                }
+            map.values.map { it.entity }.filter { it.isListedIn(deviceId, packageName, appInstance, cleared) }
         }
     }
 
     override suspend fun searchBodies(deviceId: String, packageName: String, text: String): Set<String> {
         val appInstance = currentAppInstances.value[DevicePackageKey(deviceId, packageName)] ?: return emptySet()
+        val cleared = clearedThrough.value
         return calls.value.values
-            .filter {
-                it.entity.deviceId == deviceId && it.entity.packageName == packageName && it.entity.appInstance == appInstance
-            }
+            .filter { it.entity.isListedIn(deviceId, packageName, appInstance, cleared) }
             .filter { call ->
                 val hydrated = call.hydrate()
                 hydrated.request.body.contains(text) ||
@@ -141,6 +139,16 @@ class InMemoryNetworkDataSource(
             .map { it.entity.callId }
             .toSet()
     }
+
+    private fun NetworkCallEntity.isListedIn(
+        deviceId: String,
+        packageName: String,
+        appInstance: String,
+        cleared: Map<AppSessionKey, Long>,
+    ): Boolean = this.deviceId == deviceId &&
+        this.packageName == packageName &&
+        this.appInstance == appInstance &&
+        startTime > (cleared[AppSessionKey(deviceId, packageName, appInstance)] ?: Long.MIN_VALUE)
 
     private fun String?.contains(text: String) = this?.contains(text, ignoreCase = true) == true
 
@@ -169,14 +177,21 @@ class InMemoryNetworkDataSource(
                 updated
             }
             currentAppInstances.update { it - DevicePackageKey(deviceId, packageName) }
+            clearedThrough.update { current ->
+                current.filterKeys { it.deviceId != deviceId || it.packageName != packageName }
+            }
         }
     }
 
-    override suspend fun deleteAll() {
+    override suspend fun clearCurrentSession(deviceId: String, packageName: String) {
         mutex.withLock {
-            bodyStore.clear()
-            calls.value = linkedMapOf()
-            currentAppInstances.value = emptyMap()
+            val appInstance = currentAppInstances.value[DevicePackageKey(deviceId, packageName)] ?: return
+            val newest = calls.value.values
+                .map { it.entity }
+                .filter { it.deviceId == deviceId && it.packageName == packageName && it.appInstance == appInstance }
+                .maxOfOrNull { it.startTime }
+                ?: return
+            clearedThrough.update { it + (AppSessionKey(deviceId, packageName, appInstance) to newest) }
         }
     }
 
@@ -241,4 +256,13 @@ private data class StoredCall(
 private data class DevicePackageKey(
     val deviceId: String,
     val packageName: String,
+)
+
+/**
+ * Key for one app session of a device and package.
+ */
+private data class AppSessionKey(
+    val deviceId: String,
+    val packageName: String,
+    val appInstance: String,
 )
