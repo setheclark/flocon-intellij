@@ -225,6 +225,14 @@ If ADB is not detected, you'll see a warning banner with instructions.
 
 Contributions are welcome!
 
+Enable the pre-commit hook once per clone. It runs `ktlintFormat` and `ktlintCheck` before each commit, which CI also enforces:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Bypassing the hook with `--no-verify` is allowed, but CI will fail on ktlint violations. Run `./gradlew :core:ktlintCheck :plugin:ktlintCheck` first.
+
 ---
 
 ## License
