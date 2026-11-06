@@ -27,6 +27,12 @@ interface FloconAdbBindingContainer {
         ): ExecuteAdbCommandUseCase = ExecuteAdbCommandUseCase(adbRepository, settingsRepository)
 
         @Provides
+        fun provideExecuteDeviceAdbCommandUseCase(
+            adbRepository: AdbRepository,
+            settingsRepository: SettingsRepository,
+        ): ExecuteDeviceAdbCommandUseCase = ExecuteDeviceAdbCommandUseCase(adbRepository, settingsRepository)
+
+        @Provides
         fun provideStartAdbForwardUseCase(
             executeAdbCommandUseCase: ExecuteAdbCommandUseCase,
         ): StartAdbForwardUseCase = StartAdbForwardUseCase(executeAdbCommandUseCase)

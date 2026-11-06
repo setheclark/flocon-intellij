@@ -22,7 +22,7 @@ class SystemProcessExecutor : ProcessExecutor {
 
     override fun execute(command: String): ProcessResult {
         return try {
-            val parts = command.split(Regex("\\s+"))
+            val parts = splitCommandLine(command)
             val executable = parts.first()
             val args = parts.drop(1)
 
