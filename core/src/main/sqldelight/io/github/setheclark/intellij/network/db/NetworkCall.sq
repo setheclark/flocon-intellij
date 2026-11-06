@@ -91,6 +91,10 @@ INSERT OR REPLACE INTO network_body(call_id, kind, data) VALUES (?, ?, ?);
 selectBody:
 SELECT data FROM network_body WHERE call_id = ? AND kind = ?;
 
+-- Which bodies exist for a call, answered from the primary key without reading any body text.
+selectBodyKinds:
+SELECT kind FROM network_body WHERE call_id = ?;
+
 -- Ids of the calls in one app session whose request or response body contains the text (ASCII case-insensitive).
 searchBodies:
 SELECT DISTINCT network_body.call_id FROM network_body

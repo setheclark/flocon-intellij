@@ -34,6 +34,8 @@ fun DetailsContent(
 
     EditorDetailLayout(
         call = currentCall,
+        loadBody = { type -> viewModel.loadBody(currentCall.callId, type) },
+        loadBodyTypes = { viewModel.loadBodyTypes(currentCall.callId) },
         modifier = modifier.fillMaxSize(),
     )
 }

@@ -6,6 +6,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.ui.WithProject
+import io.github.setheclark.intellij.ui.network.usecase.GetCallBodyUseCase
 import io.github.setheclark.intellij.ui.network.usecase.ObserveCallUseCase
 import kotlinx.coroutines.flow.flowOf
 import org.jetbrains.jewel.bridge.compose
@@ -21,11 +22,13 @@ enum class DetailLayoutMode {
 class DetailPanelFactory(
     private val project: Project,
     private val observeCallUseCase: ObserveCallUseCase,
+    private val getCallBodyUseCase: GetCallBodyUseCase,
 ) {
     fun create(callId: String, layoutMode: DetailLayoutMode = DetailLayoutMode.ToolWindow): DetailsPanel {
         val viewModel = DetailPanelViewModel(
             callIdFlow = flowOf(callId),
             observeCallUseCase = observeCallUseCase,
+            getCallBodyUseCase = getCallBodyUseCase,
             layoutMode = layoutMode,
         )
         return DetailsPanel(project, viewModel)

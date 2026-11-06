@@ -1,5 +1,6 @@
 package io.github.setheclark.intellij.network
 
+import io.github.setheclark.intellij.flocon.network.BodyContent
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -28,13 +29,23 @@ interface NetworkDataSource {
     suspend fun getByCallId(callId: String): NetworkCallEntity?
 
     /**
-     * Observes a specific network call by its ID, with bodies.
+     * Observes a specific network call by its ID, without bodies; use [getBody] for those.
      */
     fun observeByCallId(callId: String): Flow<NetworkCallEntity?>
 
     /**
+     * Loads one body of a call in full. Returns [BodyContent.Purged] when the call no longer exists.
+     */
+    suspend fun getBody(callId: String, type: BodyType): BodyContent
+
+    /**
+     * Which bodies exist for a call, without reading their text. Empty when the call has none or no longer exists.
+     */
+    suspend fun getBodyTypes(callId: String): Set<BodyType>
+
+    /**
      * Observes the calls of the current app session of a device and package, oldest first.
-     * The calls do not carry bodies; use [getByCallId] or [observeByCallId] for those.
+     * The calls do not carry bodies; use [getBody] for those.
      */
     fun observeCurrentSessionCalls(deviceId: String, packageName: String): Flow<List<NetworkCallEntity>>
 

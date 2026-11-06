@@ -9,6 +9,7 @@ import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.device.models.DeviceIdAndPackageNameDomainModel
 import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainModel
 import io.github.openflocon.domain.messages.repository.MessagesReceiverRepository
+import io.github.setheclark.intellij.network.BodyType
 import io.github.setheclark.intellij.network.NetworkDataSource
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +30,12 @@ class NetworkRepositoryImpl(
 
     override fun observeCall(callId: String): Flow<NetworkCallEntity?> =
         networkDataSource.observeByCallId(callId)
+
+    override suspend fun getBody(callId: String, type: BodyType): BodyContent =
+        withContext(dispatchers.data) { networkDataSource.getBody(callId, type) }
+
+    override suspend fun getBodyTypes(callId: String): Set<BodyType> =
+        withContext(dispatchers.data) { networkDataSource.getBodyTypes(callId) }
 
     override fun observeCurrentAppInstance(deviceId: String, packageName: String): Flow<String?> =
         networkDataSource.observeCurrentAppInstance(deviceId, packageName)

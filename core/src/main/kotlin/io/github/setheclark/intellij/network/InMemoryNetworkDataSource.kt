@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.network
 
 import co.touchlab.kermit.Logger
+import io.github.setheclark.intellij.flocon.network.BodyContent
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.util.withPluginTag
@@ -90,8 +91,24 @@ class InMemoryNetworkDataSource(
     }
 
     override fun observeByCallId(callId: String): Flow<NetworkCallEntity?> {
-        return calls.map { map ->
-            map[callId]?.hydrate()
+        return calls.map { map -> map[callId]?.entity }
+    }
+
+    override suspend fun getBody(callId: String, type: BodyType): BodyContent {
+        val storedCall = calls.value[callId] ?: return BodyContent.Purged
+        val key = when (type) {
+            BodyType.REQUEST -> storedCall.requestBodyKey
+            BodyType.RESPONSE -> storedCall.responseBodyKey
+        }
+        key ?: return BodyContent.Empty
+        return bodyStore.retrieve(key)?.let(BodyContent::Present) ?: BodyContent.Purged
+    }
+
+    override suspend fun getBodyTypes(callId: String): Set<BodyType> {
+        val storedCall = calls.value[callId] ?: return emptySet()
+        return buildSet {
+            if (storedCall.requestBodyKey != null) add(BodyType.REQUEST)
+            if (storedCall.responseBodyKey != null) add(BodyType.RESPONSE)
         }
     }
 
