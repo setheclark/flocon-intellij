@@ -3,3 +3,6 @@
 .intellijPlatform/
 build/
 .kotlin/
+
+# Local agent issue tracker
+.scratch/
