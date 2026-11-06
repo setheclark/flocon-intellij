@@ -4,8 +4,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Network history is now saved to an embedded database in the IDE system directory and survives IDE and app restarts. Bodies are stored in full as plain text, with no truncation
+- A new launch of the app keeps the previous app session's calls; the list shows the current session of the selected device and app
+- Warning banner when the history database cannot be opened and history is kept in memory only
+
 ### Changed
 
+- The old memory limits (stored call count, body cache size, body size cap, compression toggle) are removed from the settings; they now apply only to the memory-only fallback
 - GraphQL persisted-query calls no longer show "mutation" as their operation type; it now shows "Unknown" because the query text is not available
 - UI Improvements to the device/app selection menu
 - Internal: device/app picker, server controls and warning banner are now shared tool window components, ready for new feature tabs

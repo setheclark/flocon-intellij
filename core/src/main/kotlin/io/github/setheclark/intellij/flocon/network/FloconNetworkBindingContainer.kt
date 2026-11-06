@@ -7,20 +7,21 @@ import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import io.github.setheclark.intellij.network.InMemoryNetworkDataSource
 import io.github.setheclark.intellij.network.NetworkDataSource
+import io.github.setheclark.intellij.network.NetworkDataSourceFactory
 import kotlinx.serialization.json.Json
 
 @BindingContainer
 interface FloconNetworkBindingContainer {
 
-//    @Binds
-//    val InMemoryNetworkDataSource.bind: NetworkDataSource
-
     @Binds
     val NetworkRepositoryImpl.bind: NetworkRepository
 
     companion object {
+
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideNetworkDataSource(factory: NetworkDataSourceFactory): NetworkDataSource = factory.create()
 
         @Provides
         @SingleIn(AppScope::class)

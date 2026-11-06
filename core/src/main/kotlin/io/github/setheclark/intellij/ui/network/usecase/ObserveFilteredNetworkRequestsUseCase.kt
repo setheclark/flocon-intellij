@@ -9,7 +9,7 @@ import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 
 @Inject
 class ObserveFilteredNetworkRequestsUseCase(
@@ -24,7 +24,18 @@ class ObserveFilteredNetworkRequestsUseCase(
     } else {
         networkRepository
             .observeCalls(deviceIdAndPackageName.deviceId, deviceIdAndPackageName.packageName)
-            .map { it.applyFilter(filter, deviceIdAndPackageName) }
+            .mapLatest { calls ->
+                val bodyMatches = if (filter.searchText.isEmpty()) {
+                    emptySet()
+                } else {
+                    networkRepository.searchBodies(
+                        deviceIdAndPackageName.deviceId,
+                        deviceIdAndPackageName.packageName,
+                        filter.searchText,
+                    )
+                }
+                calls.applyFilter(filter, deviceIdAndPackageName, bodyMatches)
+            }
             .distinctUntilChanged()
     }
 }
@@ -32,15 +43,17 @@ class ObserveFilteredNetworkRequestsUseCase(
 private fun List<NetworkCallEntity>.applyFilter(
     filter: NetworkFilter,
     deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel,
+    bodyMatches: Set<String>,
 ): List<NetworkCallEntity> = filter { call ->
 
     // Filter device and app
     if (call.deviceId != deviceIdAndPackageName.deviceId) return@filter false
     if (call.packageName != deviceIdAndPackageName.packageName) return@filter false
 
-    // Text search filter - searches across all fields
+    // Text search filter - searches URL, method, headers and bodies. Bodies are not loaded for the list,
+    // so the repository reports which calls have a matching body.
     if (filter.searchText.isNotEmpty()) {
-        if (!call.matchesSearchText(filter.searchText)) {
+        if (call.callId !in bodyMatches && !call.matchesSearchText(filter.searchText)) {
             return@filter false
         }
     }
@@ -61,7 +74,6 @@ internal fun NetworkCallEntity.matchesSearchText(searchText: String): Boolean {
     // Search in request fields
     if (request.url.lowercase().contains(search)) return true
     if (request.method.lowercase().contains(search)) return true
-    if (request.body?.lowercase()?.contains(search) == true) return true
     if (request.headers.any { (key, value) ->
             key.lowercase().contains(search) || value.lowercase().contains(search)
         }
@@ -77,7 +89,6 @@ internal fun NetworkCallEntity.matchesSearchText(searchText: String): Boolean {
             }
 
             is NetworkResponse.Success -> {
-                if (response.body?.lowercase()?.contains(search) == true) return true
                 if (response.headers.any { (key, value) ->
                         key.lowercase().contains(search) || value.lowercase().contains(search)
                     }

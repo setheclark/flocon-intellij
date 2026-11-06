@@ -6,53 +6,56 @@ import kotlinx.coroutines.flow.Flow
 interface NetworkDataSource {
 
     /**
-     * Observes the current app instance for a device/package combination.
-     * Emits the new appInstance whenever it changes (i.e., when a new session starts).
+     * Observes the current app session of a device/package combination: the app instance of its most recent call.
+     * Emits the new app instance whenever a call from a newer session arrives.
      */
     fun observeCurrentAppInstance(deviceId: String, packageName: String): Flow<String?>
 
     /**
-     * Inserts a new network call entry.
+     * Inserts a new network call entry, replacing any call with the same ID.
      */
     suspend fun insert(entity: NetworkCallEntity)
 
     /**
-     * Updates an existing network call entry.
+     * Stores the response of an existing network call. The request side is fixed at [insert] and is not rewritten.
+     * Does nothing when the call is unknown.
      */
     suspend fun update(entity: NetworkCallEntity)
 
     /**
-     * Retrieves a specific network call by its ID.
+     * Retrieves a specific network call by its ID, with bodies.
      */
     suspend fun getByCallId(callId: String): NetworkCallEntity?
 
     /**
-     * Observes a specific network call by its ID.
+     * Observes a specific network call by its ID, with bodies.
      */
     fun observeByCallId(callId: String): Flow<NetworkCallEntity?>
 
     /**
-     * Retrieves all network calls for a specific device and package.
+     * Observes the calls of the current app session of a device and package, oldest first.
+     * The calls do not carry bodies; use [getByCallId] or [observeByCallId] for those.
      */
-    suspend fun getByDeviceAndPackage(deviceId: String, packageName: String): List<NetworkCallEntity>
+    fun observeCurrentSessionCalls(deviceId: String, packageName: String): Flow<List<NetworkCallEntity>>
 
     /**
-     * Observes all network calls for a specific device and package.
+     * Ids of the calls in the current app session of a device and package whose request or response body
+     * contains [text], ignoring case.
      */
-    fun observeByDeviceAndPackage(deviceId: String, packageName: String): Flow<List<NetworkCallEntity>>
+    suspend fun searchBodies(deviceId: String, packageName: String, text: String): Set<String>
 
     /**
-     * Deletes a specific network call by its ID.
+     * Deletes a specific network call and its bodies.
      */
     suspend fun deleteByCallId(callId: String)
 
     /**
-     * Deletes all network calls for a specific device and package.
+     * Deletes all network calls and bodies of a specific device and package, across all app sessions.
      */
     suspend fun deleteByDeviceAndPackage(deviceId: String, packageName: String)
 
     /**
-     * Deletes all network call entries.
+     * Deletes all network calls and bodies.
      */
     suspend fun deleteAll()
 }

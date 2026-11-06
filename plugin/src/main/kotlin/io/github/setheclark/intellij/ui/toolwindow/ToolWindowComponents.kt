@@ -17,12 +17,13 @@ import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.Tooltip
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 
-/** Warning banner for ADB-not-found and server errors. Renders nothing when there is no warning. */
+/** Warning banner for ADB-not-found, server errors and memory-only network history. Renders nothing when there is no warning. */
 @Composable
 fun ToolWindowWarningBanner(state: ToolWindowState, modifier: Modifier = Modifier) {
     val message = when (val warning = state.warning) {
         ToolWindowWarning.AdbNotFound -> stringResource("banner.adbNotFound")
         is ToolWindowWarning.ServerError -> stringResource("banner.serverError", warning.message)
+        ToolWindowWarning.HistoryNotPersisted -> stringResource("banner.historyNotPersisted")
         null -> return
     }
     WarningBanner(message = message, modifier = modifier.fillMaxWidth())

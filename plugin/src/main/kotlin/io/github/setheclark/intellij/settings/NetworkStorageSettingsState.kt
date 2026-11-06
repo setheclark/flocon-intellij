@@ -25,11 +25,6 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
     var hiddenColumns: MutableSet<String> = mutableSetOf()
     var columnWidths: MutableMap<String, Float> = mutableMapOf()
 
-    var maxStoredCalls: Int = NetworkStorageSettings.DEFAULT_MAX_STORED_CALLS
-    var maxBodyCacheSizeBytes: Long = NetworkStorageSettings.DEFAULT_MAX_BODY_CACHE_SIZE_BYTES
-    var maxBodySizeBytes: Int = NetworkStorageSettings.DEFAULT_MAX_BODY_SIZE_BYTES
-    var compressionEnabled: Boolean = NetworkStorageSettings.DEFAULT_COMPRESSION_ENABLED
-
     override fun getState(): NetworkStorageSettingsState = this
 
     override fun loadState(state: NetworkStorageSettingsState) {
@@ -37,19 +32,11 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
     }
 
     fun toSettings(): NetworkStorageSettings = NetworkStorageSettings(
-        maxStoredCalls = maxStoredCalls,
-        maxBodyCacheSizeBytes = maxBodyCacheSizeBytes,
-        maxBodySizeBytes = maxBodySizeBytes,
-        compressionEnabled = compressionEnabled,
         hiddenColumns = hiddenColumns.toSet(),
         columnWidths = columnWidths.toMap(),
     )
 
     fun updateFrom(settings: NetworkStorageSettings) {
-        maxStoredCalls = settings.maxStoredCalls
-        maxBodyCacheSizeBytes = settings.maxBodyCacheSizeBytes
-        maxBodySizeBytes = settings.maxBodySizeBytes
-        compressionEnabled = settings.compressionEnabled
         hiddenColumns = settings.hiddenColumns.toMutableSet()
         columnWidths = settings.columnWidths.toMutableMap()
     }

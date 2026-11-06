@@ -25,13 +25,16 @@ class NetworkRepositoryImpl(
     val log = Logger.withPluginTag("NetworkRepository")
 
     override fun observeCalls(deviceId: String, packageName: String): Flow<List<NetworkCallEntity>> =
-        networkDataSource.observeByDeviceAndPackage(deviceId, packageName)
+        networkDataSource.observeCurrentSessionCalls(deviceId, packageName)
 
     override fun observeCall(callId: String): Flow<NetworkCallEntity?> =
         networkDataSource.observeByCallId(callId)
 
     override fun observeCurrentAppInstance(deviceId: String, packageName: String): Flow<String?> =
         networkDataSource.observeCurrentAppInstance(deviceId, packageName)
+
+    override suspend fun searchBodies(deviceId: String, packageName: String, text: String): Set<String> =
+        networkDataSource.searchBodies(deviceId, packageName, text)
 
     override suspend fun deleteAll() {
         networkDataSource.deleteAll()

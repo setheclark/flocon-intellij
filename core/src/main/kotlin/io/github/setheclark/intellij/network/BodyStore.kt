@@ -1,10 +1,6 @@
 package io.github.setheclark.intellij.network
 
 import co.touchlab.kermit.Logger
-import dev.zacsweers.metro.AppScope
-import dev.zacsweers.metro.Inject
-import dev.zacsweers.metro.SingleIn
-import io.github.setheclark.intellij.settings.NetworkStorageSettingsProvider
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -14,16 +10,12 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 /**
- * Compressed body storage with LRU eviction.
+ * Compressed in-memory body storage with LRU eviction, used by [InMemoryNetworkDataSource].
  *
- * Bodies are stored compressed using GZIP to reduce memory footprint.
- * When the cache exceeds the configured size limit, least recently used entries are evicted.
+ * Bodies are stored compressed using GZIP to reduce memory footprint, and truncated beyond [MAX_BODY_SIZE_BYTES].
+ * When the cache exceeds [MAX_CACHE_SIZE_BYTES], least recently used entries are evicted.
  */
-@Inject
-@SingleIn(AppScope::class)
-class BodyStore(
-    private val settingsProvider: NetworkStorageSettingsProvider,
-) {
+class BodyStore {
     private val log = Logger.withPluginTag("BodyStore")
 
     private val mutex = Mutex()
@@ -50,30 +42,20 @@ class BodyStore(
     suspend fun store(callId: String, bodyType: BodyType, body: String?): String? {
         if (body.isNullOrEmpty()) return null
 
-        val settings = settingsProvider.getSettings()
         val key = makeKey(callId, bodyType)
 
-        // Truncate if body exceeds max size
-        val truncatedBody = if (settings.maxBodySizeBytes > 0 && body.length > settings.maxBodySizeBytes) {
-            body.take(settings.maxBodySizeBytes) + "\n\n[Body truncated - exceeded ${settings.maxBodySizeBytes} bytes]"
+        val truncatedBody = if (body.length > MAX_BODY_SIZE_BYTES) {
+            body.take(MAX_BODY_SIZE_BYTES) + "\n\n[Body truncated - exceeded $MAX_BODY_SIZE_BYTES bytes]"
         } else {
             body
         }
 
         val uncompressedBytes = truncatedBody.toByteArray(Charsets.UTF_8)
 
-        val compressed = if (settings.compressionEnabled) {
-            val gzipped = compress(uncompressedBytes)
-            // Only use compression if it actually saves space
-            if (gzipped.data.size < uncompressedBytes.size) {
-                gzipped
-            } else {
-                CompressedBody(
-                    data = uncompressedBytes,
-                    originalSize = uncompressedBytes.size,
-                    isCompressed = false,
-                )
-            }
+        val gzipped = compress(uncompressedBytes)
+        // Only use compression if it actually saves space
+        val compressed = if (gzipped.data.size < uncompressedBytes.size) {
+            gzipped
         } else {
             CompressedBody(
                 data = uncompressedBytes,
@@ -93,7 +75,7 @@ class BodyStore(
             currentSizeBytes += compressed.data.size
 
             // Evict LRU entries if over size limit
-            evictIfNeeded(settings.maxBodyCacheSizeBytes)
+            evictIfNeeded(MAX_CACHE_SIZE_BYTES)
         }
 
         val originalBytes = uncompressedBytes.size
@@ -105,7 +87,7 @@ class BodyStore(
                 append("Stored $bodyType body: ${formatBytes(originalBytes)} -> ${formatBytes(storedBytes)}")
                 if (compressed.isCompressed) {
                     append(" ($savingsPercent% savings)")
-                } else if (settings.compressionEnabled) {
+                } else {
                     append(" (compression skipped - would increase size)")
                 }
             }
@@ -164,17 +146,6 @@ class BodyStore(
         }
     }
 
-    /**
-     * Get current cache statistics.
-     */
-    suspend fun getStats(): BodyStoreStats = mutex.withLock {
-        BodyStoreStats(
-            entryCount = cache.size,
-            totalSizeBytes = currentSizeBytes,
-            maxSizeBytes = settingsProvider.getSettings().maxBodyCacheSizeBytes,
-        )
-    }
-
     private fun evictIfNeeded(maxSizeBytes: Long) {
         val iterator = cache.entries.iterator()
         while (currentSizeBytes > maxSizeBytes && iterator.hasNext()) {
@@ -209,6 +180,11 @@ class BodyStore(
         }
     }
 
+    private companion object {
+        const val MAX_CACHE_SIZE_BYTES = 50L * 1024 * 1024
+        const val MAX_BODY_SIZE_BYTES = 1024 * 1024
+    }
+
     private fun formatBytes(bytes: Int): String {
         return when {
             bytes < 1024 -> "$bytes B"
@@ -241,12 +217,4 @@ private data class CompressedBody(
         result = 31 * result + isCompressed.hashCode()
         return result
     }
-}
-
-data class BodyStoreStats(
-    val entryCount: Int,
-    val totalSizeBytes: Long,
-    val maxSizeBytes: Long,
-) {
-    val usagePercent: Int get() = if (maxSizeBytes > 0) ((totalSizeBytes * 100) / maxSizeBytes).toInt() else 0
 }

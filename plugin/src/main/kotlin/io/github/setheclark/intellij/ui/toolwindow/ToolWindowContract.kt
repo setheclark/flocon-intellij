@@ -2,6 +2,7 @@ package io.github.setheclark.intellij.ui.toolwindow
 
 import androidx.compose.runtime.Immutable
 import io.github.setheclark.intellij.adb.AdbStatus
+import io.github.setheclark.intellij.network.NetworkHistoryMode
 import io.github.setheclark.intellij.server.MessageServerState
 
 /**
@@ -12,12 +13,14 @@ data class ToolWindowState(
     val devices: DevicesRenderModel = DevicesRenderModel(emptyList(), -1),
     val serverState: MessageServerState = MessageServerState.Stopped,
     val adbStatus: AdbStatus = AdbStatus.Initializing,
+    val historyMode: NetworkHistoryMode = NetworkHistoryMode.Persistent,
 ) {
     /** Message for the warning banner, or null when nothing needs the developer's attention. */
     val warning: ToolWindowWarning?
         get() = when {
             adbStatus == AdbStatus.NotFound -> ToolWindowWarning.AdbNotFound
             serverState is MessageServerState.Error -> ToolWindowWarning.ServerError(serverState.message)
+            historyMode == NetworkHistoryMode.MemoryOnly -> ToolWindowWarning.HistoryNotPersisted
             else -> null
         }
 }
@@ -30,6 +33,7 @@ data class DevicesRenderModel(
 sealed interface ToolWindowWarning {
     data object AdbNotFound : ToolWindowWarning
     data class ServerError(val message: String) : ToolWindowWarning
+    data object HistoryNotPersisted : ToolWindowWarning
 }
 
 sealed interface ToolWindowIntent {
