@@ -25,7 +25,8 @@ data class NetworkRequest(
             val persisted: Boolean,
             val query: String?,
             val operationName: String?,
-            val operationType: String,
+            /** Null when the type cannot be known (e.g. persisted queries carry no query text). */
+            val operationType: String?,
         ) : Type
 
         data object Grpc : Type
