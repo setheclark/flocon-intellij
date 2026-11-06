@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui.chrome
+package io.github.setheclark.intellij.ui.toolwindow
 
 private const val MAX_DEVICE_NAME_LENGTH = 28
 

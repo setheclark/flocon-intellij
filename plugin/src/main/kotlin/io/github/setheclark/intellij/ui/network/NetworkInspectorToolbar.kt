@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.setheclark.intellij.server.MessageServerState
 import io.github.setheclark.intellij.stringResource
-import io.github.setheclark.intellij.ui.chrome.ServerControlButton
-import io.github.setheclark.intellij.ui.chrome.ToolWindowChromeIntent
+import io.github.setheclark.intellij.ui.toolwindow.ServerControlButton
+import io.github.setheclark.intellij.ui.toolwindow.ToolWindowIntent
 import org.jetbrains.jewel.ui.Orientation
 import org.jetbrains.jewel.ui.component.Divider
 import org.jetbrains.jewel.ui.component.IconActionButton
@@ -29,7 +29,7 @@ fun NetworkInspectorToolbar(
     state: NetworkInspectorState,
     serverState: MessageServerState,
     onIntent: (NetworkInspectorIntent) -> Unit,
-    onChromeIntent: (ToolWindowChromeIntent) -> Unit,
+    onToolWindowIntent: (ToolWindowIntent) -> Unit,
     onConfigureColumns: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -80,6 +80,6 @@ fun NetworkInspectorToolbar(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        ServerControlButton(serverState = serverState, onIntent = onChromeIntent)
+        ServerControlButton(serverState = serverState, onIntent = onToolWindowIntent)
     }
 }

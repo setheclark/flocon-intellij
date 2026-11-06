@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui.chrome
+package io.github.setheclark.intellij.ui.toolwindow
 
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -8,9 +8,9 @@ import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
-import io.github.setheclark.intellij.ui.chrome.usecase.ObserveDevicesAndAppsUseCase
-import io.github.setheclark.intellij.ui.chrome.usecase.ObserveServerStatusUseCase
-import io.github.setheclark.intellij.ui.chrome.usecase.SelectDeviceAndAppUseCase
+import io.github.setheclark.intellij.ui.toolwindow.usecase.ObserveDevicesAndAppsUseCase
+import io.github.setheclark.intellij.ui.toolwindow.usecase.ObserveServerStatusUseCase
+import io.github.setheclark.intellij.ui.toolwindow.usecase.SelectDeviceAndAppUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
  */
 @Inject
 @SingleIn(ProjectScope::class)
-class ToolWindowChromeViewModel(
+class ToolWindowViewModel(
     @param:ViewModelCoroutineScope private val scope: CoroutineScope,
     private val adbStatusDataSource: AdbStatusDataSource,
     private val observeServerStatusUseCase: ObserveServerStatusUseCase,
@@ -68,30 +68,30 @@ class ToolWindowChromeViewModel(
         emit(DevicesRenderModel(emptyList(), -1))
     }
 
-    val state: StateFlow<ToolWindowChromeState> = combine(
+    val state: StateFlow<ToolWindowState> = combine(
         devices,
         observeServerStatusUseCase(),
         adbStatusDataSource.status,
     ) { devices, serverState, adbStatus ->
-        ToolWindowChromeState(devices = devices, serverState = serverState, adbStatus = adbStatus)
+        ToolWindowState(devices = devices, serverState = serverState, adbStatus = adbStatus)
     }.stateIn(
         scope = scope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ToolWindowChromeState(
+        initialValue = ToolWindowState(
             serverState = observeServerStatusUseCase().value,
             adbStatus = adbStatusDataSource.status.value,
         ),
     )
 
-    fun dispatch(intent: ToolWindowChromeIntent) {
+    fun dispatch(intent: ToolWindowIntent) {
         when (intent) {
-            is ToolWindowChromeIntent.SelectDevice -> scope.launch {
+            is ToolWindowIntent.SelectDevice -> scope.launch {
                 selectDeviceAndAppUseCase(intent.device.deviceId, intent.device.packageName)
             }
 
-            ToolWindowChromeIntent.StartServer -> scope.launch { startServerUseCase() }
+            ToolWindowIntent.StartServer -> scope.launch { startServerUseCase() }
 
-            ToolWindowChromeIntent.StopServer -> scope.launch { stopServerUseCase() }
+            ToolWindowIntent.StopServer -> scope.launch { stopServerUseCase() }
         }
     }
 }

@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui.chrome
+package io.github.setheclark.intellij.ui.toolwindow
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,10 +19,10 @@ import org.jetbrains.jewel.ui.icons.AllIconsKeys
 
 /** Warning banner for ADB-not-found and server errors. Renders nothing when there is no warning. */
 @Composable
-fun ChromeWarningBanner(state: ToolWindowChromeState, modifier: Modifier = Modifier) {
+fun ToolWindowWarningBanner(state: ToolWindowState, modifier: Modifier = Modifier) {
     val message = when (val warning = state.warning) {
-        ChromeWarning.AdbNotFound -> stringResource("banner.adbNotFound")
-        is ChromeWarning.ServerError -> stringResource("banner.serverError", warning.message)
+        ToolWindowWarning.AdbNotFound -> stringResource("banner.adbNotFound")
+        is ToolWindowWarning.ServerError -> stringResource("banner.serverError", warning.message)
         null -> return
     }
     WarningBanner(message = message, modifier = modifier.fillMaxWidth())
@@ -33,7 +33,7 @@ fun ChromeWarningBanner(state: ToolWindowChromeState, modifier: Modifier = Modif
 @Composable
 fun DeviceAppPicker(
     devices: DevicesRenderModel,
-    onIntent: (ToolWindowChromeIntent) -> Unit,
+    onIntent: (ToolWindowIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Workaround for JEWEL-1244: sync external selection changes into list state
@@ -51,7 +51,7 @@ fun DeviceAppPicker(
             selectedIndex = devices.selectedIndex,
             onSelectedItemChange = { index ->
                 devices.devices.getOrNull(index)?.let { device ->
-                    onIntent(ToolWindowChromeIntent.SelectDevice(device))
+                    onIntent(ToolWindowIntent.SelectDevice(device))
                 }
             },
             listState = listState,
@@ -65,7 +65,7 @@ fun DeviceAppPicker(
 @Composable
 fun ServerControlButton(
     serverState: MessageServerState,
-    onIntent: (ToolWindowChromeIntent) -> Unit,
+    onIntent: (ToolWindowIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val (serverIcon, serverEnabled, serverTooltipKey) = when (serverState) {
@@ -91,11 +91,11 @@ fun ServerControlButton(
         enabled = serverEnabled,
         onClick = {
             when (serverState) {
-                is MessageServerState.Running -> onIntent(ToolWindowChromeIntent.StopServer)
+                is MessageServerState.Running -> onIntent(ToolWindowIntent.StopServer)
 
                 is MessageServerState.Stopped,
                 is MessageServerState.Error,
-                -> onIntent(ToolWindowChromeIntent.StartServer)
+                -> onIntent(ToolWindowIntent.StartServer)
 
                 else -> Unit
             }

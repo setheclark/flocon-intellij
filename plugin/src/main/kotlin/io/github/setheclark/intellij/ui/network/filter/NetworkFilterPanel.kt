@@ -13,9 +13,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.setheclark.intellij.stringResource
-import io.github.setheclark.intellij.ui.chrome.DeviceAppPicker
-import io.github.setheclark.intellij.ui.chrome.DevicesRenderModel
-import io.github.setheclark.intellij.ui.chrome.ToolWindowChromeIntent
+import io.github.setheclark.intellij.ui.toolwindow.DeviceAppPicker
+import io.github.setheclark.intellij.ui.toolwindow.DevicesRenderModel
+import io.github.setheclark.intellij.ui.toolwindow.ToolWindowIntent
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jetbrains.jewel.foundation.theme.JewelTheme
@@ -31,7 +31,7 @@ import org.jetbrains.jewel.ui.theme.textFieldStyle
 fun NetworkFilterPanel(
     viewModel: NetworkFilterViewModel,
     devices: DevicesRenderModel,
-    onChromeIntent: (ToolWindowChromeIntent) -> Unit,
+    onToolWindowIntent: (ToolWindowIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val searchState = rememberTextFieldState()
@@ -51,7 +51,7 @@ fun NetworkFilterPanel(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DeviceAppPicker(devices = devices, onIntent = onChromeIntent)
+        DeviceAppPicker(devices = devices, onIntent = onToolWindowIntent)
 
         TextField(
             modifier = Modifier.weight(1f),

@@ -11,7 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import io.github.setheclark.intellij.di.ProjectGraph
-import io.github.setheclark.intellij.ui.chrome.ChromeWarningBanner
+import io.github.setheclark.intellij.ui.toolwindow.ToolWindowWarningBanner
 import io.github.setheclark.intellij.ui.network.filter.NetworkFilterPanel
 import io.github.setheclark.intellij.ui.network.list.ColumnConfigDialog
 import io.github.setheclark.intellij.ui.network.list.NetworkCallList
@@ -26,24 +26,24 @@ fun NetworkInspectorContent(
 ) {
     val state by uiGraph.networkInspectorViewModel.state.collectAsState()
     val listState by uiGraph.networkCallListViewModel.state.collectAsState()
-    val chromeState by uiGraph.toolWindowChromeViewModel.state.collectAsState()
+    val toolWindowState by uiGraph.toolWindowViewModel.state.collectAsState()
 
     // Instantiate NetworkCallTabManager to keep its tab-management side effects alive.
     remember { uiGraph.networkCallTabManager }
 
     Column(modifier = modifier.fillMaxSize()) {
-        ChromeWarningBanner(state = chromeState, modifier = Modifier.fillMaxWidth())
+        ToolWindowWarningBanner(state = toolWindowState, modifier = Modifier.fillMaxWidth())
         NetworkFilterPanel(
             viewModel = uiGraph.networkFilterViewModel,
-            devices = chromeState.devices,
-            onChromeIntent = { uiGraph.toolWindowChromeViewModel.dispatch(it) },
+            devices = toolWindowState.devices,
+            onToolWindowIntent = { uiGraph.toolWindowViewModel.dispatch(it) },
         )
         Row(modifier = Modifier.fillMaxSize()) {
             NetworkInspectorToolbar(
                 state = state,
-                serverState = chromeState.serverState,
+                serverState = toolWindowState.serverState,
                 onIntent = { uiGraph.networkInspectorViewModel.dispatch(it) },
-                onChromeIntent = { uiGraph.toolWindowChromeViewModel.dispatch(it) },
+                onToolWindowIntent = { uiGraph.toolWindowViewModel.dispatch(it) },
                 onConfigureColumns = {
                     val dialog = ColumnConfigDialog(uiGraph.project, uiGraph.settingsProvider)
                     dialog.show()

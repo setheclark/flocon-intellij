@@ -1,4 +1,4 @@
-package io.github.setheclark.intellij.ui.chrome.usecase
+package io.github.setheclark.intellij.ui.toolwindow.usecase
 
 import dev.zacsweers.metro.Inject
 import io.github.setheclark.intellij.server.MessageServerState
