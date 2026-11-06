@@ -142,13 +142,13 @@ class SqlNetworkDataSource internal constructor(
         }
     }
 
-    override suspend fun clearCurrentSession(deviceId: String, packageName: String) {
+    override suspend fun clearCurrentAppSession(deviceId: String, packageName: String) {
         withContext(dispatcher) {
             writeMutex.withLock {
                 queries.transaction {
                     val appInstance = queries.selectCurrentAppInstance(deviceId, packageName).executeAsOneOrNull()
                         ?: return@transaction
-                    queries.clearSession(deviceId, packageName, appInstance)
+                    queries.clearAppSession(deviceId, packageName, appInstance)
                 }
             }
         }

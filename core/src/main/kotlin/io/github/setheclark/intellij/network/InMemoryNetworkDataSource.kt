@@ -122,7 +122,8 @@ class InMemoryNetworkDataSource(
         val key = DevicePackageKey(deviceId, packageName)
         return combine(calls, currentAppInstances, clearedThrough) { map, instances, cleared ->
             val appInstance = instances[key] ?: return@combine emptyList()
-            map.values.map { it.entity }.filter { it.isListedIn(deviceId, packageName, appInstance, cleared) }
+            val session = AppSessionKey(deviceId, packageName, appInstance)
+            map.values.map { it.entity }.filter { it.isListedIn(session, cleared) }
         }
     }
 
@@ -130,7 +131,7 @@ class InMemoryNetworkDataSource(
         val appInstance = currentAppInstances.value[DevicePackageKey(deviceId, packageName)] ?: return emptySet()
         val cleared = clearedThrough.value
         return calls.value.values
-            .filter { it.entity.isListedIn(deviceId, packageName, appInstance, cleared) }
+            .filter { it.entity.isListedIn(AppSessionKey(deviceId, packageName, appInstance), cleared) }
             .filter { call ->
                 val hydrated = call.hydrate()
                 hydrated.request.body.contains(text) ||
@@ -140,15 +141,9 @@ class InMemoryNetworkDataSource(
             .toSet()
     }
 
-    private fun NetworkCallEntity.isListedIn(
-        deviceId: String,
-        packageName: String,
-        appInstance: String,
-        cleared: Map<AppSessionKey, Long>,
-    ): Boolean = this.deviceId == deviceId &&
-        this.packageName == packageName &&
-        this.appInstance == appInstance &&
-        startTime > (cleared[AppSessionKey(deviceId, packageName, appInstance)] ?: Long.MIN_VALUE)
+    private fun NetworkCallEntity.isListedIn(session: AppSessionKey, cleared: Map<AppSessionKey, Long>): Boolean =
+        AppSessionKey(deviceId, packageName, appInstance) == session &&
+            startTime > (cleared[session] ?: Long.MIN_VALUE)
 
     private fun String?.contains(text: String) = this?.contains(text, ignoreCase = true) == true
 
@@ -183,15 +178,15 @@ class InMemoryNetworkDataSource(
         }
     }
 
-    override suspend fun clearCurrentSession(deviceId: String, packageName: String) {
+    override suspend fun clearCurrentAppSession(deviceId: String, packageName: String) {
         mutex.withLock {
             val appInstance = currentAppInstances.value[DevicePackageKey(deviceId, packageName)] ?: return
-            val newest = calls.value.values
+            val watermark = calls.value.values
                 .map { it.entity }
                 .filter { it.deviceId == deviceId && it.packageName == packageName && it.appInstance == appInstance }
                 .maxOfOrNull { it.startTime }
                 ?: return
-            clearedThrough.update { it + (AppSessionKey(deviceId, packageName, appInstance) to newest) }
+            clearedThrough.update { it + (AppSessionKey(deviceId, packageName, appInstance) to watermark) }
         }
     }
 

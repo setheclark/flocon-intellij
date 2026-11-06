@@ -71,5 +71,5 @@ interface NetworkDataSource {
      * Nothing is deleted: calls that started at or before the watermark stay hidden, including ones that only
      * arrive after the clear, and later calls are listed normally.
      */
-    suspend fun clearCurrentSession(deviceId: String, packageName: String)
+    suspend fun clearCurrentAppSession(deviceId: String, packageName: String)
 }

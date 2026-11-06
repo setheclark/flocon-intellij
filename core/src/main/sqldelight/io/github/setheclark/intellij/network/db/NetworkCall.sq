@@ -102,8 +102,8 @@ DELETE FROM network_call WHERE device_id = ? AND package_name = ?;
 deleteClearsForDevicePackage:
 DELETE FROM network_clear WHERE device_id = ? AND package_name = ?;
 
--- Hides every call the session has so far. Does nothing when the session has no calls.
-clearSession:
+-- Hides every call the app session has so far. Does nothing when the app session has no calls.
+clearAppSession:
 INSERT OR REPLACE INTO network_clear(device_id, package_name, app_instance, cleared_through)
 SELECT device_id, package_name, app_instance, MAX(start_time) FROM network_call
 WHERE device_id = ? AND package_name = ? AND app_instance = ?
