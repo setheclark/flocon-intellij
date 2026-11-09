@@ -1,5 +1,7 @@
 package io.github.setheclark.intellij.ui.network.list
 
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -41,6 +43,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.setheclark.intellij.PluginBundle
+import io.github.setheclark.intellij.graphql.GraphQlGoToDeclaration
+import io.github.setheclark.intellij.ui.LocalProject
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -193,35 +198,56 @@ private fun CallListRow(
     val bgColor by style.simpleListItemStyle.colors.backgroundFor(itemState)
     val contentColor by style.simpleListItemStyle.colors.contentFor(itemState)
     val isDark = JewelTheme.isDark
+    val project = LocalProject.current
+    val graphQl = call.graphQl
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(style.itemHeight)
-            .background(bgColor)
-            .pointerInput(call.callId) {
-                detectTapGestures(
-                    onPress = { onSelect() },
-                    onDoubleTap = { onOpen() },
+    ContextMenuArea(
+        items = {
+            if (graphQl == null) {
+                emptyList()
+            } else {
+                val reason = graphQl.unavailableReason
+                listOf(
+                    if (reason == null) {
+                        ContextMenuItem(PluginBundle.message("action.goToGraphQlDeclaration.text")) {
+                            GraphQlGoToDeclaration(project).go(graphQl)
+                        }
+                    } else {
+                        ContextMenuItem(PluginBundle.message("graphql.goTo.unavailable.contextMenu", reason)) {}
+                    },
                 )
             }
-            .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        },
     ) {
-        visibleColumns.forEachIndexed { index, col ->
-            val isLast = index == visibleColumns.lastIndex
-            val text = col.formatForDisplay(call)
-            val color = if (!isSelected) col.colorForDisplay(call, isDark) ?: contentColor else contentColor
-            val widthModifier = if (isLast) Modifier.weight(1f) else Modifier.width(columnWidths[index].dp)
-            Text(
-                text = text,
-                color = color,
-                modifier = widthModifier.padding(start = 2.dp, end = 4.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!isLast) {
-                Spacer(Modifier.width(4.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(style.itemHeight)
+                .background(bgColor)
+                .pointerInput(call.callId) {
+                    detectTapGestures(
+                        onPress = { onSelect() },
+                        onDoubleTap = { onOpen() },
+                    )
+                }
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            visibleColumns.forEachIndexed { index, col ->
+                val isLast = index == visibleColumns.lastIndex
+                val text = col.formatForDisplay(call)
+                val color = if (!isSelected) col.colorForDisplay(call, isDark) ?: contentColor else contentColor
+                val widthModifier = if (isLast) Modifier.weight(1f) else Modifier.width(columnWidths[index].dp)
+                Text(
+                    text = text,
+                    color = color,
+                    modifier = widthModifier.padding(start = 2.dp, end = 4.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!isLast) {
+                    Spacer(Modifier.width(4.dp))
+                }
             }
         }
     }

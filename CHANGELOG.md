@@ -13,6 +13,7 @@
 - "Clear history" (formerly "Clear All") hides the calls of the current app session of the selected device and app. Other sessions, devices and apps keep their calls, the cleared state survives an IDE restart, and nothing is deleted until retention purges it
 - Network history retention: history stays under a maximum database size (default 1 GB) and a maximum age (default 7 days), evicting the oldest calls and their bodies first
 - New **Settings → Tools → Network Inspector** page with three options: persist network history, maximum database size and maximum age. With persistence off, history is memory-only and nothing is written to the database
+- GraphQL calls can jump to their operation in the project: "Go to GraphQL Declaration" in the call details' GraphQL section and in the call list's context menu. It scans `.graphql`, `.gql` and `.graphqls` files without needing the GraphQL plugin, waits for indexing, offers a chooser when several files match (operations of the call's type first), and offers Find in Files when none do. When the call's operation type is unknown, the matched file's keyword is shown as its type
 
 ### Changed
 

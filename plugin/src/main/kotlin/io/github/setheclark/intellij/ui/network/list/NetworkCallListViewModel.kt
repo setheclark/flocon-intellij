@@ -6,7 +6,9 @@ import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPacka
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
+import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
+import io.github.setheclark.intellij.graphql.GraphQlOperationRef
 import io.github.setheclark.intellij.ui.network.NetworkInspectorIntent
 import io.github.setheclark.intellij.ui.network.NetworkInspectorViewModel
 import io.github.setheclark.intellij.ui.network.usecase.ObserveFilteredNetworkRequestsUseCase
@@ -91,6 +93,9 @@ class NetworkCallListViewModel(
             status = (response as? NetworkResponse.Success)?.statusCode,
             duration = response?.durationMs,
             size = (response as? NetworkResponse.Success)?.size,
+            graphQl = (request.type as? NetworkRequest.Type.GraphQl)?.let {
+                GraphQlOperationRef(operationName = it.operationName, operationType = it.operationType)
+            },
         )
     }
 }
