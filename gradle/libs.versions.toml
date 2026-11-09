@@ -1,7 +1,7 @@
 [versions]
 # plugins
 kotlin = "2.4.0"
-intellij-platform = "2.19.0"
+intellij-platform = "2.20.0"
 metro = "1.5.1"
 changelog = "2.5.0"
 kover = "0.9.11"
