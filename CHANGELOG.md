@@ -18,6 +18,7 @@
 
 - The old memory limits (stored call count, body cache size, body size cap, compression toggle) are removed from the settings; they now apply only to the memory-only fallback
 - GraphQL persisted-query calls no longer show "mutation" as their operation type; it now shows "Unknown" because the query text is not available
+- Opening a large body no longer freezes the IDE, and the loading indicator animates (and shows for at least 250 ms) while the editor is built. JSON bodies are now pretty-printed in the background with kotlinx.serialization instead of the IDE formatter, so indentation is a fixed 4 spaces and ignores the IDE code style (other types still use the IDE formatter). Invalid JSON, and non-JSON bodies over 200,000 characters, are shown unformatted
 - UI Improvements to the device/app selection menu
 - Internal: device/app picker, server controls and warning banner are now shared tool window components, ready for new feature tabs
 - Internal: process executor keeps double-quoted arguments with spaces intact, and a device-targeted ADB use case refuses to run when the device serial is unknown

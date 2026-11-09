@@ -27,9 +27,11 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import io.github.setheclark.intellij.stringResource
 import io.github.setheclark.intellij.ui.LocalProject
-import io.github.setheclark.intellij.util.IntellijUtil.formatText
+import io.github.setheclark.intellij.util.IntellijUtil
+import io.github.setheclark.intellij.util.formatBody
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.jewel.foundation.theme.JewelTheme
@@ -37,6 +39,9 @@ import org.jetbrains.jewel.ui.component.Text
 import kotlin.coroutines.cancellation.CancellationException
 
 private val log = Logger.withPluginTag("EditorText")
+
+/** Keeps the loading indicator visible long enough not to flicker for fast loads. */
+private const val MIN_LOADING_MS = 250L
 
 enum class ContentType(val extension: String) {
     Json("json"),
@@ -143,7 +148,10 @@ private fun rememberEditor(
         val creationJob = compositionScope.launch(Dispatchers.EDT) {
             try {
                 val fileType = FileTypeManager.getInstance().getFileTypeByExtension(contentType.extension)
-                val formattedText = formatText(project, text, fileType)
+                val started = System.nanoTime()
+                val formattedText = IntellijUtil.formatBody(project, text, fileType)
+                val remainingMs = MIN_LOADING_MS - (System.nanoTime() - started) / 1_000_000
+                if (remainingMs > 0) delay(remainingMs)
                 val doc = EditorFactory.getInstance().createDocument(formattedText)
                 val createdEditor = EditorFactory.getInstance()
                     .createEditor(doc, project, fileType, true) as Editor
@@ -178,7 +186,7 @@ private fun rememberEditor(
         withContext(Dispatchers.EDT) {
             try {
                 val fileType = FileTypeManager.getInstance().getFileTypeByExtension(contentType.extension)
-                val formattedText = formatText(project, text, fileType)
+                val formattedText = IntellijUtil.formatBody(project, text, fileType)
                 WriteCommandAction.writeCommandAction(project).run<Throwable> {
                     currentEditor.document.setText(formattedText)
                 }
