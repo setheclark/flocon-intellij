@@ -190,6 +190,9 @@ class InMemoryNetworkDataSource(
         }
     }
 
+    // Memory-only history is bounded by MAX_STORED_CALLS and the body store, not by the retention settings.
+    override suspend fun enforceRetention(maxSizeBytes: Long, maxAgeMillis: Long, now: Long) = Unit
+
     private suspend fun storeResponseBody(entity: NetworkCallEntity): String? =
         when (val response = entity.response) {
             is NetworkResponse.Success -> bodyStore.store(entity.callId, BodyType.RESPONSE, response.body)

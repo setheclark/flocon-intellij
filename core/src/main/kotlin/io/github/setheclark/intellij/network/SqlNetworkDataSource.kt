@@ -1,6 +1,8 @@
 package io.github.setheclark.intellij.network
 
 import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.db.QueryResult
+import app.cash.sqldelight.db.SqlDriver
 import io.github.setheclark.intellij.flocon.network.BodyContent
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
@@ -20,6 +22,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
+import javax.sql.DataSource
+import kotlin.math.ceil
 
 /**
  * [NetworkDataSource] backed by the SQLite history database.
@@ -29,6 +33,8 @@ import kotlinx.serialization.json.Json
  */
 class SqlNetworkDataSource internal constructor(
     database: NetworkHistoryDatabase,
+    private val driver: SqlDriver,
+    private val dataSource: DataSource,
     private val json: Json,
     private val dispatcher: CoroutineDispatcher,
 ) : NetworkDataSource {
@@ -154,6 +160,33 @@ class SqlNetworkDataSource internal constructor(
         }
     }
 
+    override suspend fun enforceRetention(maxSizeBytes: Long, maxAgeMillis: Long, now: Long) {
+        withContext(dispatcher) {
+            writeMutex.withLock {
+                queries.deleteCallsReceivedBefore(now - maxAgeMillis)
+                evictOldestUntilWithin(maxSizeBytes)
+                queries.deleteOrphanClears()
+                // The deletes above hand their pages back at commit; the checkpoint makes the file on disk show it.
+                dataSource.checkpoint()
+            }
+        }
+    }
+
+    /** Deletes the oldest calls in proportion to how far history is over [maxSizeBytes], until it fits. */
+    private fun evictOldestUntilWithin(maxSizeBytes: Long) {
+        while (true) {
+            val used = usedBytes()
+            val calls = queries.countCalls().executeAsOne()
+            if (used <= maxSizeBytes || calls == 0L) return
+            val overshoot = (used - maxSizeBytes).toDouble() / used
+            queries.deleteOldestCalls(maxOf(1L, ceil(calls * overshoot).toLong()))
+        }
+    }
+
+    // Pages on the freelist are reusable space, not history.
+    private fun usedBytes(): Long =
+        (driver.pragmaLong("page_count") - driver.pragmaLong("freelist_count")) * driver.pragmaLong("page_size")
+
     // region mapping
 
     private fun NetworkCallEntity.insertRow() {
@@ -164,6 +197,7 @@ class SqlNetworkDataSource internal constructor(
             package_name = packageName,
             app_instance = appInstance,
             start_time = startTime,
+            received_at = System.currentTimeMillis(),
             name = name,
             request_url = request.url,
             request_method = request.method,

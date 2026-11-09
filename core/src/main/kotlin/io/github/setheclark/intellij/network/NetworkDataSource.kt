@@ -72,4 +72,12 @@ interface NetworkDataSource {
      * arrive after the clear, and later calls are listed normally.
      */
     suspend fun clearCurrentAppSession(deviceId: String, packageName: String)
+
+    /**
+     * Purges history beyond its limits, oldest first: calls received more than [maxAgeMillis] before [now], then
+     * the oldest remaining calls and their bodies until stored history fits in [maxSizeBytes].
+     * Clear watermarks of app sessions left without calls are dropped. Memory-only history has fixed limits
+     * of its own and ignores this.
+     */
+    suspend fun enforceRetention(maxSizeBytes: Long, maxAgeMillis: Long, now: Long = System.currentTimeMillis())
 }

@@ -7,6 +7,8 @@ CREATE TABLE network_call (
     package_name TEXT NOT NULL,
     app_instance TEXT NOT NULL,
     start_time INTEGER NOT NULL,
+    -- When the IDE stored the call, on the IDE's clock. Retention ages calls by this, not by the device's start_time.
+    received_at INTEGER NOT NULL,
     name TEXT NOT NULL,
     request_url TEXT NOT NULL,
     request_method TEXT NOT NULL,
@@ -51,12 +53,12 @@ CREATE TABLE network_clear (
 
 insertCall:
 INSERT OR REPLACE INTO network_call(
-    call_id, device_id, package_name, app_instance, start_time, name,
+    call_id, device_id, package_name, app_instance, start_time, received_at, name,
     request_url, request_method, request_headers, request_size, request_type,
     graphql_persisted, graphql_query, graphql_operation_name, graphql_operation_type,
     response_kind, response_duration_ms, response_headers, response_size,
     response_content_type, response_status_code, response_issue
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateResponse:
 UPDATE network_call SET
@@ -98,6 +100,25 @@ DELETE FROM network_call WHERE call_id = ?;
 
 deleteCallsForDevicePackage:
 DELETE FROM network_call WHERE device_id = ? AND package_name = ?;
+
+deleteCallsReceivedBefore:
+DELETE FROM network_call WHERE received_at < ?;
+
+countCalls:
+SELECT COUNT(*) FROM network_call;
+
+-- Deletes the oldest calls, and through the foreign key their bodies.
+deleteOldestCalls:
+DELETE FROM network_call WHERE seq IN (SELECT seq FROM network_call ORDER BY seq LIMIT ?);
+
+-- A watermark only means something while its app session still has calls.
+deleteOrphanClears:
+DELETE FROM network_clear WHERE NOT EXISTS (
+    SELECT 1 FROM network_call
+    WHERE network_call.device_id = network_clear.device_id
+        AND network_call.package_name = network_clear.package_name
+        AND network_call.app_instance = network_clear.app_instance
+);
 
 deleteClearsForDevicePackage:
 DELETE FROM network_clear WHERE device_id = ? AND package_name = ?;

@@ -9,6 +9,7 @@ import io.github.openflocon.domain.settings.usecase.StartAdbForwardUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.AppCoroutineScope
 import io.github.setheclark.intellij.flocon.device.EnsureSelectedDeviceAndPackageUseCase
+import io.github.setheclark.intellij.network.NetworkRetentionScheduler
 import io.github.setheclark.intellij.server.MessageServerDelegate
 import io.github.setheclark.intellij.util.withPluginTag
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +26,7 @@ class ApplicationServiceDelegate(
     private val initAdbPathUseCase: InitAdbPathUseCase,
     private val startAdbForwardUseCase: StartAdbForwardUseCase,
     private val ensureSelectedDeviceAndPackageUseCase: EnsureSelectedDeviceAndPackageUseCase,
+    private val networkRetentionScheduler: NetworkRetentionScheduler,
 ) {
     private val log = Logger.withPluginTag("ApplicationServiceDelegate")
 
@@ -46,6 +48,8 @@ class ApplicationServiceDelegate(
                     delay(1_500)
                 }
             }
+
+            networkRetentionScheduler.start()
 
             ensureSelectedDeviceAndPackageUseCase()
         }

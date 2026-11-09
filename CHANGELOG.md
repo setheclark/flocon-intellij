@@ -11,6 +11,8 @@
 - Warning banner when the history database cannot be opened and history is kept in memory only
 - Request and response bodies are read from the history database only when the body tab that shows them is opened, so selecting a call stays fast for very large bodies. A body whose call was purged shows a clear message
 - "Clear history" (formerly "Clear All") hides the calls of the current app session of the selected device and app. Other sessions, devices and apps keep their calls, the cleared state survives an IDE restart, and nothing is deleted until retention purges it
+- Network history retention: history stays under a maximum database size (default 1 GB) and a maximum age (default 7 days), evicting the oldest calls and their bodies first
+- New **Settings → Tools → Network Inspector** page with three options: persist network history, maximum database size and maximum age. With persistence off, history is memory-only and nothing is written to the database
 
 ### Changed
 
