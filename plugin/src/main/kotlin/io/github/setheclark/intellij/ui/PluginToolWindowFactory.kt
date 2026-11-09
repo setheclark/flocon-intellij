@@ -36,7 +36,9 @@ class PluginToolWindowFactory : ToolWindowFactory, DumbAware {
             tabDisplayName = PluginBundle.message("tab.network"),
             focusOnClickInside = false,
         ) {
-            NetworkInspectorContent(uiGraph)
+            WithProject(project) {
+                NetworkInspectorContent(uiGraph)
+            }
         }
 
         (toolWindow as? ToolWindowEx)?.setTabActions(showHiddenTabsAction(toolWindow))

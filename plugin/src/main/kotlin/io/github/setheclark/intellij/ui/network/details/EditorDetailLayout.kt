@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -40,9 +41,12 @@ import io.github.setheclark.intellij.flocon.network.BodyContent
 import io.github.setheclark.intellij.flocon.network.NetworkCallEntity
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
+import io.github.setheclark.intellij.graphql.GraphQlGoToDeclaration
+import io.github.setheclark.intellij.graphql.GraphQlOperationRef
 import io.github.setheclark.intellij.network.BodyType
 import io.github.setheclark.intellij.settings.NetworkStorageSettingsState
 import io.github.setheclark.intellij.stringResource
+import io.github.setheclark.intellij.ui.LocalProject
 import io.github.setheclark.intellij.ui.network.details.common.HeadersTable
 import io.github.setheclark.intellij.ui.network.details.common.KeyValueRow
 import io.github.setheclark.intellij.ui.network.details.common.rememberMaxKeyWidth
@@ -55,6 +59,8 @@ import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.Orientation
 import org.jetbrains.jewel.ui.component.Divider
 import org.jetbrains.jewel.ui.component.Icon
+import org.jetbrains.jewel.ui.component.OutlinedButton
+import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import java.awt.Cursor
 import java.awt.datatransfer.StringSelection
@@ -219,6 +225,8 @@ private fun EditorLeftPanel(
     val graphqlKeyWidth = rememberMaxKeyWidth(graphqlKeys)
 
     var expandedSection by remember(call.callId) { mutableStateOf<String?>("general") }
+    var resolvedOperationType by remember(call.callId) { mutableStateOf<String?>(null) }
+    val project = LocalProject.current
     fun toggle(key: String) {
         expandedSection = if (expandedSection == key) null else key
     }
@@ -263,9 +271,31 @@ private fun EditorLeftPanel(
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
                         type.operationName?.let { KeyValueRow(key = "Operation Name", value = it, keyWidth = graphqlKeyWidth) }
-                        KeyValueRow(key = "Operation Type", value = type.operationType ?: "Unknown", keyWidth = graphqlKeyWidth)
+                        KeyValueRow(
+                            key = "Operation Type",
+                            value = type.operationType ?: resolvedOperationType ?: "Unknown",
+                            keyWidth = graphqlKeyWidth,
+                        )
                         KeyValueRow(key = "Persisted", value = type.persisted.toString(), keyWidth = graphqlKeyWidth)
                         type.query?.let { KeyValueRow(key = "Has Query", value = "Yes", keyWidth = graphqlKeyWidth) }
+
+                        val operationRef = GraphQlOperationRef(type.operationName, type.operationType)
+                        val unavailableReason = operationRef.unavailableReason
+                        DisableSelection {
+                            Column(modifier = Modifier.padding(top = 4.dp)) {
+                                OutlinedButton(
+                                    onClick = {
+                                        GraphQlGoToDeclaration(project).go(operationRef) { resolvedOperationType = it }
+                                    },
+                                    enabled = unavailableReason == null,
+                                ) {
+                                    Text(stringResource("action.goToGraphQlDeclaration.text"))
+                                }
+                                if (unavailableReason != null) {
+                                    Text(unavailableReason, color = JewelTheme.globalColors.text.info)
+                                }
+                            }
+                        }
                     }
                 }
             }
