@@ -191,6 +191,8 @@ Network calls and their full request and response bodies are stored in an embedd
 - **It is a cache**: The history is lost on an IDE major upgrade, after **File → Invalidate Caches**, and when the IDE cleans up leftover directories. A plugin update that changes the database layout also starts a fresh database.
 - **Stored unredacted**: Headers and bodies are written to disk exactly as the device sent them, including tokens and personal data. Treat the database file as sensitive.
 - **If the database cannot be opened**: The plugin deletes and recreates it once. If that fails too, it keeps history in memory only (the latest 1000 calls, bodies truncated at 1 MB) and shows a warning banner that history will not survive a restart.
+- **Retention**: History stays within a maximum database size (default 1 GB) and a maximum age (default 7 days). The oldest calls and their bodies are removed first, when the plugin starts, when you change a limit and every ten minutes. Calls you hid with **Clear history** are removed this way too.
+- **Settings**: **Settings → Tools → Network Inspector** has exactly three options: persist network history, maximum database size and maximum age. Turning persistence off keeps history in memory only (the latest 1000 calls, bodies truncated at 1 MB) and writes nothing to the database. Persistence applies after the IDE restarts; the limits apply immediately.
 
 ---
 

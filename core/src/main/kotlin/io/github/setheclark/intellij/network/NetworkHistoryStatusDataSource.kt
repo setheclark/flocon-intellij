@@ -13,6 +13,9 @@ enum class NetworkHistoryMode {
 
     /** The history database could not be opened. Calls are kept in memory and lost on restart. */
     MemoryOnly,
+
+    /** The developer turned persistence off. Calls are kept in memory by choice and lost on restart. */
+    Disabled,
 }
 
 @Inject

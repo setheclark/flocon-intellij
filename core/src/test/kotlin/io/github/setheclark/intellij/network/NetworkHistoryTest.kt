@@ -5,6 +5,7 @@ import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.device.models.DeviceIdAndPackageNameDomainModel
 import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainModel
 import io.github.setheclark.intellij.domain.models.NetworkFilter
+import io.github.setheclark.intellij.fakes.FakeNetworkStorageSettingsProvider
 import io.github.setheclark.intellij.fakes.FakeServer
 import io.github.setheclark.intellij.flocon.messages.MessageRemoteDataSourceImpl
 import io.github.setheclark.intellij.flocon.network.BodyContent
@@ -13,6 +14,7 @@ import io.github.setheclark.intellij.flocon.network.NetworkMessageMapper
 import io.github.setheclark.intellij.flocon.network.NetworkRepositoryImpl
 import io.github.setheclark.intellij.flocon.network.NetworkResponse
 import io.github.setheclark.intellij.server.MessageServerStatusDataSource
+import io.github.setheclark.intellij.settings.NetworkStorageSettings
 import io.github.setheclark.intellij.ui.network.usecase.ObserveFilteredNetworkRequestsUseCase
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -23,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -55,7 +58,8 @@ class NetworkHistoryTest {
         harnesses.forEach { it.close() }
     }
 
-    private fun harness(file: File = databaseFile) = Harness(file).also { harnesses += it }
+    private fun harness(file: File = databaseFile, settings: NetworkStorageSettings = NetworkStorageSettings()) =
+        Harness(file, settings).also { harnesses += it }
 
     private fun unopenableFile() = File(tmp.newFile("blocker"), "network-history.db")
 
@@ -437,9 +441,166 @@ class NetworkHistoryTest {
         harness().awaitSession { true }.shouldBeEmpty()
     }
 
-    private fun bodyCount(): Int = DriverManager.getConnection("jdbc:sqlite:${databaseFile.absolutePath}").use { c ->
+    @Test
+    fun `exceeding the maximum size evicts the oldest calls and their bodies until under the limit`() = runBlocking<Unit> {
+        val settings = NetworkStorageSettings(maxDatabaseSizeMb = 1)
+        val h = harness(settings = settings)
+        val body = "x".repeat(200_000)
+        repeat(10) { h.sendCall("call-$it", appInstance = 1, responseBody = body) }
+        h.awaitSession { calls -> calls.size == 10 && calls.all { it.response != null } }
+        (databaseFile.length() > settings.maxDatabaseSizeBytes) shouldBe true
+
+        h.dataSource.enforceRetention(settings.maxDatabaseSizeBytes, settings.maxAgeMillis)
+
+        val remaining = h.awaitSession { it.isNotEmpty() }.map(NetworkCallEntity::callId)
+        (remaining.size < 10) shouldBe true
+        remaining shouldBe (10 - remaining.size until 10).map { "call-$it" }
+        (databaseFile.length() <= settings.maxDatabaseSizeBytes) shouldBe true
+        bodyCount() shouldBe remaining.size
+        h.dataSource.getByCallId("call-0") shouldBe null
+    }
+
+    @Test
+    fun `changing the maximum size in the settings trims history without a restart`() = runBlocking<Unit> {
+        val provider = FakeNetworkStorageSettingsProvider()
+        val h = harness(settings = provider.getSettings())
+        val body = "x".repeat(200_000)
+        repeat(10) { h.sendCall("call-$it", appInstance = 1, responseBody = body) }
+        h.awaitSession { calls -> calls.size == 10 && calls.all { it.response != null } }
+
+        val scheduler = NetworkRetentionScheduler(CoroutineScope(Dispatchers.Default), h.dataSource, provider)
+        val job = scheduler.start()
+        try {
+            delay(200)
+            h.awaitSession { true }.size shouldBe 10
+
+            provider.updateSettings(provider.getSettings().copy(maxDatabaseSizeMb = 1))
+
+            h.awaitSession { it.size in 1..9 }
+        } finally {
+            job.cancel()
+        }
+        h.dataSource.getByCallId("call-0") shouldBe null
+    }
+
+    @Test
+    fun `staying under the maximum size evicts nothing`() = runBlocking<Unit> {
+        val settings = NetworkStorageSettings(maxDatabaseSizeMb = 1)
+        val h = harness(settings = settings)
+        repeat(3) { h.sendCall("call-$it", appInstance = 1, responseBody = "small") }
+        h.awaitSession { calls -> calls.size == 3 && calls.all { it.response != null } }
+
+        h.dataSource.enforceRetention(settings.maxDatabaseSizeBytes, settings.maxAgeMillis)
+
+        h.awaitSession { true }.map(NetworkCallEntity::callId) shouldBe listOf("call-0", "call-1", "call-2")
+    }
+
+    @Test
+    fun `calls older than the maximum age are purged with their bodies`() = runBlocking<Unit> {
+        val settings = NetworkStorageSettings(maxAgeDays = 7)
+        val h = harness(settings = settings)
+        h.sendCall("old", appInstance = 1, responseBody = "old body")
+        h.awaitSession { it.singleOrNull()?.response != null }
+        delay(50)
+        val between = System.currentTimeMillis()
+        delay(50)
+        h.sendCall("recent", appInstance = 1, responseBody = "recent body")
+        h.awaitSession { calls -> calls.size == 2 && calls.all { it.response != null } }
+
+        // Seven days after the first call arrived, the second has not yet reached that age.
+        h.dataSource.enforceRetention(settings.maxDatabaseSizeBytes, settings.maxAgeMillis, now = between + settings.maxAgeMillis)
+
+        h.awaitSession { it.size == 1 }.single().callId shouldBe "recent"
+        h.dataSource.getByCallId("old") shouldBe null
+        bodyCount() shouldBe 1
+    }
+
+    @Test
+    fun `retention is applied again after a restart`() = runBlocking<Unit> {
+        val settings = NetworkStorageSettings(maxAgeDays = 1)
+        val first = harness(settings = settings)
+        first.sendCall("call-1", appInstance = 1)
+        first.awaitSession { it.singleOrNull()?.response != null }
+        first.close()
+
+        val second = harness(settings = settings)
+        second.dataSource.enforceRetention(
+            settings.maxDatabaseSizeBytes, settings.maxAgeMillis,
+            now =
+            System.currentTimeMillis() + 2 * settings.maxAgeMillis,
+        )
+
+        second.dataSource.getByCallId("call-1") shouldBe null
+    }
+
+    @Test
+    fun `purging the last call of an app session removes its clear watermark`() = runBlocking<Unit> {
+        val settings = NetworkStorageSettings(maxAgeDays = 7)
+        val h = harness(settings = settings)
+        h.sendCall("session-1", appInstance = 1, startTime = 10)
+        h.awaitSession { it.size == 1 }
+        h.dataSource.clearCurrentAppSession(DEVICE, PACKAGE)
+        delay(50)
+        val between = System.currentTimeMillis()
+        delay(50)
+        h.sendCall("session-2", appInstance = 2, startTime = 20)
+        h.awaitSession { it.size == 1 }
+        h.dataSource.clearCurrentAppSession(DEVICE, PACKAGE)
+        clearCount() shouldBe 2
+
+        h.dataSource.enforceRetention(settings.maxDatabaseSizeBytes, settings.maxAgeMillis, now = between + settings.maxAgeMillis)
+
+        clearCount() shouldBe 1
+    }
+
+    @Test
+    fun `a clear watermark is kept while its session still has calls`() = runBlocking<Unit> {
+        val settings = NetworkStorageSettings(maxAgeDays = 7)
+        val h = harness(settings = settings)
+        h.sendCall("call-1", appInstance = 1, startTime = 10)
+        h.awaitSession { it.size == 1 }
+        h.dataSource.clearCurrentAppSession(DEVICE, PACKAGE)
+
+        h.dataSource.enforceRetention(settings.maxDatabaseSizeBytes, settings.maxAgeMillis)
+
+        clearCount() shouldBe 1
+    }
+
+    @Test
+    fun `with persistence off history is memory-only and nothing is written to the database`() = runBlocking<Unit> {
+        val h = harness(settings = NetworkStorageSettings(persistHistory = false))
+
+        h.status.mode.value shouldBe NetworkHistoryMode.Disabled
+        h.sendCall("call-1", appInstance = 1, requestBody = "req", responseBody = "res")
+        h.awaitSession { it.singleOrNull()?.response != null }
+        h.dataSource.getByCallId("call-1")!!.request.body shouldBe "req"
+
+        databaseFile.exists() shouldBe false
+        databaseFile.parentFile.exists() shouldBe false
+    }
+
+    @Test
+    fun `with persistence off a database from an earlier run is left untouched and not read`() = runBlocking<Unit> {
+        val first = harness()
+        first.sendCall("stored", appInstance = 1)
+        first.awaitSession { it.size == 1 }
+        first.close()
+        val sizeBefore = databaseFile.length()
+
+        val second = harness(settings = NetworkStorageSettings(persistHistory = false))
+
+        second.dataSource.getByCallId("stored") shouldBe null
+        second.dataSource.enforceRetention(0, 0, now = Long.MAX_VALUE)
+        databaseFile.length() shouldBe sizeBefore
+    }
+
+    private fun bodyCount(): Int = rowCount("network_body")
+
+    private fun clearCount(): Int = rowCount("network_clear")
+
+    private fun rowCount(table: String): Int = DriverManager.getConnection("jdbc:sqlite:${databaseFile.absolutePath}").use { c ->
         c.createStatement().use { s ->
-            s.executeQuery("SELECT count(*) FROM network_body").use {
+            s.executeQuery("SELECT count(*) FROM $table").use {
                 it.next()
                 it.getInt(1)
             }
@@ -452,7 +613,7 @@ class NetworkHistoryTest {
         }
     }
 
-    private class Harness(file: File) {
+    private class Harness(file: File, settings: NetworkStorageSettings) {
         private val json = Json { ignoreUnknownKeys = true }
         private val scope = CoroutineScope(Dispatchers.Default)
         private val server = FakeServer()
@@ -469,6 +630,7 @@ class NetworkHistoryTest {
                 override val databaseFile: File = file
             },
             status = status,
+            settingsProvider = FakeNetworkStorageSettingsProvider(settings),
             dispatchers = dispatchers,
             json = json,
         ).create()

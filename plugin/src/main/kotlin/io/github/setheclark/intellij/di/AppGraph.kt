@@ -28,6 +28,8 @@ interface AppGraph : ProjectGraph.Factory {
 
     val applicationServiceDelegate: ApplicationServiceDelegate
 
+    val networkStorageSettingsProvider: NetworkStorageSettingsProvider
+
     @Provides
     @SingleIn(AppScope::class)
     fun provideProcessExecutor(impl: SystemProcessExecutor): ProcessExecutor = impl

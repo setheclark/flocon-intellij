@@ -31,14 +31,24 @@ class NetworkStorageSettingsState : PersistentStateComponent<NetworkStorageSetti
         XmlSerializerUtil.copyBean(state, this)
     }
 
+    var persistHistory: Boolean = true
+    var maxDatabaseSizeMb: Int = NetworkStorageSettings.DEFAULT_MAX_DATABASE_SIZE_MB
+    var maxAgeDays: Int = NetworkStorageSettings.DEFAULT_MAX_AGE_DAYS
+
     fun toSettings(): NetworkStorageSettings = NetworkStorageSettings(
         hiddenColumns = hiddenColumns.toSet(),
         columnWidths = columnWidths.toMap(),
+        persistHistory = persistHistory,
+        maxDatabaseSizeMb = maxDatabaseSizeMb,
+        maxAgeDays = maxAgeDays,
     )
 
     fun updateFrom(settings: NetworkStorageSettings) {
         hiddenColumns = settings.hiddenColumns.toMutableSet()
         columnWidths = settings.columnWidths.toMutableMap()
+        persistHistory = settings.persistHistory
+        maxDatabaseSizeMb = settings.maxDatabaseSizeMb
+        maxAgeDays = settings.maxAgeDays
     }
 
     companion object {
