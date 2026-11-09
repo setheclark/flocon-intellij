@@ -21,7 +21,7 @@ sealed interface NetworkInspectorIntent {
     data class UpdateFilter(val filter: String) : NetworkInspectorIntent
 
     // List actions
-    data object ClearAll : NetworkInspectorIntent
+    data object ClearHistory : NetworkInspectorIntent
     data object EnableAutoScroll : NetworkInspectorIntent
     data object DisableAutoScroll : NetworkInspectorIntent
 

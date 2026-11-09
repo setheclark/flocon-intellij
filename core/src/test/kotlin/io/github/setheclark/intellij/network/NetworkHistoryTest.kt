@@ -244,7 +244,7 @@ class NetworkHistoryTest {
         bodyCount() shouldBe 2
         h.dataSource.getByCallId("call-1") shouldBe null
 
-        h.dataSource.deleteAll()
+        h.dataSource.deleteByDeviceAndPackage(DEVICE, PACKAGE)
         bodyCount() shouldBe 0
     }
 
@@ -316,6 +316,123 @@ class NetworkHistoryTest {
     }
 
     @Test
+    fun `clearing history empties the current session and later calls appear normally`() = runBlocking<Unit> {
+        val h = harness()
+        h.sendCall("old-1", appInstance = 1, startTime = 10)
+        h.sendCall("old-2", appInstance = 1, startTime = 20)
+        h.awaitSession { it.size == 2 }
+
+        h.repository.clearHistory(DEVICE, PACKAGE)
+        h.awaitSession { it.isEmpty() }
+
+        h.sendCall("new-1", appInstance = 1, startTime = 30)
+        h.awaitSession { it.map(NetworkCallEntity::callId) == listOf("new-1") }
+    }
+
+    @Test
+    fun `a call that started before the clear stays hidden when it arrives after it`() = runBlocking<Unit> {
+        val h = harness()
+        h.sendCall("old", appInstance = 1, startTime = 20)
+        h.awaitSession { it.size == 1 }
+        h.repository.clearHistory(DEVICE, PACKAGE)
+        h.awaitSession { it.isEmpty() }
+
+        h.sendCall("late", appInstance = 1, startTime = 15)
+        h.sendCall("after", appInstance = 1, startTime = 21)
+
+        h.awaitSession { it.map(NetworkCallEntity::callId) == listOf("after") }
+    }
+
+    @Test
+    fun `clearing history keeps the stored calls and bodies and leaves other sessions devices and apps alone`() = runBlocking<Unit> {
+        val h = harness()
+        h.sendCall("earlier-session", appInstance = 1, startTime = 10)
+        h.sendCall("mine", appInstance = 2, startTime = 20, requestBody = "req", responseBody = "res")
+        h.sendCall("other-device", appInstance = 2, startTime = 20, deviceId = "device-2")
+        h.sendCall("other-app", appInstance = 2, startTime = 20, packageName = "com.other")
+        h.awaitSession { it.map(NetworkCallEntity::callId) == listOf("mine") }
+
+        h.repository.clearHistory(DEVICE, PACKAGE)
+        h.awaitSession { it.isEmpty() }
+
+        h.repository.observeCalls("device-2", PACKAGE).first { it.map(NetworkCallEntity::callId) == listOf("other-device") }
+        h.repository.observeCalls(DEVICE, "com.other").first { it.map(NetworkCallEntity::callId) == listOf("other-app") }
+        h.dataSource.getByCallId("earlier-session")!!.appInstance shouldBe "1"
+        h.dataSource.getByCallId("mine")!!.request.body shouldBe "req"
+        bodyCount() shouldBe 2
+    }
+
+    @Test
+    fun `a cleared session stays cleared after a restart and its new calls still appear`() = runBlocking<Unit> {
+        val first = harness()
+        first.sendCall("old", appInstance = 1, startTime = 10)
+        first.awaitSession { it.size == 1 }
+        first.repository.clearHistory(DEVICE, PACKAGE)
+        first.awaitSession { it.isEmpty() }
+        first.close()
+
+        val second = harness()
+        second.awaitSession { it.isEmpty() }
+        second.sendCall("new", appInstance = 1, startTime = 30)
+
+        second.awaitSession { it.map(NetworkCallEntity::callId) == listOf("new") }
+    }
+
+    @Test
+    fun `clearing again hides what arrived since the previous clear`() = runBlocking<Unit> {
+        val h = harness()
+        h.sendCall("first", appInstance = 1, startTime = 10)
+        h.awaitSession { it.size == 1 }
+        h.repository.clearHistory(DEVICE, PACKAGE)
+        h.sendCall("second", appInstance = 1, startTime = 20)
+        h.awaitSession { it.map(NetworkCallEntity::callId) == listOf("second") }
+
+        h.repository.clearHistory(DEVICE, PACKAGE)
+
+        h.awaitSession { it.isEmpty() }
+    }
+
+    @Test
+    fun `clearing history does nothing when there are no calls`() = runBlocking<Unit> {
+        val h = harness()
+        h.repository.clearHistory(DEVICE, PACKAGE)
+
+        h.sendCall("first", appInstance = 1, startTime = 1)
+
+        h.awaitSession { it.map(NetworkCallEntity::callId) == listOf("first") }
+    }
+
+    @Test
+    fun `cleared calls are not found by body search`() = runBlocking<Unit> {
+        val h = harness()
+        h.sendCall("old", appInstance = 1, startTime = 10, requestBody = "needle", responseBody = "x")
+        h.awaitSession { it.singleOrNull()?.response != null }
+        h.repository.clearHistory(DEVICE, PACKAGE)
+        h.sendCall("new", appInstance = 1, startTime = 20, requestBody = "needle", responseBody = "x")
+        h.awaitSession { it.map(NetworkCallEntity::callId) == listOf("new") }
+
+        h.search("needle") shouldBe listOf("new")
+    }
+
+    @Test
+    fun `memory-only history clears the current session the same way`() = runBlocking<Unit> {
+        val h = harness(unopenableFile())
+        h.sendCall("earlier-session", appInstance = 1, startTime = 10)
+        h.sendCall("old", appInstance = 2, startTime = 20)
+        h.sendCall("other-device", appInstance = 2, startTime = 20, deviceId = "device-2")
+        h.awaitSession { it.map(NetworkCallEntity::callId) == listOf("old") }
+
+        h.repository.clearHistory(DEVICE, PACKAGE)
+        h.awaitSession { it.isEmpty() }
+        h.sendCall("late", appInstance = 2, startTime = 15)
+        h.sendCall("new", appInstance = 2, startTime = 30)
+
+        h.awaitSession { it.map(NetworkCallEntity::callId) == listOf("new") }
+        h.repository.observeCalls("device-2", PACKAGE).first { it.map(NetworkCallEntity::callId) == listOf("other-device") }
+        h.dataSource.getByCallId("old")!!.appInstance shouldBe "2"
+    }
+
+    @Test
     fun `an empty database lists nothing`() = runBlocking<Unit> {
         harness().awaitSession { true }.shouldBeEmpty()
     }
@@ -380,6 +497,7 @@ class NetworkHistoryTest {
             requestBody: String? = null,
             responseBody: String? = null,
             withResponse: Boolean = true,
+            startTime: Long = 1,
         ) {
             send(
                 method = "logNetworkCallRequest",
@@ -391,7 +509,7 @@ class NetworkHistoryTest {
                         put("floconCallId", JsonPrimitive(callId))
                         put("url", JsonPrimitive("https://example.com/api/$callId"))
                         put("method", JsonPrimitive("GET"))
-                        put("startTime", JsonPrimitive(1L))
+                        put("startTime", JsonPrimitive(startTime))
                         put("requestHeaders", JsonObject(mapOf("Accept" to JsonPrimitive("application/json"))))
                         requestBody?.let { put("requestBody", JsonPrimitive(it)) }
                     },

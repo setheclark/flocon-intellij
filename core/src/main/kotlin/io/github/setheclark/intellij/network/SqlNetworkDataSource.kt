@@ -133,13 +133,24 @@ class SqlNetworkDataSource internal constructor(
 
     override suspend fun deleteByDeviceAndPackage(deviceId: String, packageName: String) {
         withContext(dispatcher) {
-            writeMutex.withLock { queries.deleteCallsForDevicePackage(deviceId, packageName) }
+            writeMutex.withLock {
+                queries.transaction {
+                    queries.deleteCallsForDevicePackage(deviceId, packageName)
+                    queries.deleteClearsForDevicePackage(deviceId, packageName)
+                }
+            }
         }
     }
 
-    override suspend fun deleteAll() {
+    override suspend fun clearCurrentAppSession(deviceId: String, packageName: String) {
         withContext(dispatcher) {
-            writeMutex.withLock { queries.deleteAllCalls() }
+            writeMutex.withLock {
+                queries.transaction {
+                    val appInstance = queries.selectCurrentAppInstance(deviceId, packageName).executeAsOneOrNull()
+                        ?: return@transaction
+                    queries.clearAppSession(deviceId, packageName, appInstance)
+                }
+            }
         }
     }
 
