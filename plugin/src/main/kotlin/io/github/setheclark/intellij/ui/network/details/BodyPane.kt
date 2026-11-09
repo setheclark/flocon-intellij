@@ -49,6 +49,7 @@ import io.github.setheclark.intellij.ui.component.LoadingContent
 import io.github.setheclark.intellij.ui.network.details.common.EmptyContent
 import io.github.setheclark.intellij.ui.network.details.common.ScratchFileContext
 import io.github.setheclark.intellij.util.IntellijUtil
+import io.github.setheclark.intellij.util.formatBody
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.jewel.foundation.theme.JewelTheme
@@ -241,7 +242,7 @@ private suspend fun openInScratchFile(project: Project, context: ScratchFileCont
     val fileType = FileTypeManager.getInstance().getFileTypeByExtension(contentType.extension)
     val language = if (fileType is LanguageFileType) fileType.language else Language.ANY
     val filename = generateScratchFilename(context)
-    val formattedBody = IntellijUtil.formatText(project, context.body, fileType)
+    val formattedBody = IntellijUtil.formatBody(project, context.body, fileType)
     try {
         val scratchFile = WriteCommandAction.writeCommandAction(project)
             .compute<VirtualFile?, Exception> {
