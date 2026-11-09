@@ -50,7 +50,7 @@ Network traffic inspector for Android apps using the Flocon SDK.
         <applicationConfigurable
                 parentId="tools"
                 id="io.github.setheclark.flocon_plugin.networkHistory"
-                instanceClass="io.github.setheclark.intellij.settings.NetworkHistoryConfigurable"
+                instance="io.github.setheclark.intellij.settings.NetworkHistoryConfigurable"
                 displayName="Network Inspector"/>
 
         <fileEditorProvider

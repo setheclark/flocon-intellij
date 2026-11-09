@@ -1,5 +1,6 @@
 package io.github.setheclark.intellij.settings
 
+import com.intellij.openapi.options.Configurable
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.JBIntSpinner
 import com.intellij.ui.components.JBCheckBox
@@ -30,6 +31,14 @@ class NetworkHistoryConfigurableTest : BasePlatformTestCase() {
         } finally {
             super.tearDown()
         }
+    }
+
+    fun testPageIsRegisteredUnderTools() {
+        val ep = Configurable.APPLICATION_CONFIGURABLE.extensionList
+            .single { it.id == "io.github.setheclark.flocon_plugin.networkHistory" }
+
+        assertEquals("tools", ep.parentId)
+        assertTrue(ep.createConfigurable() is NetworkHistoryConfigurable)
     }
 
     fun testPageShowsTheThreeHistoryOptionsWithTheirDefaultsAndNothingElse() {
