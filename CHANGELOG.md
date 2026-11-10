@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-10
+
 ### Added
 
 - Network history is now saved to an embedded database in the IDE system directory and survives IDE and app restarts. Bodies are stored in full as plain text, with no truncation
@@ -88,7 +90,8 @@
 - Ability to open network details as an editor window (configurable in settings)
 - A changelog :)
 
-[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/setheclark/flocon-intellij/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/setheclark/flocon-intellij/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/setheclark/flocon-intellij/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/setheclark/flocon-intellij/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/setheclark/flocon-intellij/compare/v0.2.0...v0.2.1
