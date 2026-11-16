@@ -1,5 +1,6 @@
 package io.github.setheclark.intellij.network
 
+import io.github.openflocon.domain.Protocol
 import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainModel
 import io.github.setheclark.intellij.flocon.network.NetworkMessageMapper
 import io.github.setheclark.intellij.flocon.network.NetworkRequest
@@ -29,9 +30,9 @@ class NetworkMessageMapperGraphQlTest {
         val message = FloconIncomingMessageDomainModel(
             deviceName = "device",
             deviceId = "device-id",
-            plugin = "network",
+            plugin = Protocol.FromDevice.Network.Plugin,
             body = json.encodeToString(JsonObject.serializer(), body),
-            method = "logNetworkCallRequest",
+            method = Protocol.FromDevice.Network.Method.LogNetworkCallRequest,
             appName = "app",
             appPackageName = "com.example",
             appInstance = 1L,

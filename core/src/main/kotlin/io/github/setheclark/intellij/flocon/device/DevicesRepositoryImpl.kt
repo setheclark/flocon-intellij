@@ -251,9 +251,5 @@ class DevicesRepositoryImpl(
         log.w { "no-op:askForDeviceAppIcon: $deviceIdAndPackageName" }
     }
 
-    override suspend fun restartApp(deviceIdAndPackageName: DeviceIdAndPackageNameDomainModel) {
-        log.w { "no-op:restartApp: $deviceIdAndPackageName" }
-    }
-
     // endregion no-op
 }

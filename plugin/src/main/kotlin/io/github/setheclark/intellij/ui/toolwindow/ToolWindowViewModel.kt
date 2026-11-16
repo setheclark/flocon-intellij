@@ -3,11 +3,11 @@ package io.github.setheclark.intellij.ui.toolwindow
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.github.openflocon.domain.device.usecase.ObserveCurrentDeviceIdAndPackageNameUseCase
-import io.github.openflocon.domain.messages.usecase.StartServerUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
 import io.github.setheclark.intellij.di.ProjectScope
 import io.github.setheclark.intellij.di.ViewModelCoroutineScope
 import io.github.setheclark.intellij.network.NetworkHistoryStatusDataSource
+import io.github.setheclark.intellij.server.usecase.StartMessageServerUseCase
 import io.github.setheclark.intellij.server.usecase.StopMessageServerUseCase
 import io.github.setheclark.intellij.ui.toolwindow.usecase.ObserveDevicesAndAppsUseCase
 import io.github.setheclark.intellij.ui.toolwindow.usecase.ObserveServerStatusUseCase
@@ -33,7 +33,7 @@ class ToolWindowViewModel(
     private val adbStatusDataSource: AdbStatusDataSource,
     private val networkHistoryStatusDataSource: NetworkHistoryStatusDataSource,
     private val observeServerStatusUseCase: ObserveServerStatusUseCase,
-    private val startServerUseCase: StartServerUseCase,
+    private val startServerUseCase: StartMessageServerUseCase,
     private val stopServerUseCase: StopMessageServerUseCase,
     private val selectDeviceAndAppUseCase: SelectDeviceAndAppUseCase,
     observeDevicesAndAppsUseCase: ObserveDevicesAndAppsUseCase,

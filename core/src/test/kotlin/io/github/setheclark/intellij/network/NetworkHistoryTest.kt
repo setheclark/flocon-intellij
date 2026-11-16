@@ -1,6 +1,7 @@
 package io.github.setheclark.intellij.network
 
 import com.flocon.data.remote.models.FloconIncomingMessageDataModel
+import io.github.openflocon.domain.Protocol
 import io.github.openflocon.domain.common.DispatcherProvider
 import io.github.openflocon.domain.device.models.DeviceIdAndPackageNameDomainModel
 import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainModel
@@ -662,7 +663,7 @@ class NetworkHistoryTest {
             startTime: Long = 1,
         ) {
             send(
-                method = "logNetworkCallRequest",
+                method = Protocol.FromDevice.Network.Method.LogNetworkCallRequest,
                 deviceId = deviceId,
                 packageName = packageName,
                 appInstance = appInstance,
@@ -690,7 +691,7 @@ class NetworkHistoryTest {
             appInstance: Long = 1,
         ) {
             send(
-                method = "logNetworkCallResponse",
+                method = Protocol.FromDevice.Network.Method.LogNetworkCallResponse,
                 deviceId = deviceId,
                 packageName = packageName,
                 appInstance = appInstance,
@@ -723,7 +724,7 @@ class NetworkHistoryTest {
                 FloconIncomingMessageDataModel(
                     deviceName = "Pixel",
                     deviceId = deviceId,
-                    plugin = "network",
+                    plugin = Protocol.FromDevice.Network.Plugin,
                     body = json.encodeToString(JsonObject.serializer(), body),
                     method = method,
                     appName = "App",

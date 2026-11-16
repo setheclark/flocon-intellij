@@ -6,6 +6,7 @@ import dev.zacsweers.metro.Provides
 import io.github.openflocon.data.core.adb.datasource.local.AdbLocalDataSource
 import io.github.openflocon.domain.adb.ExecuteAdbCommandUseCase
 import io.github.openflocon.domain.adb.repository.AdbRepository
+import io.github.openflocon.domain.device.repository.DevicesRepository
 import io.github.openflocon.domain.settings.repository.SettingsRepository
 import io.github.openflocon.domain.settings.usecase.InitAdbPathUseCase
 import io.github.openflocon.domain.settings.usecase.StartAdbForwardUseCase
@@ -24,7 +25,8 @@ interface FloconAdbBindingContainer {
         fun provideExecuteAdbCommandUseCase(
             adbRepository: AdbRepository,
             settingsRepository: SettingsRepository,
-        ): ExecuteAdbCommandUseCase = ExecuteAdbCommandUseCase(adbRepository, settingsRepository)
+            devicesRepository: DevicesRepository,
+        ): ExecuteAdbCommandUseCase = ExecuteAdbCommandUseCase(adbRepository, settingsRepository, devicesRepository)
 
         @Provides
         fun provideExecuteDeviceAdbCommandUseCase(

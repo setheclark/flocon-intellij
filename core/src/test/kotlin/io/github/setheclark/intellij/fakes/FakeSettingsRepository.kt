@@ -1,6 +1,8 @@
 package io.github.setheclark.intellij.fakes
 
+import io.github.openflocon.domain.models.settings.AppScaleSetting
 import io.github.openflocon.domain.models.settings.NetworkSettings
+import io.github.openflocon.domain.models.settings.ServerPortsDomainModel
 import io.github.openflocon.domain.models.settings.ThemeSetting
 import io.github.openflocon.domain.settings.repository.AdbForwardStatus
 import io.github.openflocon.domain.settings.repository.SettingsRepository
@@ -23,7 +25,7 @@ class FakeSettingsRepository(private var path: String? = "/sdk/adb") : SettingsR
         this.path = path
     }
 
-    override suspend fun setFontSizeMultiplier(value: Float) = Unit
+    override suspend fun setAppScale(value: AppScaleSetting) = Unit
     override suspend fun setTheme(value: ThemeSetting) = Unit
     override fun getFloconDocumentsPath(): String? = null
     override suspend fun setFloconDocumentsPath(path: String) = Unit
@@ -33,8 +35,12 @@ class FakeSettingsRepository(private var path: String? = "/sdk/adb") : SettingsR
     override val dismissedClientVersionFlow: Flow<String?> = MutableStateFlow(null)
     override fun getDismissedClientVersion(): String? = null
     override suspend fun setDismissedClientVersion(version: String) = Unit
+    override fun getLastSeenReleaseNotesVersion(): String? = null
+    override suspend fun setLastSeenReleaseNotesVersion(version: String) = Unit
+    override val savedServerPorts: Flow<ServerPortsDomainModel> = MutableStateFlow(ServerPortsDomainModel())
+    override suspend fun setServerPorts(ports: ServerPortsDomainModel) = Unit
     override val adbPath: Flow<String?> = MutableStateFlow(path)
-    override val fontSizeMultiplier: StateFlow<Float> = MutableStateFlow(1f)
+    override val appScale: StateFlow<AppScaleSetting> = MutableStateFlow(AppScaleSetting.DEFAULT)
     override val theme: StateFlow<ThemeSetting> = MutableStateFlow(ThemeSetting.System)
     override val adbForwardStatus: StateFlow<AdbForwardStatus> = MutableStateFlow(AdbForwardStatus.UNKNOWN)
     override fun setAdbForwardStatus(status: AdbForwardStatus) = Unit

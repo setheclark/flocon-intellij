@@ -45,7 +45,7 @@ Inspect detailed request and response information including headers, query param
 - **JDK**: 21 or later
 
 ### Android App Requirements
-- **Flocon SDK**: Integrated in your Android app ([see installation](https://github.com/openflocon/Flocon))
+- **Flocon SDK 2.x**: Integrated in your Android app ([see installation](https://github.com/openflocon/Flocon)). SDK 1.x apps cannot connect, because Flocon 2.0 only accepts encrypted connections
 - **ADB**: For device communication (usually installed with Android SDK)
 
 ---
