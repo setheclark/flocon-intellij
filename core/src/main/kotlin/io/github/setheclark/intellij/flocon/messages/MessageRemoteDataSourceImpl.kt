@@ -9,7 +9,6 @@ import io.github.openflocon.domain.messages.models.FloconIncomingMessageDomainMo
 import io.github.openflocon.domain.messages.models.FloconReceivedFileDomainModel
 import io.github.setheclark.intellij.server.MessageServerState
 import io.github.setheclark.intellij.server.MessageServerStatusDataSource
-import io.github.setheclark.intellij.server.PluginMessageRemoteDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -18,17 +17,17 @@ import kotlinx.coroutines.flow.map
 class MessageRemoteDataSourceImpl(
     private val server: Server,
     private val messageServerStatusDataSource: MessageServerStatusDataSource,
-) : MessageRemoteDataSource, PluginMessageRemoteDataSource {
+) : MessageRemoteDataSource {
 
-    override fun startServer() {
+    override fun startServer(websocketPort: Int, httpPort: Int) {
         synchronized(messageServerStatusDataSource) {
             val current = messageServerStatusDataSource.status.value
             if (current is MessageServerState.Running || current is MessageServerState.Starting) return
             messageServerStatusDataSource.updateStatus(MessageServerState.Starting)
         }
         try {
-            server.startWebsocket()
-            server.starHttp()
+            server.startWebsocket(websocketPort)
+            server.starHttp(httpPort)
             messageServerStatusDataSource.updateStatus(MessageServerState.Running)
         } catch (t: Throwable) {
             messageServerStatusDataSource.updateStatus(MessageServerState.Error(t.message ?: "Unknown error"))

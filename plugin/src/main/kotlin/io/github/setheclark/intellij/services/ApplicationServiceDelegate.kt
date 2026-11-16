@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.github.openflocon.domain.models.settings.ServerPortsDomainModel
 import io.github.openflocon.domain.settings.usecase.InitAdbPathUseCase
 import io.github.openflocon.domain.settings.usecase.StartAdbForwardUseCase
 import io.github.setheclark.intellij.adb.AdbStatusDataSource
@@ -44,7 +45,7 @@ class ApplicationServiceDelegate(
 
             launch {
                 while (isActive) {
-                    startAdbForwardUseCase()
+                    startAdbForwardUseCase(ServerPortsDomainModel())
                     delay(1_500)
                 }
             }

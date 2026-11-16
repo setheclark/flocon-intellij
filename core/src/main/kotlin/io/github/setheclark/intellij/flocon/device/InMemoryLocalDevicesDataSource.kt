@@ -8,6 +8,7 @@ import io.github.openflocon.data.core.device.datasource.local.LocalDevicesDataSo
 import io.github.openflocon.data.core.device.datasource.local.model.InsertResult
 import io.github.openflocon.domain.device.models.AppPackageName
 import io.github.openflocon.domain.device.models.DeviceAppDomainModel
+import io.github.openflocon.domain.device.models.DeviceConnectionType
 import io.github.openflocon.domain.device.models.DeviceDomainModel
 import io.github.openflocon.domain.device.models.DeviceId
 import io.github.setheclark.intellij.util.withPluginTag
@@ -101,6 +102,18 @@ class InMemoryLocalDevicesDataSource : LocalDevicesDataSource {
     // endregion
 
     // region no-op
+
+    override suspend fun saveConnectionType(deviceId: DeviceId, connectionType: DeviceConnectionType) {
+        log.w { "no-op:saveConnectionType: $deviceId|$connectionType" }
+    }
+
+    override suspend fun saveInstalledPlugins(
+        deviceId: DeviceId,
+        appPackageName: AppPackageName,
+        installedPlugins: Set<String>?,
+    ) {
+        log.w { "no-op:saveInstalledPlugins: $deviceId|$appPackageName|$installedPlugins" }
+    }
 
     override suspend fun saveAppIcon(
         deviceId: DeviceId,

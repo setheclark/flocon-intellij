@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** the plugin now targets Flocon 2.0.0, which only accepts encrypted connections (`wss://` and `https://` with a self-signed certificate) and renames its protocol messages. Apps must use Flocon SDK 2.x; apps on SDK 1.x can no longer connect, and nothing in the IDE shows why
+
 ## [0.3.0] - 2026-11-10
 
 ### Added

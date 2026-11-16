@@ -12,9 +12,10 @@ sqldelight = "2.4.1"
 # Flocon dependecies
 kotlinx-coroutines = "1.10.2" # keep in line with the IDE-bundled coroutines (no IDE ships 1.11 yet)
 kotlinx-serialization = "1.11.0"
-kotlinx-dateTime = "0.7.1"
+kotlinx-dateTime = "0.8.0"
 ktor = "3.4.3" # keep <3.5: Ktor 3.5 needs coroutines 1.11 (runBlockingK), newer than the IDE bundles
 kermit = "2.1.0"
+semver = "3.1.0"
 paging = "3.5.0"
 
 # Test dependencies
@@ -43,6 +44,8 @@ sqldelight-jdbc = { module = "app.cash.sqldelight:jdbc-driver", version.ref = "s
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version = "3.54.1.0" }
 paging-common = { module = "androidx.paging:paging-common", version.ref = "paging" }
+semver = { module = "io.github.z4kn4fein:semver", version.ref = "semver" }
+ktor-network-tls-certificates = { module = "io.ktor:ktor-network-tls-certificates", version.ref = "ktor" }
 # endregion
 
 # Test libraries

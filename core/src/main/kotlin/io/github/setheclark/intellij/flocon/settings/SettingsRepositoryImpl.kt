@@ -3,7 +3,9 @@ package io.github.setheclark.intellij.flocon.settings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.github.openflocon.domain.models.settings.AppScaleSetting
 import io.github.openflocon.domain.models.settings.NetworkSettings
+import io.github.openflocon.domain.models.settings.ServerPortsDomainModel
 import io.github.openflocon.domain.models.settings.ThemeSetting
 import io.github.openflocon.domain.settings.repository.AdbForwardStatus
 import io.github.openflocon.domain.settings.repository.SettingsRepository
@@ -79,12 +81,28 @@ class SettingsRepositoryImpl(
         _dismissedClientVersion.value = version
     }
 
-    override suspend fun setFontSizeMultiplier(value: Float) {
-        // noop
+    private val _appScale = MutableStateFlow(AppScaleSetting.DEFAULT)
+
+    override suspend fun setAppScale(value: AppScaleSetting) {
+        _appScale.value = value
     }
 
-    override val fontSizeMultiplier: StateFlow<Float>
-        get() = TODO("no-op")
+    override val appScale: StateFlow<AppScaleSetting> = _appScale
+
+    private val _lastSeenReleaseNotesVersion = MutableStateFlow<String?>(null)
+
+    override fun getLastSeenReleaseNotesVersion(): String? = _lastSeenReleaseNotesVersion.value
+
+    override suspend fun setLastSeenReleaseNotesVersion(version: String) {
+        _lastSeenReleaseNotesVersion.value = version
+    }
+
+    // The IDE plugin always uses Flocon's default ports
+    override val savedServerPorts: Flow<ServerPortsDomainModel> = MutableStateFlow(ServerPortsDomainModel())
+
+    override suspend fun setServerPorts(ports: ServerPortsDomainModel) {
+        // noop
+    }
 
     private val _theme = MutableStateFlow(ThemeSetting.System)
 
